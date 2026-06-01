@@ -7,6 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <style>
 :root{--bg:#0b0b11;--sf:#13131d;--sf2:#1b1b28;--bd:#252535;--ac:#00e5ff;--ac2:#7c3aed;--ac3:#22c55e;--wn:#f59e0b;--dn:#ef4444;--tx:#e8e8f2;--mu:#64748b}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -144,7 +147,6 @@ select:focus{border-color:var(--ac)}
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="ls">
   <div class="lb">
     <div class="ll">Labor<span>BI</span></div>
@@ -162,7 +164,6 @@ select:focus{border-color:var(--ac)}
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="tb">
     <div class="tbl">Labor<span>BI</span></div>
@@ -173,10 +174,9 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ PETCARE-2026 ██ -->
   <div class="pg on" id="pg-petcare">
     <div class="ptitle">Petcare <span>2026</span></div>
-    <div class="psub" id="petcare-sub">Carregue os arquivos no painel Admin.</div>
+    <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
     <div class="frow">
       <span class="flbl">Filtrar:</span>
       <select id="f-vet" onchange="renderPetcare()"><option value="">Todos os Veterinários</option></select>
@@ -191,7 +191,6 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
   </div>
 
-  <!-- ██ RANKING ██ -->
   <div class="pg" id="pg-ranking">
     <div class="ptitle">Ranking <span>Veterinários</span></div>
     <div class="psub">Produção total — filtro por mês</div>
@@ -203,7 +202,6 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
   </div>
 
-  <!-- ██ CLINICA MÉDICA ██ -->
   <div class="pg" id="pg-clinica">
     <div class="ptitle">Clínica <span>Médica</span></div>
     <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
@@ -219,7 +217,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ INTER ██ -->
   <div class="pg" id="pg-inter">
     <div class="ptitle">Internação <span>— INTER</span></div>
     <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
@@ -235,7 +232,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ BLOCO CIRÚRGICO ██ -->
   <div class="pg" id="pg-cirurgico">
     <div class="ptitle">Bloco <span>Cirúrgico</span></div>
     <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
@@ -251,7 +247,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ LABORATÓRIO ██ -->
   <div class="pg" id="pg-laboratorio">
     <div class="ptitle">Laboratório <span>— LAB</span></div>
     <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
@@ -267,12 +262,11 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ ADMIN ██ -->
   <div class="pg" id="pg-admin">
     <div class="ptitle">Painel <span>Admin</span></div>
     <div class="psub">Upload de planilhas e gerenciamento de usuários</div>
     <div class="ibox">
-      ℹ️ Faça upload dos dois arquivos Excel exatamente como exportados do sistema. Os dados <strong>substituem completamente</strong> os anteriores a cada upload.<br>
+      ℹ️ Faça upload dos dois arquivos Excel exatamente como exportados do sistema. Os dados <strong>substituem completamente</strong> os anteriores a cada upload e atualizam para todos os visualizadores.<br>
       <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados": Veterinarios, Produção, Semana, Horas normais, Horas noturnas…<br>
       <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB
     </div>
@@ -320,6 +314,26 @@ select:focus{border-color:var(--ac)}
 
 <script>
 // ════════════════════════════════
+//  FIREBASE CONFIGURATION
+// ════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBeasaFybB-awfqxLdU8024-EQRaIHZFJA",
+  authDomain: "gc-widget-obs.firebaseapp.com",
+  databaseURL: "https://gc-widget-obs-default-rtdb.firebaseio.com",
+  projectId: "gc-widget-obs",
+  storageBucket: "gc-widget-obs.firebasestorage.app",
+  messagingSenderId: "361431978410",
+  appId: "1:361431978410:web:659db181abfdfd6cabdbd3",
+  measurementId: "G-KJXWV2W24M"
+};
+
+// Inicializa o Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// ════════════════════════════════
 //  CONSTANTS & STATE
 // ════════════════════════════════
 const CHART_COLORS = ['#00e5ff','#7c3aed','#22c55e','#f59e0b','#fb7185','#818cf8','#34d399','#fbbf24','#60a5fa','#e879f9'];
@@ -328,18 +342,21 @@ const TC = {color:'#64748b',font:{family:'DM Mono',size:10}};
 
 const DEF_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass:'viewer123',role:'viewer'}];
 
-const S={role:'viewer',user:null,base:null,anal:null,charts:{}};
+const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
+let globalUsers = [...DEF_USERS];
 
-const DB={
-  users:()=>{const s=localStorage.getItem('lb_u');return s?JSON.parse(s):[...DEF_USERS]},
-  setU:v=>localStorage.setItem('lb_u',JSON.stringify(v)),
-  base:()=>{const s=localStorage.getItem('lb_b');return s?JSON.parse(s):null},
-  setB:v=>v?localStorage.setItem('lb_b',JSON.stringify(v)):localStorage.removeItem('lb_b'),
-  anal:()=>{const s=localStorage.getItem('lb_a');return s?JSON.parse(s):null},
-  setA:v=>v?localStorage.setItem('lb_a',JSON.stringify(v)):localStorage.removeItem('lb_a'),
-  meta:()=>{const s=localStorage.getItem('lb_m');return s?JSON.parse(s):{}},
-  setM:v=>localStorage.setItem('lb_m',JSON.stringify(v))
-};
+// Escuta a lista de usuários em tempo real
+db.ref('laborbi/users').on('value', (snap) => {
+    if (snap.exists()) {
+        globalUsers = snap.val();
+    } else {
+        // Se o banco estiver vazio, grava os usuários padrão
+        db.ref('laborbi/users').set(globalUsers);
+    }
+    if(S.role === 'admin' && document.getElementById('pg-admin').classList.contains('on')) {
+        renderUsers();
+    }
+});
 
 // ════════════════════════════════
 //  FORMATTERS & MATH
@@ -381,7 +398,7 @@ function selR(r,el){selRole_=r;document.querySelectorAll('.rtab').forEach(t=>t.c
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
-  const f=DB.users().find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
+  const f=globalUsers.find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
   if(f){
     S.user=f.user;S.role=f.role;
     document.getElementById('ls').style.display='none';
@@ -402,7 +419,7 @@ function doLogout(){
 }
 
 // ════════════════════════════════
-//  APP INIT
+//  APP INIT (CLOUD SYNC)
 // ════════════════════════════════
 const PAGES=[
   {id:'petcare',  label:'Petcare-2026'},
@@ -426,21 +443,26 @@ function initApp(){
     `<button class="nb${i===0?' on':''}" data-pg="${p.id}" onclick="showPg('${p.id}',this)">${p.label}</button>`
   ).join('');
 
-  S.base=DB.base();
-  S.anal=DB.anal();
+  // ESCUTANDO O FIREBASE EM TEMPO REAL
+  db.ref('laborbi').on('value', (snap) => {
+    const data = snap.val() || {};
+    
+    S.base = data.base || null;
+    S.anal = data.anal || null;
+    S.meta = data.meta || {};
 
-  const meta=DB.meta();
-  if(meta.base) setFst('base',meta.base,true);
-  if(meta.anal) setFst('anal',meta.anal,true);
+    if(S.meta.base) setFst('base', S.meta.base, true);
+    if(S.meta.anal) setFst('anal', S.meta.anal, true);
 
-  populateAllFilters();
-  renderPetcare();
-  renderRanking();
-  renderClinica();
-  renderInter();
-  renderCirurgico();
-  renderLab();
-  if(S.role==='admin') renderUsers();
+    populateAllFilters();
+    renderPetcare();
+    renderRanking();
+    renderClinica();
+    renderInter();
+    renderCirurgico();
+    renderLab();
+    if(S.role==='admin') renderUsers();
+  });
 }
 
 function showPg(id,btn){
@@ -584,12 +606,11 @@ function kpiCard(lbl,val,sub,clr='var(--ac)'){
 function renderPetcare(){
   const rows=fBase();
   const has=rows.length>0;
-  const meta=DB.meta();
   
-  // Mensagem amigável focada na permissão
-  document.getElementById('petcare-sub').textContent=meta.base
-    ?'Base: '+meta.base+(meta.anal?' · Análises: '+meta.anal:'')
-    :(S.role==='admin'?'Carregue os arquivos no painel Admin.':'Aguardando atualização dos dados.');
+  // Mensagem amigável focada na permissão (lendo S.meta em vez de DB.meta())
+  document.getElementById('petcare-sub').textContent=S.meta.base
+    ?'Base: '+S.meta.base+(S.meta.anal?' · Análises: '+S.meta.anal:'')
+    :(S.role==='admin'?'Carregue os arquivos no painel Admin.':'Aguardando atualização dos dados da nuvem.');
 
   const tProd=sumC(rows,'prod'),tVar=sumC(rows,'valVar'),tFixo=sumC(rows,'valFixo');
   const tTotal=sumC(rows,'valTotal'),tHoras=sumC(rows,'horas');
@@ -748,7 +769,7 @@ function renderLab(){
 }
 
 // ════════════════════════════════
-//  FILE LOADING (SECURITY APPLIED)
+//  FILE LOADING (CLOUD UPLOAD)
 // ════════════════════════════════
 function dropF(e,type){
   e.preventDefault();
@@ -765,6 +786,7 @@ function loadF(e,type){
 }
 
 function procXlsx(file,type){
+  toast('Lendo arquivo Excel...', 'inf');
   const rd=new FileReader();
   rd.onload=ev=>{
     try{
@@ -784,10 +806,8 @@ function parseBase(wb,fname){
   const rawN=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
   
   let hi=-1;
-  // Fallback padrão se não encontrar alguma das colunas
   let col = { vet:1, prod:2, vFixo:4, sem:7, data:8, hN:10, hNt:11 };
 
-  // Identifica as colunas dinamicamente buscando pelo título
   for(let i=0;i<rawN.length;i++){
     if(rawN[i]){
       let achouVet = false;
@@ -812,7 +832,6 @@ function parseBase(wb,fname){
   const tempRows=[];
   const mProd={};
 
-  // PASSO 1: Agrupar
   for(let i=hi+1;i<rawN.length;i++){
     const r=rawN[i];
     if(!r||!r[col.vet])continue;
@@ -850,7 +869,6 @@ function parseBase(wb,fname){
     tempRows.push({vet, prod, vFixo, hN, hNt, sem, ds, mes});
   }
   
-  // PASSO 2: Aplicar comissões e gerar os resultados
   const rows=[];
   for(const r of tempRows){
     const mTotal = mProd[r.vet+'|'+r.mes];
@@ -878,11 +896,14 @@ function parseBase(wb,fname){
   
   if(!rows.length){setFst('base','Nenhuma linha válida.',false);return}
 
-  S.base=rows;DB.setB(rows);
-  const meta=DB.meta();meta.base=fname+' ('+rows.length+' linhas)';DB.setM(meta);
-  setFst('base',fname+' — '+rows.length+' registros',true);
-  toast('Base de dados: '+rows.length+' registros carregados ✓','ok');
-  populateAllFilters();renderPetcare();renderRanking();
+  // ENVIO PARA O FIREBASE
+  toast('Enviando Base de Dados para a nuvem...', 'inf');
+  db.ref('laborbi/base').set(rows).then(() => {
+    db.ref('laborbi/meta/base').set(fname+' ('+rows.length+' linhas)');
+    toast('Base de dados sincronizada com sucesso! ✓','ok');
+  }).catch(err => {
+    toast('Erro de sincronização: ' + err.message, 'err');
+  });
 }
 
 // ── Parse Analises_Balneario.xlsx ──
@@ -912,12 +933,15 @@ function parseAnal(wb,fname){
     }
     anal[sh]=rows;total+=rows.length;
   }
-  S.anal=anal;DB.setA(anal);
-  const meta=DB.meta();meta.anal=fname+' ('+total+' linhas)';DB.setM(meta);
-  const det=shts.map(s=>`${s}:${(anal[s]||[]).length}`).join(' · ');
-  setFst('anal',fname+' — '+total+' registros ('+det+')',true);
-  toast('Análises: '+total+' registros carregados ✓','ok');
-  populateAllFilters();renderClinica();renderInter();renderCirurgico();renderLab();
+
+  // ENVIO PARA O FIREBASE
+  toast('Enviando Análises para a nuvem...', 'inf');
+  db.ref('laborbi/anal').set(anal).then(() => {
+    db.ref('laborbi/meta/anal').set(fname+' ('+total+' linhas)');
+    toast('Análises sincronizadas com sucesso! ✓','ok');
+  }).catch(err => {
+    toast('Erro de sincronização: ' + err.message, 'err');
+  });
 }
 
 function setFst(type,msg,ok){
@@ -928,10 +952,10 @@ function setFst(type,msg,ok){
 }
 
 // ════════════════════════════════
-//  USERS (SECURITY APPLIED)
+//  USERS (CLOUD SYNC)
 // ════════════════════════════════
 function renderUsers(){
-  document.getElementById('ulist').innerHTML=DB.users().map((u,i)=>`
+  document.getElementById('ulist').innerHTML=globalUsers.map((u,i)=>`
     <div class="ui-item">
       <div class="uav ${u.role==='admin'?'ua':'uv'}">${u.user[0].toUpperCase()}</div>
       <div class="uin"><div class="unm">${u.user}</div><div class="url">${u.role}</div></div>
@@ -943,17 +967,22 @@ function addUser(){
   const u=document.getElementById('nu').value.trim();
   const p=document.getElementById('np').value.trim();
   if(!u||!p){toast('Preencha usuário e senha.','err');return}
-  const us=DB.users();
-  if(us.find(x=>x.user===u)){toast('Usuário já existe.','err');return}
-  us.push({user:u,pass:p,role:'viewer'});DB.setU(us);
-  document.getElementById('nu').value='';document.getElementById('np').value='';
-  renderUsers();toast(`"${u}" adicionado ✓`,'ok');
+  if(globalUsers.find(x=>x.user===u)){toast('Usuário já existe.','err');return}
+  
+  globalUsers.push({user:u,pass:p,role:'viewer'});
+  db.ref('laborbi/users').set(globalUsers).then(() => {
+      document.getElementById('nu').value='';document.getElementById('np').value='';
+      toast(`"${u}" adicionado na nuvem ✓`,'ok');
+  });
 }
 function rmUser(i){
   if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
-  const us=DB.users();
-  if(us[i]?.role==='admin'){toast('Não é possível remover o admin.','err');return}
-  us.splice(i,1);DB.setU(us);renderUsers();toast('Usuário removido.','ok');
+  if(globalUsers[i]?.role==='admin'){toast('Não é possível remover o admin.','err');return}
+  
+  globalUsers.splice(i,1);
+  db.ref('laborbi/users').set(globalUsers).then(() => {
+      toast('Usuário removido da nuvem.','ok');
+  });
 }
 
 // ════════════════════════════════
