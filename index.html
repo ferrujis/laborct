@@ -52,13 +52,13 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .psub{color:var(--mu);font-size:11px;margin-bottom:20px}
 
 /* ── KPI ── */
-.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
-.kc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;transition:border-color .2s;position:relative;overflow:hidden}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:18px}
+.kc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px;transition:border-color .2s;position:relative;overflow:hidden}
 .kc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--clr,var(--ac));opacity:.5}
 .kc:hover{border-color:rgba(0,229,255,.2)}
-.klbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mu);margin-bottom:8px}
-.kval{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--clr,var(--ac))}
-.ksub{font-size:10px;color:var(--mu);margin-top:4px}
+.klbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--mu);margin-bottom:6px}
+.kval{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.5px;line-height:1.2;color:var(--clr,var(--ac));white-space:nowrap}
+.ksub{font-size:10px;color:var(--mu);margin-top:6px}
 
 /* ── CHARTS ── */
 .cgrid{display:grid;gap:12px;margin-bottom:18px}
@@ -342,17 +342,34 @@ const DB={
 };
 
 // ════════════════════════════════
-//  FORMATTERS
+//  FORMATTERS & MATH
 // ════════════════════════════════
 const fN=v=>(parseFloat(v)||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
 const fR=v=>'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fP=v=>((parseFloat(v)||0)*100).toFixed(1)+'%';
 const sumC=(a,k)=>a.reduce((s,r)=>s+(r[k]||0),0);
 
-function calcPerc(p){if(p>15250)return .10;if(p>=12750.25)return .07;if(p>=10250.25)return .05;if(p>=8750.25)return .03;return 0}
+// ▼ TABELA DE COMISSÕES ▼
+function calcPerc(p){
+  if(p >= 61000) return 0.10; // 10%
+  if(p >= 51000) return 0.07; // 7%
+  if(p >= 41000) return 0.05; // 5%
+  if(p >= 35000) return 0.03; // 3%
+  return 0; // Abaixo de 35k
+}
 
 const MESES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-function getMes(ds){if(!ds)return '';const m=parseInt(ds.slice(5,7));return MESES[m]||''}
+
+function getMes(ds){
+  if(!ds) return '';
+  const p = ds.split('-');
+  if(p.length >= 2){
+    const m = parseInt(p[1], 10);
+    return MESES[m] || '';
+  }
+  return '';
+}
+
 function r2(v){return Math.round(v*100)/100}
 
 // ════════════════════════════════
@@ -402,6 +419,7 @@ function initApp(){
   br.className='brl'+(S.role==='admin'?' adm':'');
 
   const pages=[...PAGES];
+  // Apenas Admin vê e tem a página de admin injetada na navbar
   if(S.role==='admin') pages.push({id:'admin',label:'⚙ Admin'});
 
   document.getElementById('tnav').innerHTML=pages.map((p,i)=>
@@ -422,10 +440,15 @@ function initApp(){
   renderInter();
   renderCirurgico();
   renderLab();
-  renderUsers();
+  if(S.role==='admin') renderUsers();
 }
 
 function showPg(id,btn){
+  // Trava de segurança extra: impede o visualizador de forçar a tela admin
+  if(id === 'admin' && S.role !== 'admin') {
+    toast('Acesso negado: apenas Administrador.','err');
+    return;
+  }
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+id).classList.add('on');
@@ -562,20 +585,21 @@ function renderPetcare(){
   const rows=fBase();
   const has=rows.length>0;
   const meta=DB.meta();
+  
+  // Mensagem amigável focada na permissão
   document.getElementById('petcare-sub').textContent=meta.base
     ?'Base: '+meta.base+(meta.anal?' · Análises: '+meta.anal:'')
-    :'Carregue os arquivos no painel Admin.';
+    :(S.role==='admin'?'Carregue os arquivos no painel Admin.':'Aguardando atualização dos dados.');
 
   const tProd=sumC(rows,'prod'),tVar=sumC(rows,'valVar'),tFixo=sumC(rows,'valFixo');
   const tTotal=sumC(rows,'valTotal'),tHoras=sumC(rows,'horas');
-  const nVets=new Set(rows.map(r=>r.vet)).size;
-  const avgProd=rows.length?tProd/nVets:0;
+  const avgProd=rows.length ? tProd / 4 : 0;
 
   document.getElementById('pc-kpi').innerHTML=[
     kpiCard('Produção Total',has?fR(tProd):'—','soma das produções','var(--ac)'),
-    kpiCard('Média de Produção',has?fR(avgProd):'—','por veterinário','#60a5fa'),
+    kpiCard('Média de Produção',has?fR(avgProd):'—','por semana (4 sem.)','#60a5fa'),
     kpiCard('Valor Total',has?fR(tTotal):'—','fixo + variável','var(--ac3)'),
-    kpiCard('Valor Fixo',has?fR(tFixo):'—','horas × tarifa','#a78bfa'),
+    kpiCard('Valor Fixo',has?fR(tFixo):'—','lido da planilha','#a78bfa'),
     kpiCard('Valor Variável',has?fR(tVar):'—','comissão por prod.','var(--wn)'),
     kpiCard('Horas no Mês',has?fN(tHoras)+'h':'—','normais + noturnas','var(--ac)'),
   ].join('');
@@ -610,7 +634,7 @@ function renderPetcare(){
       <td style="color:var(--wn);font-weight:600">${fR(d.total)}</td>
       <td>${fN(d.hN)}h+${fN(d.hNt)}h<span style="color:var(--mu)">=${fN(d.horas)}h</span></td></tr>`;
     }).join('')}</tbody></table>`
-    :'<div class="nd"><div class="nd-i">📂</div>Carregue a planilha no painel Admin.</div>';
+    :'<div class="nd"><div class="nd-i">📂</div>'+(S.role==='admin'?'Carregue a planilha no painel Admin.':'Dados não disponíveis.')+'</div>';
 }
 
 // ════════════════════════════════
@@ -643,7 +667,7 @@ function renderRanking(){
       <td><span class="bdg ${pc>=.07?'bg':pc>=.03?'by':'br'}">${fP(pc)}</span></td>
       <td style="color:var(--ac3)">${fR(d.total)}</td><td>${fN(d.horas)}h</td></tr>`;
     }).join('')}</tbody></table>`
-    :'<div class="nd"><div class="nd-i">🏆</div>Carregue os dados no painel Admin.</div>';
+    :'<div class="nd"><div class="nd-i">🏆</div>'+(S.role==='admin'?'Carregue os dados no painel Admin.':'Dados não disponíveis.')+'</div>';
 }
 
 // ════════════════════════════════
@@ -666,7 +690,7 @@ function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAcce
 
   if(!rows.length){
     killChart(barId);
-    document.getElementById(tableId).innerHTML='<div class="nd"><div class="nd-i">📋</div>Carregue o arquivo Analises_Balneario.xlsx no painel Admin.</div>';
+    document.getElementById(tableId).innerHTML='<div class="nd"><div class="nd-i">📋</div>'+(S.role==='admin'?'Carregue o arquivo Analises_Balneario.xlsx no painel Admin.':'Dados não disponíveis.')+'</div>';
     document.getElementById(countId).textContent='';
     return;
   }
@@ -724,10 +748,21 @@ function renderLab(){
 }
 
 // ════════════════════════════════
-//  FILE LOADING
+//  FILE LOADING (SECURITY APPLIED)
 // ════════════════════════════════
-function dropF(e,type){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)procXlsx(f,type)}
-function loadF(e,type){const f=e.target.files[0];if(f)procXlsx(f,type);e.target.value=''}
+function dropF(e,type){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag');
+  if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
+  const f=e.dataTransfer.files[0];
+  if(f)procXlsx(f,type);
+}
+function loadF(e,type){
+  if(S.role !== 'admin') { toast('Acesso negado.','err'); e.target.value=''; return; }
+  const f=e.target.files[0];
+  if(f)procXlsx(f,type);
+  e.target.value='';
+}
 
 function procXlsx(file,type){
   const rd=new FileReader();
@@ -747,31 +782,100 @@ function parseBase(wb,fname){
   if(!ws){setFst('base','Aba "Base de dados" não encontrada.',false);return}
 
   const rawN=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-  // Find header row: row where col[1] === 'Veterinarios'
+  
   let hi=-1;
-  for(let i=0;i<rawN.length;i++){if(rawN[i]&&String(rawN[i][1]||'').trim()==='Veterinarios'){hi=i;break}}
+  // Fallback padrão se não encontrar alguma das colunas
+  let col = { vet:1, prod:2, vFixo:4, sem:7, data:8, hN:10, hNt:11 };
+
+  // Identifica as colunas dinamicamente buscando pelo título
+  for(let i=0;i<rawN.length;i++){
+    if(rawN[i]){
+      let achouVet = false;
+      for(let j=0; j<rawN[i].length; j++) {
+        const cellRaw = String(rawN[i][j]||'').trim();
+        const val = cellRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        
+        if(cellRaw === 'Veterinarios') { hi=i; col.vet=j; achouVet = true; } 
+        else if(val === 'producao') col.prod=j;
+        else if(val === 'valores fixos') col.vFixo=j;
+        else if(val === 'semana') col.sem=j;
+        else if(val === 'data') col.data=j;
+        else if(val === 'horas normais') col.hN=j;
+        else if(val === 'horas noturnas') col.hNt=j;
+      }
+      if(achouVet) break;
+    }
+  }
+  
   if(hi<0){setFst('base','Cabeçalho "Veterinarios" não encontrado.',false);return}
 
-  const rows=[];
+  const tempRows=[];
+  const mProd={};
+
+  // PASSO 1: Agrupar
   for(let i=hi+1;i<rawN.length;i++){
-    const r=rawN[i];if(!r||!r[1])continue;
-    const vet=String(r[1]).trim();
-    const prod=parseFloat(r[2])||0;
-    const hN=parseFloat(r[10])||0;   // Horas normais
-    const hNt=parseFloat(r[11])||0;  // Horas noturnas
-    const sem=String(r[7]||'').trim();
+    const r=rawN[i];
+    if(!r||!r[col.vet])continue;
+    
+    const vet=String(r[col.vet]).trim();
+    const prod=parseFloat(r[col.prod])||0;
+    const vFixo=parseFloat(r[col.vFixo])||0;
+    const hN=parseFloat(r[col.hN])||0;
+    const hNt=parseFloat(r[col.hNt])||0;
+    const sem=String(r[col.sem]||'').trim();
+    
     let ds='';
-    const dc=r[8];
-    if(dc instanceof Date)ds=dc.toISOString().slice(0,10);
-    else if(typeof dc==='number'){const d=XLSX.SSF.parse_date_code(dc);if(d)ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}
-    else if(dc)ds=String(dc).slice(0,10);
+    const dc=r[col.data];
+    if(dc instanceof Date){
+      ds=dc.toISOString().slice(0,10);
+    } else if(typeof dc==='number'){
+      const d=XLSX.SSF.parse_date_code(dc);
+      if(d) ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    } else if(dc){
+      ds=String(dc).trim();
+      if(ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+        const p = ds.slice(0,10).split('/');
+        ds = `${p[2]}-${p[1]}-${p[0]}`;
+      } else {
+        ds = ds.slice(0,10);
+      }
+    }
+
     const mes=getMes(ds);
-    const perc=calcPerc(prod);
-    const valVar=r2(perc*prod);
-    const valFixo=r2(hN*26.22+hNt*37.79);
-    const valTotal=r2(valVar+valFixo);
-    rows.push({vet,prod,valVar,valFixo,valTotal,sem,data:ds,mes,horas:hN+hNt,hNorm:hN,hNot:hNt,perc});
+    const key=vet+'|'+mes;
+    
+    if(!mProd[key]) mProd[key]=0;
+    mProd[key] += prod;
+
+    tempRows.push({vet, prod, vFixo, hN, hNt, sem, ds, mes});
   }
+  
+  // PASSO 2: Aplicar comissões e gerar os resultados
+  const rows=[];
+  for(const r of tempRows){
+    const mTotal = mProd[r.vet+'|'+r.mes];
+    
+    const perc = calcPerc(mTotal); 
+    const valVar = r2(perc * r.prod); 
+    const valFixo = r.vFixo; 
+    const valTotal = r2(valVar + valFixo);
+    
+    rows.push({
+      vet: r.vet,
+      prod: r.prod,
+      valVar,
+      valFixo,
+      valTotal,
+      sem: r.sem,
+      data: r.ds,
+      mes: r.mes,
+      horas: r.hN + r.hNt,
+      hNorm: r.hN,
+      hNot: r.hNt,
+      perc
+    });
+  }
+  
   if(!rows.length){setFst('base','Nenhuma linha válida.',false);return}
 
   S.base=rows;DB.setB(rows);
@@ -824,7 +928,7 @@ function setFst(type,msg,ok){
 }
 
 // ════════════════════════════════
-//  USERS
+//  USERS (SECURITY APPLIED)
 // ════════════════════════════════
 function renderUsers(){
   document.getElementById('ulist').innerHTML=DB.users().map((u,i)=>`
@@ -835,6 +939,7 @@ function renderUsers(){
     </div>`).join('');
 }
 function addUser(){
+  if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
   const u=document.getElementById('nu').value.trim();
   const p=document.getElementById('np').value.trim();
   if(!u||!p){toast('Preencha usuário e senha.','err');return}
@@ -845,6 +950,7 @@ function addUser(){
   renderUsers();toast(`"${u}" adicionado ✓`,'ok');
 }
 function rmUser(i){
+  if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
   const us=DB.users();
   if(us[i]?.role==='admin'){toast('Não é possível remover o admin.','err');return}
   us.splice(i,1);DB.setU(us);renderUsers();toast('Usuário removido.','ok');
