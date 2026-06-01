@@ -3,1128 +3,404 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Labor Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>LaborBI — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  :root {
-    --bg: #0b0f1a;
-    --surface: #131929;
-    --surface2: #1a2236;
-    --border: #1e2d47;
-    --accent: #2563eb;
-    --accent2: #3b82f6;
-    --accent-glow: rgba(37,99,235,0.18);
-    --text: #e8edf5;
-    --text2: #8fa3bf;
-    --text3: #4d6280;
-    --green: #22c55e;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --purple: #a855f7;
-    --teal: #14b8a6;
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ===== LOGIN ===== */
-  #login-screen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(ellipse at 30% 40%, rgba(37,99,235,0.12) 0%, transparent 60%),
-                radial-gradient(ellipse at 70% 80%, rgba(168,85,247,0.08) 0%, transparent 50%),
-                var(--bg);
-  }
-  .login-card {
-    width: 400px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 48px 40px;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
-  }
-  .login-logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 36px;
-  }
-  .logo-icon {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .login-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-  .login-logo span { font-size: 12px; color: var(--text2); display: block; font-weight: 400; }
-  .login-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
-  .login-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
-  .field-group { margin-bottom: 20px; }
-  .field-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
-  .field-group input {
-    width: 100%; padding: 12px 16px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text);
-    font-family: inherit; font-size: 15px;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-  .field-group input:focus { border-color: var(--accent); }
-  .btn-primary {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #1d4ed8);
-    color: white; border: none; border-radius: var(--radius-sm);
-    font-family: inherit; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
-    margin-top: 8px;
-  }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-primary:active { transform: scale(0.98); }
-  .login-error {
-    color: var(--red); font-size: 13px; margin-top: 12px;
-    background: rgba(239,68,68,0.08); padding: 10px 14px;
-    border-radius: var(--radius-sm); border: 1px solid rgba(239,68,68,0.2);
-    display: none;
-  }
-  .login-hint { font-size: 12px; color: var(--text3); margin-top: 20px; text-align: center; }
-
-  /* ===== APP SHELL ===== */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
-
-  /* TOPBAR */
-  .topbar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    height: 60px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .topbar-left { display: flex; align-items: center; gap: 20px; }
-  .top-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
-  .top-logo .logo-icon { width: 32px; height: 32px; font-size: 14px; border-radius: 8px; }
-  .user-badge {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 6px 14px 6px 10px; border-radius: 999px; font-size: 13px;
-    cursor: pointer; transition: border-color 0.2s;
-  }
-  .user-badge:hover { border-color: var(--accent); }
-  .user-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
-  .admin-dot { background: linear-gradient(135deg, var(--accent), var(--purple)); }
-  .viewer-dot { background: linear-gradient(135deg, var(--teal), var(--green)); }
-  .btn-logout {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text2); padding: 6px 14px; border-radius: var(--radius-sm);
-    font-family: inherit; font-size: 13px; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-logout:hover { border-color: var(--red); color: var(--red); }
-
-  /* TABS */
-  .tabs-bar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    display: flex; align-items: center; gap: 4px;
-    overflow-x: auto;
-  }
-  .tab-btn {
-    padding: 12px 18px; background: transparent; border: none;
-    color: var(--text2); font-family: inherit; font-size: 13px; font-weight: 500;
-    cursor: pointer; border-bottom: 2px solid transparent;
-    transition: all 0.2s; white-space: nowrap;
-  }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
-  .admin-tab {
-    margin-left: auto;
-    color: var(--yellow) !important;
-  }
-  .admin-tab.active { color: var(--yellow) !important; border-bottom-color: var(--yellow) !important; }
-
-  /* MAIN CONTENT */
-  .main { flex: 1; padding: 28px; }
-
-  /* ===== DASHBOARD PAGES ===== */
-  .page { display: none; }
-  .page.active { display: block; animation: fadeIn 0.3s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-  .page-header { margin-bottom: 24px; }
-  .page-header h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
-  .page-header p { color: var(--text2); font-size: 14px; margin-top: 4px; }
-
-  /* KPI CARDS */
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .kpi-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-    position: relative; overflow: hidden;
-    transition: border-color 0.2s;
-  }
-  .kpi-card:hover { border-color: var(--accent); }
-  .kpi-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  }
-  .kpi-card.blue::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), var(--teal)); }
-  .kpi-card.yellow::before { background: linear-gradient(90deg, var(--yellow), #f97316); }
-  .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), #ec4899); }
-  .kpi-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-  .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; font-family: 'DM Mono', monospace; }
-  .kpi-sub { font-size: 12px; color: var(--text3); margin-top: 6px; }
-  .kpi-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 8px; }
-  .kpi-badge.up { background: rgba(34,197,94,0.1); color: var(--green); }
-  .kpi-badge.dn { background: rgba(239,68,68,0.1); color: var(--red); }
-
-  /* CHARTS */
-  .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
-  .chart-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-  .chart-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-  }
-  .chart-card h3 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .chart-wrap { position: relative; }
-
-  /* TABLE */
-  .table-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-    margin-bottom: 24px;
-  }
-  .table-header {
-    padding: 16px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-  }
-  .table-header h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); }
-  .search-input {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 8px 14px;
-    color: var(--text); font-family: inherit; font-size: 13px;
-    outline: none; width: 220px;
-    transition: border-color 0.2s;
-  }
-  .search-input:focus { border-color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  td { padding: 11px 16px; border-bottom: 1px solid rgba(30,45,71,0.5); color: var(--text2); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface2); color: var(--text); }
-  .empty-state { text-align: center; padding: 48px; color: var(--text3); font-size: 14px; }
-  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-  .badge-blue { background: rgba(37,99,235,0.12); color: var(--accent2); }
-  .badge-green { background: rgba(34,197,94,0.1); color: var(--green); }
-  .badge-yellow { background: rgba(245,158,11,0.1); color: var(--yellow); }
-  .badge-purple { background: rgba(168,85,247,0.1); color: var(--purple); }
-
-  /* FILTER ROW */
-  .filter-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  .filter-select {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 8px 14px;
-    color: var(--text); font-family: inherit; font-size: 13px;
-    outline: none; cursor: pointer; min-width: 140px;
-    transition: border-color 0.2s;
-  }
-  .filter-select:focus { border-color: var(--accent); }
-  .filter-label { font-size: 12px; color: var(--text3); align-self: center; margin-right: 4px; }
-
-  /* ===== ADMIN PANEL ===== */
-  .admin-panel { max-width: 720px; }
-  .admin-section {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 28px; margin-bottom: 20px;
-  }
-  .admin-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-  .admin-section p { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
-  .upload-zone {
-    border: 2px dashed var(--border); border-radius: var(--radius);
-    padding: 48px; text-align: center; cursor: pointer;
-    transition: all 0.2s; position: relative;
-  }
-  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-glow); }
-  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .upload-icon { font-size: 40px; margin-bottom: 14px; }
-  .upload-zone h4 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .upload-zone p { font-size: 13px; color: var(--text2); margin: 0; }
-  .upload-note { font-size: 12px; color: var(--text3); margin-top: 12px; }
-  .upload-progress {
-    display: none; margin-top: 16px;
-    background: var(--surface2); border-radius: 999px; height: 6px; overflow: hidden;
-  }
-  .upload-progress-bar {
-    height: 100%; width: 0; border-radius: 999px;
-    background: linear-gradient(90deg, var(--accent), var(--purple));
-    transition: width 0.4s;
-  }
-  .upload-status { font-size: 13px; color: var(--text2); margin-top: 10px; display: none; }
-  .data-preview { margin-top: 16px; display: none; }
-  .btn-sm {
-    padding: 8px 16px; border-radius: var(--radius-sm); font-family: inherit;
-    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
-    transition: opacity 0.2s;
-  }
-  .btn-sm:hover { opacity: 0.8; }
-  .btn-accent { background: var(--accent); color: white; }
-  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-
-  /* USER MANAGEMENT */
-  .users-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-  .user-row {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px 16px;
-  }
-  .user-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-  .user-info { flex: 1; }
-  .user-info .name { font-size: 14px; font-weight: 500; }
-  .user-info .role { font-size: 12px; color: var(--text3); }
-  .btn-del { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 5px 10px; border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-  .btn-del:hover { border-color: var(--red); color: var(--red); }
-  .add-user-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-  .add-user-form input, .add-user-form select {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 9px 12px;
-    color: var(--text); font-family: inherit; font-size: 13px; outline: none;
-    flex: 1; min-width: 130px;
-  }
-
-  /* ALERT */
-  .alert {
-    display: none; padding: 12px 16px; border-radius: var(--radius-sm);
-    font-size: 13px; margin-top: 12px;
-  }
-  .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
-  .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
-
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    .chart-grid, .chart-grid-3 { grid-template-columns: 1fr; }
-    .main { padding: 16px; }
-    .topbar { padding: 0 16px; }
-    .kpi-row { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  /* SLICER PILLS */
-  .slicer-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .slicer-pill {
-    padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500;
-    border: 1px solid var(--border); background: var(--surface);
-    color: var(--text2); cursor: pointer; transition: all 0.2s;
-  }
-  .slicer-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
-  .slicer-pill:hover:not(.active) { border-color: var(--accent2); color: var(--text); }
-
-  .no-data-msg { text-align: center; padding: 60px 20px; color: var(--text3); }
-  .no-data-msg .nd-icon { font-size: 48px; margin-bottom: 12px; }
-  .no-data-msg p { font-size: 14px; }
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;--accent:#00e5ff;--accent2:#7c3aed;--accent3:#22c55e;--warn:#f59e0b;--danger:#ef4444;--text:#e8e8f0;--muted:#6b7280}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,rgba(124,58,237,.12) 0,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.08) 0,transparent 50%),var(--bg)}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:400px;box-shadow:0 0 60px rgba(0,229,255,.05),0 24px 48px rgba(0,0,0,.6)}
+.login-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:8px}
+.login-logo span{color:var(--text);font-weight:400}
+.login-sub{color:var(--muted);font-size:12px;margin-bottom:36px}
+.login-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.login-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:20px;transition:border-color .2s;outline:none}
+.login-input:focus{border-color:var(--accent)}
+.login-btn{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:14px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px;transition:opacity .2s,transform .1s}
+.login-btn:hover{opacity:.9;transform:translateY(-1px)}
+.login-error{color:var(--danger);font-size:12px;margin-top:12px;background:rgba(239,68,68,.1);border-radius:6px;padding:8px 12px;display:none}
+.role-tabs{display:flex;gap:8px;margin-bottom:28px}
+.role-tab{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
+.role-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.05)}
+#app{display:none;min-height:100vh}
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:20px;position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent);letter-spacing:-.5px;flex-shrink:0}
+.topbar-logo span{color:var(--text);font-weight:400}
+.topbar-nav{display:flex;gap:4px;flex:1}
+.nav-btn{padding:6px 14px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s}
+.nav-btn:hover{color:var(--text);background:var(--surface2)}
+.nav-btn.active{color:var(--accent);background:rgba(0,229,255,.08)}
+.topbar-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+.badge-role{padding:4px 10px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:uppercase}
+.badge-role.admin{background:rgba(0,229,255,.1);color:var(--accent);border-color:rgba(0,229,255,.25)}
+.logout-btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+.page{display:none;padding:28px;animation:fadeIn .3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.page-header{margin-bottom:28px}
+.page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-.5px}
+.page-title span{color:var(--accent)}
+.page-subtitle{color:var(--muted);font-size:12px;margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s}
+.kpi-card:hover{border-color:rgba(0,229,255,.2)}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-1px}
+.kpi-value.cyan{color:var(--accent)}.kpi-value.purple{color:#a78bfa}.kpi-value.green{color:var(--accent3)}.kpi-value.amber{color:var(--warn)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:16px;color:var(--text)}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);padding:10px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:11px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 32px 8px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;outline:none;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+select:focus{border-color:var(--accent)}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:48px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);margin-bottom:24px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,229,255,.04)}
+.upload-icon{font-size:40px;margin-bottom:12px}
+.upload-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px}
+.upload-hint{color:var(--muted);font-size:12px}
+#file-input{display:none}
+.upload-btn{display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#000;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:opacity .2s}
+.upload-btn:hover{opacity:.85}
+.upload-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.upload-list-header{padding:14px 20px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.upload-item{display:flex;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px}
+.upload-item:last-child{border-bottom:none}
+.upload-item-icon{font-size:20px}
+.upload-item-info{flex:1}
+.upload-item-name{font-size:13px;font-weight:500}
+.upload-item-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.upload-item-status{padding:4px 10px;border-radius:100px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.status-active{background:rgba(34,197,94,.15);color:var(--accent3)}
+.del-btn{padding:4px 10px;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.del-btn:hover{border-color:var(--danger);color:var(--danger)}
+.users-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.panel-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+.action-btn{padding:10px 20px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{opacity:.85}
+.user-item{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px}
+.user-item:last-child{border-bottom:none}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;flex-shrink:0}
+.avatar-admin{background:rgba(0,229,255,.15);color:var(--accent)}
+.avatar-viewer{background:rgba(124,58,237,.15);color:#a78bfa}
+.user-info{flex:1}
+.user-name{font-size:13px;font-weight:500}
+.user-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.no-data{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+.no-data-icon{font-size:32px;margin-bottom:10px}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .6s ease}
+.medal{font-size:16px}
+.info-box{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:16px 20px;margin-bottom:24px;font-size:13px;color:var(--accent)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:1000}
+.toast.show{transform:none;opacity:1}
+.toast.success{border-color:var(--accent3);color:var(--accent3)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}.users-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.page{padding:16px}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-icon">📊</div>
-      <div>
-        <h1>Labor</h1>
-        <span>Dashboard de Indicadores</span>
-      </div>
+  <div class="login-box">
+    <div class="login-logo">Labor<span>BI</span></div>
+    <div class="login-sub">Dashboard de gestão laboral · Petcare</div>
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="selectRole('viewer',this)">👁 Visualizador</button>
+      <button class="role-tab" onclick="selectRole('admin',this)">⚙️ Administrador</button>
     </div>
-    <h2 class="login-title">Bem-vindo</h2>
-    <p class="login-sub">Faça login para acessar o painel</p>
-    <div class="field-group">
-      <label>Usuário</label>
-      <input type="text" id="login-user" placeholder="seu.usuario" autocomplete="username">
-    </div>
-    <div class="field-group">
-      <label>Senha</label>
-      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="login-label">Usuário</div>
+    <input type="text" class="login-input" id="login-user" placeholder="seu.usuario" autocomplete="off">
+    <div class="login-label">Senha</div>
+    <input type="password" class="login-input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">ENTRAR →</button>
     <div class="login-error" id="login-error">Usuário ou senha incorretos.</div>
-    <p class="login-hint">Primeiro acesso? Contate o administrador.</p>
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-left">
-      <div class="top-logo"><div class="logo-icon">📊</div> Labor Dashboard</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="user-badge" id="user-badge">
-        <div class="user-dot" id="user-dot"></div>
-        <span id="user-name-display"></span>
-        <span style="color:var(--text3);font-size:11px;" id="user-role-display"></span>
-      </div>
-      <button class="btn-logout" onclick="logout()">Sair</button>
+    <div class="topbar-logo">Labor<span>BI</span></div>
+    <div class="topbar-nav" id="topbar-nav"></div>
+    <div class="topbar-right">
+      <span class="badge-role" id="badge-role">VIEWER</span>
+      <button class="logout-btn" onclick="doLogout()">sair</button>
     </div>
   </div>
 
-  <div class="tabs-bar" id="tabs-bar">
-    <button class="tab-btn active" onclick="switchPage('petcare')" id="tab-petcare">🐾 Petcare-2026</button>
-    <button class="tab-btn" onclick="switchPage('ranking')" id="tab-ranking">🏆 Ranking</button>
-    <button class="tab-btn" onclick="switchPage('ciru')" id="tab-ciru">🔪 Bloco Ciru</button>
-    <button class="tab-btn" onclick="switchPage('clinica')" id="tab-clinica">🏥 Clínica Médica</button>
-    <button class="tab-btn" onclick="switchPage('inter')" id="tab-inter">🔬 Inter</button>
-    <button class="tab-btn" onclick="switchPage('lab')" id="tab-lab">🧪 Laboratório</button>
-    <button class="tab-btn admin-tab" onclick="switchPage('admin')" id="tab-admin" style="display:none;">⚙️ Admin</button>
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div class="page-title">Dashboard <span>Petcare-2026</span></div>
+      <div class="page-subtitle" id="dash-subtitle">Última atualização: —</div>
+    </div>
+    <div class="filters">
+      <select id="filter-vet" onchange="updateDashboard()"><option value="">Todos os Veterinários</option></select>
+      <select id="filter-month" onchange="updateDashboard()">
+        <option value="">Todos os Meses</option>
+        <option>janeiro</option><option>fevereiro</option><option>março</option><option>abril</option>
+        <option>maio</option><option>junho</option><option>julho</option><option>agosto</option>
+        <option>setembro</option><option>outubro</option><option>novembro</option><option>dezembro</option>
+      </select>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Produção Total</div><div class="kpi-value cyan" id="kpi-prod">—</div><div class="kpi-sub">atendimentos</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valor Total</div><div class="kpi-value green" id="kpi-valor">—</div><div class="kpi-sub">receita acumulada</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valores Fixos</div><div class="kpi-value purple" id="kpi-fixo">—</div><div class="kpi-sub">serviços fixos</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valores Variáveis</div><div class="kpi-value amber" id="kpi-var">—</div><div class="kpi-sub">comissão variável</div></div>
+      <div class="kpi-card"><div class="kpi-label">Horas no Mês</div><div class="kpi-value cyan" id="kpi-horas">—</div><div class="kpi-sub">horas trabalhadas</div></div>
+      <div class="kpi-card"><div class="kpi-label">Veterinários</div><div class="kpi-value green" id="kpi-vets">—</div><div class="kpi-sub">profissionais</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Valores Fixos + Variáveis por Semana</div><canvas id="chart-main" height="200"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Composição de Valores</div><canvas id="chart-donut" height="200"></canvas></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><span>Por Veterinário</span><span style="font-size:11px;color:var(--muted)" id="table-count"></span></div>
+      <div id="main-table-body"></div>
+    </div>
   </div>
 
-  <div class="main">
+  <div class="page" id="page-ranking">
+    <div class="page-header"><div class="page-title">Ranking <span>Veterinários</span></div><div class="page-subtitle">Classificação por produção e valor total</div></div>
+    <div id="ranking-content"></div>
+  </div>
 
-    <!-- PETCARE PAGE -->
-    <div class="page active" id="page-petcare">
-      <div class="page-header">
-        <h2>🐾 Petcare — 2026</h2>
-        <p>Visão geral de produção, horas e valores</p>
-      </div>
-      <div id="filter-petcare" class="filter-row">
-        <span class="filter-label">Semana:</span>
-        <select class="filter-select" id="sel-semana" onchange="renderPetcare()"><option value="">Todas</option></select>
-        <span class="filter-label">Mês:</span>
-        <select class="filter-select" id="sel-mes" onchange="renderPetcare()"><option value="">Todos</option></select>
-        <span class="filter-label">VET:</span>
-        <select class="filter-select" id="sel-vet" onchange="renderPetcare()"><option value="">Todos</option></select>
-      </div>
-      <div class="kpi-row" id="kpi-petcare"></div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <h3>Valores Fixos vs Variáveis por Mês</h3>
-          <div class="chart-wrap"><canvas id="chart-combo" height="220"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <h3>Distribuição por VET</h3>
-          <div class="chart-wrap"><canvas id="chart-donut" height="220"></canvas></div>
-        </div>
-      </div>
-      <div class="table-card">
-        <div class="table-header">
-          <h3>Detalhamento</h3>
-          <input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-petcare', this.value)">
-        </div>
-        <div style="overflow-x:auto;"><table id="tbl-petcare"><thead><tr></tr></thead><tbody></tbody></table></div>
-      </div>
+  <div class="page" id="page-laboratorio">
+    <div class="page-header"><div class="page-title">Laboratório <span>— Análises</span></div><div class="page-subtitle">Produção por semana e período</div></div>
+    <div id="lab-content"></div>
+  </div>
+
+  <div class="page" id="page-admin">
+    <div class="page-header"><div class="page-title">Painel <span>Admin</span></div><div class="page-subtitle">Upload de dados e gerenciamento de usuários</div></div>
+    
+    <div class="info-box">
+      ℹ️ <strong>Como usar:</strong> Exporte sua planilha como <strong>CSV (UTF-8)</strong> com as colunas: <code>Veterinarios, Producao, Valor total, Valores fixos, Valores variaveis, Qnt Horas, Data, Semana</code>. Faça upload abaixo. Os visualizadores verão os dados atualizados imediatamente.
     </div>
 
-    <!-- RANKING PAGE -->
-    <div class="page" id="page-ranking">
-      <div class="page-header"><h2>🏆 Ranking</h2><p>Performance comparativa</p></div>
-      <div id="kpi-ranking" class="kpi-row"></div>
-      <div class="chart-card" style="margin-bottom:20px;">
-        <h3>Ranking por Produção / Valor</h3>
-        <div class="chart-wrap"><canvas id="chart-ranking" height="180"></canvas></div>
-      </div>
-      <div class="table-card">
-        <div class="table-header"><h3>Tabela de Ranking</h3><input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-ranking', this.value)"></div>
-        <div style="overflow-x:auto;"><table id="tbl-ranking"><thead><tr></tr></thead><tbody></tbody></table></div>
-      </div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+      <div class="upload-icon">📊</div>
+      <div class="upload-title">Arraste o arquivo CSV aqui</div>
+      <div class="upload-hint">ou clique para selecionar · Formato: CSV com cabeçalho</div>
+      <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Selecionar Arquivo</button>
+    </div>
+    <input type="file" id="file-input" accept=".csv" onchange="handleFile(event)">
+
+    <div class="upload-list">
+      <div class="upload-list-header">Arquivo Ativo</div>
+      <div id="upload-items"><div class="no-data"><div class="no-data-icon">📁</div>Nenhum arquivo carregado.</div></div>
     </div>
 
-    <!-- CIRU PAGE -->
-    <div class="page" id="page-ciru">
-      <div class="page-header"><h2>🔪 Bloco Cirúrgico</h2><p>Dados de cirurgias e procedimentos</p></div>
-      <div id="kpi-ciru" class="kpi-row"></div>
-      <div class="chart-grid">
-        <div class="chart-card"><h3>Produção por Período</h3><div class="chart-wrap"><canvas id="chart-ciru-bar" height="220"></canvas></div></div>
-        <div class="chart-card"><h3>Top Procedimentos</h3><div class="chart-wrap"><canvas id="chart-ciru-donut" height="220"></canvas></div></div>
+    <div class="users-grid">
+      <div class="panel">
+        <div class="panel-title">Adicionar Visualizador</div>
+        <div class="form-group"><label class="form-label">Usuário</label><input type="text" class="form-input" id="new-user" placeholder="nome.sobrenome"></div>
+        <div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="new-pass" placeholder="••••••••"></div>
+        <button class="action-btn btn-primary" onclick="addUser()">Adicionar</button>
       </div>
-      <div class="table-card">
-        <div class="table-header"><h3>Registro de Procedimentos</h3><input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-ciru', this.value)"></div>
-        <div style="overflow-x:auto;"><table id="tbl-ciru"><thead><tr></tr></thead><tbody></tbody></table></div>
-      </div>
-    </div>
-
-    <!-- CLINICA PAGE -->
-    <div class="page" id="page-clinica">
-      <div class="page-header"><h2>🏥 Clínica Médica</h2><p>Atendimentos e indicadores clínicos</p></div>
-      <div id="kpi-clinica" class="kpi-row"></div>
-      <div class="chart-card" style="margin-bottom:20px;"><h3>Produção Mensal</h3><div class="chart-wrap"><canvas id="chart-clinica" height="180"></canvas></div></div>
-      <div class="table-card">
-        <div class="table-header"><h3>Detalhes</h3><input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-clinica', this.value)"></div>
-        <div style="overflow-x:auto;"><table id="tbl-clinica"><thead><tr></tr></thead><tbody></tbody></table></div>
+      <div class="panel">
+        <div class="panel-title">Usuários do Sistema</div>
+        <div id="users-list"></div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- INTER PAGE -->
-    <div class="page" id="page-inter">
-      <div class="page-header"><h2>🔬 Inter</h2><p>Indicadores intermediários</p></div>
-      <div id="kpi-inter" class="kpi-row"></div>
-      <div class="chart-card" style="margin-bottom:20px;"><h3>Evolução de Valores</h3><div class="chart-wrap"><canvas id="chart-inter" height="180"></canvas></div></div>
-      <div class="table-card">
-        <div class="table-header"><h3>Detalhes</h3><input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-inter', this.value)"></div>
-        <div style="overflow-x:auto;"><table id="tbl-inter"><thead><tr></tr></thead><tbody></tbody></table></div>
-      </div>
-    </div>
-
-    <!-- LAB PAGE -->
-    <div class="page" id="page-lab">
-      <div class="page-header"><h2>🧪 Laboratório</h2><p>Exames e resultados laboratoriais</p></div>
-      <div id="kpi-lab" class="kpi-row"></div>
-      <div class="chart-grid">
-        <div class="chart-card"><h3>Exames por Período</h3><div class="chart-wrap"><canvas id="chart-lab-bar" height="220"></canvas></div></div>
-        <div class="chart-card"><h3>Distribuição</h3><div class="chart-wrap"><canvas id="chart-lab-donut" height="220"></canvas></div></div>
-      </div>
-      <div class="table-card">
-        <div class="table-header"><h3>Detalhes</h3><input class="search-input" placeholder="🔍 Pesquisar..." oninput="filterTable('tbl-lab', this.value)"></div>
-        <div style="overflow-x:auto;"><table id="tbl-lab"><thead><tr></tr></thead><tbody></tbody></table></div>
-      </div>
-    </div>
-
-    <!-- ADMIN PAGE -->
-    <div class="page" id="page-admin">
-      <div class="page-header"><h2>⚙️ Painel Administrativo</h2><p>Upload de dados e gestão de usuários</p></div>
-      <div class="admin-panel">
-
-        <div class="admin-section">
-          <h3>📤 Upload de Dados</h3>
-          <p>Faça upload de um arquivo Excel (.xlsx, .xls) ou CSV com os dados. As abas do arquivo serão mapeadas automaticamente para as seções do dashboard.</p>
-          <div class="upload-zone" id="upload-zone" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
-            <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
-            <div class="upload-icon">📂</div>
-            <h4>Arraste o arquivo aqui</h4>
-            <p>ou clique para selecionar</p>
-          </div>
-          <div class="upload-progress" id="upload-progress"><div class="upload-progress-bar" id="upload-bar"></div></div>
-          <div class="upload-status" id="upload-status"></div>
-          <div class="data-preview" id="data-preview"></div>
-          <p class="upload-note">ℹ️ Formatos suportados: .xlsx, .xls, .csv — O arquivo é processado localmente, seus dados ficam apenas neste navegador.</p>
-        </div>
-
-        <div class="admin-section">
-          <h3>👥 Gestão de Usuários</h3>
-          <p>Adicione ou remova usuários com acesso ao dashboard. Visualizadores só veem dados, admins têm acesso a este painel.</p>
-          <div class="users-list" id="users-list"></div>
-          <div class="add-user-form">
-            <input type="text" id="new-user" placeholder="Usuário (ex: joao.silva)">
-            <input type="password" id="new-pass" placeholder="Senha">
-            <select id="new-role">
-              <option value="viewer">👁 Visualizador</option>
-              <option value="admin">⚙️ Admin</option>
-            </select>
-            <button class="btn-sm btn-accent" onclick="addUser()">+ Adicionar</button>
-          </div>
-          <div class="alert alert-success" id="user-alert-ok">✅ Usuário adicionado com sucesso!</div>
-          <div class="alert alert-error" id="user-alert-err">❌ Preencha todos os campos.</div>
-        </div>
-
-      </div>
-    </div>
-
-  </div><!-- /main -->
-</div><!-- /app -->
+<div class="toast" id="toast"></div>
 
 <script>
-// ============================
-// STATE
-// ============================
-let STATE = {
-  currentUser: null,
-  data: {
-    petcare: [], ranking: [], ciru: [], clinica: [], inter: [], lab: []
-  },
-  charts: {}
-};
+const DEFAULT_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass:'viewer123',role:'viewer'}];
+let selectedRole='viewer';
+const STATE={user:null,role:null,data:null,uploads:[],charts:{}};
 
-// ============================
-// USER MANAGEMENT (localStorage)
-// ============================
-function getUsers() {
-  try {
-    const u = localStorage.getItem('labor_users');
-    return u ? JSON.parse(u) : null;
-  } catch(e) { return null; }
-}
-function saveUsers(users) {
-  try { localStorage.setItem('labor_users', JSON.stringify(users)); } catch(e) {}
-}
-function initUsers() {
-  if (!getUsers()) {
-    saveUsers([
-      { user: 'admin', pass: 'admin123', role: 'admin', color: '#2563eb' },
-      { user: 'viewer', pass: 'viewer123', role: 'viewer', color: '#14b8a6' }
-    ]);
-  }
-}
-initUsers();
+function getUsers(){const s=localStorage.getItem('labor_users');return s?JSON.parse(s):[...DEFAULT_USERS]}
+function saveUsers(u){localStorage.setItem('labor_users',JSON.stringify(u))}
+function getData(){const s=localStorage.getItem('labor_data');return s?JSON.parse(s):null}
+function saveData(d){d?localStorage.setItem('labor_data',JSON.stringify(d)):localStorage.removeItem('labor_data')}
+function getUploads(){const s=localStorage.getItem('labor_uploads');return s?JSON.parse(s):[]}
+function saveUploads(u){localStorage.setItem('labor_uploads',JSON.stringify(u))}
 
-// ============================
-// DATA (localStorage)
-// ============================
-function getData() {
-  try {
-    const d = localStorage.getItem('labor_data');
-    return d ? JSON.parse(d) : null;
-  } catch(e) { return null; }
-}
-function saveData(d) {
-  try { localStorage.setItem('labor_data', JSON.stringify(d)); } catch(e) {}
+function selectRole(role,el){
+  selectedRole=role;
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
 }
 
-// ============================
-// LOGIN
-// ============================
-function doLogin() {
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value;
-  const users = getUsers();
-  const found = users.find(x => x.user === u && x.pass === p);
-  if (found) {
-    STATE.currentUser = found;
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    setupUI();
-    loadData();
+function doLogin(){
+  const user=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const found=getUsers().find(u=>u.user===user&&u.pass===pass&&u.role===selectedRole);
+  if(found){
+    STATE.user=found.user;STATE.role=found.role;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
   } else {
-    document.getElementById('login-error').style.display = 'block';
-  }
-}
-document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-
-function logout() {
-  STATE.currentUser = null;
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').style.display = 'none';
-}
-
-function setupUI() {
-  const u = STATE.currentUser;
-  document.getElementById('user-name-display').textContent = u.user;
-  document.getElementById('user-role-display').textContent = u.role === 'admin' ? '· Admin' : '· Visualizador';
-  const dot = document.getElementById('user-dot');
-  dot.textContent = u.user[0].toUpperCase();
-  dot.className = 'user-dot ' + (u.role === 'admin' ? 'admin-dot' : 'viewer-dot');
-  if (u.role === 'admin') {
-    document.getElementById('tab-admin').style.display = 'block';
-  }
-  renderUsers();
-}
-
-// ============================
-// LOAD DATA
-// ============================
-function loadData() {
-  const saved = getData();
-  if (saved) {
-    STATE.data = saved;
-  } else {
-    // Demo data
-    STATE.data = generateDemoData();
-  }
-  renderPetcare();
-  renderRanking();
-  renderCiru();
-  renderClinica();
-  renderInter();
-  renderLab();
-}
-
-// ============================
-// DEMO DATA GENERATOR
-// ============================
-function generateDemoData() {
-  const months = ['Jan','Fev','Mar','Abr','Mai','Jun'];
-  const vets = ['Dr. Carlos','Dra. Ana','Dr. Pedro','Dra. Lucia','Dr. Rafael'];
-  const semanas = ['S1','S2','S3','S4'];
-  const procs = ['Consulta','Cirurgia','Exame','Vacinação','Retorno'];
-  const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
-  const rndF = (a,b,dec=2) => parseFloat((Math.random()*(b-a)+a).toFixed(dec));
-
-  function makeRows(entity, cols, n=80) {
-    return Array.from({length:n}, (_, i) => {
-      const row = { id: i+1 };
-      cols.forEach(c => {
-        if (c==='Data') row[c] = months[rnd(0,5)]+'/2026';
-        else if (c==='Semana') row[c] = semanas[rnd(0,3)];
-        else if (c==='Mês') row[c] = months[rnd(0,5)];
-        else if (c==='VET'||c==='Veterinarios') row[c] = vets[rnd(0,4)];
-        else if (c==='Procedimento') row[c] = procs[rnd(0,4)];
-        else if (c==='Qnt Horas') row[c] = rnd(4,200);
-        else if (c==='Valores fixos') row[c] = rnd(1000,20000);
-        else if (c==='Valores variaveis') row[c] = rnd(500,15000);
-        else if (c==='Produção') row[c] = rnd(10,500);
-        else if (c==='Valor Lançado') row[c] = rnd(500,25000);
-        else if (c==='Valor total') row[c] = rnd(1000,30000);
-        else row[c] = '-';
-      });
-      return row;
-    });
-  }
-
-  return {
-    petcare: makeRows('Base de dados', ['Data','Semana','VET','Qnt Horas','Valores fixos','Valores variaveis','Produção']),
-    ranking: makeRows('Base de dados', ['VET','Procedimento','Produção','Valor total','Mês']),
-    ciru: makeRows('Base Ciru', ['Data','Procedimento','Produção','Qnt Horas','Valor Lançado']),
-    clinica: makeRows('Base Clinica Medica', ['Data','Mês','Procedimento','Produção','Valor Lançado','Valor total']),
-    inter: makeRows('Base Inter', ['Data','Mês','Procedimento','Produção','Valor Lançado']),
-    lab: makeRows('Base Lab', ['Data','Mês','Procedimento','Produção','Valor Lançado','Valor total'])
-  };
-}
-
-// ============================
-// PAGE SWITCHING
-// ============================
-function switchPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.getElementById('tab-'+page).classList.add('active');
-}
-
-// ============================
-// CHART HELPERS
-// ============================
-const COLORS = ['#2563eb','#22c55e','#f59e0b','#a855f7','#14b8a6','#ef4444','#3b82f6','#84cc16'];
-Chart.defaults.color = '#8fa3bf';
-Chart.defaults.borderColor = '#1e2d47';
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-
-function destroyChart(id) {
-  if (STATE.charts[id]) { STATE.charts[id].destroy(); delete STATE.charts[id]; }
-}
-
-function makeBarChart(id, labels, datasets, opts={}) {
-  destroyChart(id);
-  const ctx = document.getElementById(id).getContext('2d');
-  STATE.charts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top' } },
-      scales: { x: { grid: { color: '#1e2d47' } }, y: { grid: { color: '#1e2d47' } } },
-      ...opts
-    }
-  });
-}
-
-function makeLineChart(id, labels, datasets) {
-  destroyChart(id);
-  const ctx = document.getElementById(id).getContext('2d');
-  STATE.charts[id] = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top' } },
-      scales: { x: { grid: { color: '#1e2d47' } }, y: { grid: { color: '#1e2d47' } } }
-    }
-  });
-}
-
-function makeDonutChart(id, labels, values) {
-  destroyChart(id);
-  const ctx = document.getElementById(id).getContext('2d');
-  STATE.charts[id] = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{ data: values, backgroundColor: COLORS, borderWidth: 0, hoverOffset: 6 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'right' } },
-      cutout: '65%'
-    }
-  });
-}
-
-function makeComboChart(id, labels, barDatasets, lineDataset) {
-  destroyChart(id);
-  const ctx = document.getElementById(id).getContext('2d');
-  STATE.charts[id] = new Chart(ctx, {
-    data: {
-      labels,
-      datasets: [
-        ...barDatasets.map((d,i) => ({...d, type:'bar', backgroundColor: COLORS[i], borderRadius:4})),
-        {...lineDataset, type:'line', yAxisID:'y1', borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)', tension:0.4, fill:true, pointBackgroundColor:'#f59e0b'}
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top' } },
-      scales: {
-        x: { grid: { color: '#1e2d47' } },
-        y: { grid: { color: '#1e2d47' }, position: 'left' },
-        y1: { grid: { display: false }, position: 'right' }
-      }
-    }
-  });
-}
-
-// ============================
-// KPI HELPER
-// ============================
-function renderKPIs(containerId, cards) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = cards.map(c => `
-    <div class="kpi-card ${c.color||'blue'}">
-      <div class="kpi-label">${c.label}</div>
-      <div class="kpi-value">${c.value}</div>
-      <div class="kpi-sub">${c.sub||''}</div>
-    </div>
-  `).join('');
-}
-
-function fmtNum(n) { return n.toLocaleString('pt-BR'); }
-function fmtBRL(n) { return 'R$ '+(n/1000).toFixed(1)+'k'; }
-
-function groupBy(arr, key) {
-  return arr.reduce((acc, row) => {
-    const k = row[key] || 'Outros';
-    acc[k] = (acc[k] || []);
-    acc[k].push(row);
-    return acc;
-  }, {});
-}
-
-function sumKey(arr, key) { return arr.reduce((s, r) => s + (Number(r[key])||0), 0); }
-
-// ============================
-// RENDER TABLE
-// ============================
-function renderTable(tableId, rows, maxRows=200) {
-  const tbl = document.getElementById(tableId);
-  if (!rows || !rows.length) {
-    tbl.innerHTML = '<tr><td colspan="10" class="empty-state">Nenhum dado disponível</td></tr>';
-    return;
-  }
-  const cols = Object.keys(rows[0]).filter(k => k !== 'id');
-  tbl.querySelector('thead tr').innerHTML = cols.map(c => `<th>${c}</th>`).join('');
-  tbl.querySelector('tbody').innerHTML = rows.slice(0, maxRows).map(r =>
-    `<tr>${cols.map(c => `<td>${formatCell(c, r[c])}</td>`).join('')}</tr>`
-  ).join('');
-}
-
-function formatCell(col, val) {
-  if (['Valores fixos','Valores variaveis','Valor Lançado','Valor total'].includes(col))
-    return '<span style="font-family:DM Mono,monospace;">R$'+Number(val).toLocaleString('pt-BR')+'</span>';
-  if (col === 'Qnt Horas') return val+'h';
-  return val;
-}
-
-function filterTable(tableId, query) {
-  const tbl = document.getElementById(tableId);
-  const rows = tbl.querySelectorAll('tbody tr');
-  const q = query.toLowerCase();
-  rows.forEach(r => {
-    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-}
-
-// ============================
-// PETCARE
-// ============================
-function populateFilters(data) {
-  const semanas = [...new Set(data.map(r=>r['Semana']).filter(Boolean))].sort();
-  const meses = [...new Set(data.map(r=>r['Data']).filter(Boolean))].sort();
-  const vets = [...new Set(data.map(r=>r['VET']).filter(Boolean))].sort();
-
-  const s = document.getElementById('sel-semana');
-  s.innerHTML = '<option value="">Todas</option>' + semanas.map(v=>`<option>${v}</option>`).join('');
-  const m = document.getElementById('sel-mes');
-  m.innerHTML = '<option value="">Todos</option>' + meses.map(v=>`<option>${v}</option>`).join('');
-  const v = document.getElementById('sel-vet');
-  v.innerHTML = '<option value="">Todos</option>' + vets.map(v=>`<option>${v}</option>`).join('');
-}
-
-function renderPetcare() {
-  let data = STATE.data.petcare || [];
-  if (!data.length) return;
-
-  const selS = document.getElementById('sel-semana').value;
-  const selM = document.getElementById('sel-mes').value;
-  const selV = document.getElementById('sel-vet').value;
-
-  // populate first time
-  if (document.getElementById('sel-semana').options.length <= 1) populateFilters(data);
-
-  if (selS) data = data.filter(r => r['Semana']===selS);
-  if (selM) data = data.filter(r => r['Data']===selM);
-  if (selV) data = data.filter(r => r['VET']===selV);
-
-  const totalHoras = sumKey(data, 'Qnt Horas');
-  const totalFixo = sumKey(data, 'Valores fixos');
-  const totalVar = sumKey(data, 'Valores variaveis');
-  const totalProd = sumKey(data, 'Produção');
-  const totalGeral = totalFixo + totalVar;
-
-  renderKPIs('kpi-petcare', [
-    { label: 'Total Horas', value: fmtNum(totalHoras)+'h', sub: 'Quantidade de horas', color: 'blue' },
-    { label: 'Valores Fixos', value: fmtBRL(totalFixo), sub: 'Soma do período', color: 'green' },
-    { label: 'Valores Variáveis', value: fmtBRL(totalVar), sub: 'Soma do período', color: 'yellow' },
-    { label: 'Total Geral', value: fmtBRL(totalGeral), sub: 'Fixos + Variáveis', color: 'purple' }
-  ]);
-
-  // Combo chart: by month
-  const byMes = groupBy(data, 'Data');
-  const labels = Object.keys(byMes).sort();
-  makeComboChart('chart-combo', labels,
-    [
-      { label: 'Valores Fixos', data: labels.map(l=>sumKey(byMes[l]||[], 'Valores fixos')) },
-      { label: 'Valores Variáveis', data: labels.map(l=>sumKey(byMes[l]||[], 'Valores variaveis')) }
-    ],
-    { label: 'Horas', data: labels.map(l=>sumKey(byMes[l]||[], 'Qnt Horas')) }
-  );
-
-  // Donut: by VET
-  const byVet = groupBy(data, 'VET');
-  makeDonutChart('chart-donut',
-    Object.keys(byVet),
-    Object.values(byVet).map(rows => sumKey(rows, 'Produção'))
-  );
-
-  renderTable('tbl-petcare', data);
-}
-
-// ============================
-// RANKING
-// ============================
-function renderRanking() {
-  const data = STATE.data.ranking || [];
-  if (!data.length) return;
-
-  const byVet = groupBy(data, 'VET');
-  const vetSums = Object.entries(byVet).map(([vet,rows]) => ({
-    vet, prod: sumKey(rows,'Produção'), valor: sumKey(rows,'Valor total')
-  })).sort((a,b)=>b.prod-a.prod);
-
-  renderKPIs('kpi-ranking', [
-    { label: 'Total VETs', value: vetSums.length, color: 'blue' },
-    { label: 'Top Produção', value: vetSums[0]?.vet||'-', sub: fmtNum(vetSums[0]?.prod||0)+' procedimentos', color: 'green' },
-    { label: 'Total Produção', value: fmtNum(vetSums.reduce((s,v)=>s+v.prod,0)), color: 'yellow' },
-    { label: 'Total Valor', value: fmtBRL(vetSums.reduce((s,v)=>s+v.valor,0)), color: 'purple' }
-  ]);
-
-  makeBarChart('chart-ranking',
-    vetSums.map(v=>v.vet),
-    [
-      { label: 'Produção', data: vetSums.map(v=>v.prod), backgroundColor: COLORS[0], borderRadius: 4 },
-      { label: 'Valor (R$k)', data: vetSums.map(v=>+(v.valor/1000).toFixed(1)), backgroundColor: COLORS[1], borderRadius: 4 }
-    ]
-  );
-
-  const rankData = vetSums.map((v,i) => ({...v, '#': i+1}));
-  renderTable('tbl-ranking', rankData.map(v=>({Pos:v['#'],VET:v.vet,'Produção':v.prod,'Valor Total':v.valor})));
-}
-
-// ============================
-// GENERIC RENDER (Ciru, Clinica, Inter, Lab)
-// ============================
-function renderGeneric(key, pageIds) {
-  const data = STATE.data[key] || [];
-  if (!data.length) return;
-
-  const totalProd = sumKey(data, 'Produção');
-  const totalVal = sumKey(data, 'Valor Lançado') || sumKey(data, 'Valor total');
-  const totalHoras = sumKey(data, 'Qnt Horas');
-
-  renderKPIs('kpi-'+key, [
-    { label: 'Total Produção', value: fmtNum(totalProd), color: 'blue' },
-    { label: 'Valor Total', value: fmtBRL(totalVal), color: 'green' },
-    ...(totalHoras ? [{ label: 'Total Horas', value: fmtNum(totalHoras)+'h', color: 'yellow' }] : []),
-    { label: 'Registros', value: data.length, color: 'purple' }
-  ]);
-
-  const byPeriod = groupBy(data, 'Data') || groupBy(data, 'Mês');
-  const labels = Object.keys(byPeriod).sort();
-
-  if (pageIds.bar) {
-    makeBarChart(pageIds.bar, labels, [
-      { label: 'Produção', data: labels.map(l=>sumKey(byPeriod[l]||[],'Produção')), backgroundColor: COLORS[0], borderRadius:4 },
-      { label: 'Valor (R$k)', data: labels.map(l=>+(sumKey(byPeriod[l]||[],'Valor Lançado')/1000).toFixed(1)), backgroundColor: COLORS[1], borderRadius:4 }
-    ]);
-  }
-
-  if (pageIds.donut) {
-    const byProc = groupBy(data, 'Procedimento');
-    makeDonutChart(pageIds.donut, Object.keys(byProc), Object.values(byProc).map(r=>sumKey(r,'Produção')));
-  }
-
-  if (pageIds.line) {
-    makeLineChart(pageIds.line, labels, [
-      { label: 'Produção', data: labels.map(l=>sumKey(byPeriod[l]||[],'Produção')), borderColor: COLORS[0], tension:0.4, fill:false },
-      { label: 'Valor (R$k)', data: labels.map(l=>+(sumKey(byPeriod[l]||[],'Valor Lançado')/1000).toFixed(1)), borderColor: COLORS[1], tension:0.4, fill:false }
-    ]);
-  }
-
-  renderTable('tbl-'+key, data);
-}
-
-function renderCiru() { renderGeneric('ciru', { bar:'chart-ciru-bar', donut:'chart-ciru-donut' }); }
-function renderClinica() { renderGeneric('clinica', { line:'chart-clinica' }); }
-function renderInter() { renderGeneric('inter', { line:'chart-inter' }); }
-function renderLab() { renderGeneric('lab', { bar:'chart-lab-bar', donut:'chart-lab-donut' }); }
-
-// ============================
-// USERS
-// ============================
-function renderUsers() {
-  const users = getUsers() || [];
-  const colors = ['#2563eb','#22c55e','#a855f7','#f59e0b','#14b8a6','#ef4444'];
-  document.getElementById('users-list').innerHTML = users.map((u,i) => `
-    <div class="user-row">
-      <div class="user-avatar" style="background:${colors[i%colors.length]}20;color:${colors[i%colors.length]}">
-        ${u.user[0].toUpperCase()}
-      </div>
-      <div class="user-info">
-        <div class="name">${u.user}</div>
-        <div class="role">${u.role === 'admin' ? '⚙️ Administrador' : '👁 Visualizador'}</div>
-      </div>
-      <span class="badge ${u.role==='admin'?'badge-blue':'badge-green'}">${u.role}</span>
-      ${u.user !== STATE.currentUser.user ? `<button class="btn-del" onclick="delUser('${u.user}')">Remover</button>` : ''}
-    </div>
-  `).join('');
-}
-
-function addUser() {
-  const u = document.getElementById('new-user').value.trim();
-  const p = document.getElementById('new-pass').value;
-  const r = document.getElementById('new-role').value;
-  if (!u || !p) {
-    showAlert('user-alert-err');
-    return;
-  }
-  const users = getUsers() || [];
-  if (!users.find(x=>x.user===u)) {
-    users.push({ user:u, pass:p, role:r });
-    saveUsers(users);
-    renderUsers();
-    document.getElementById('new-user').value='';
-    document.getElementById('new-pass').value='';
-    showAlert('user-alert-ok');
+    const el=document.getElementById('login-error');el.style.display='block';
+    setTimeout(()=>el.style.display='none',3000);
   }
 }
 
-function delUser(username) {
-  const users = (getUsers()||[]).filter(u=>u.user!==username);
-  saveUsers(users);
-  renderUsers();
+function doLogout(){
+  STATE.user=null;STATE.role=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  destroyCharts();
 }
 
-function showAlert(id) {
-  const el = document.getElementById(id);
-  el.style.display='block';
-  setTimeout(()=>el.style.display='none', 3000);
+function initApp(){
+  const badge=document.getElementById('badge-role');
+  badge.textContent=STATE.role.toUpperCase();
+  if(STATE.role==='admin')badge.classList.add('admin');
+  const pages=[{id:'dashboard',label:'Dashboard'},{id:'ranking',label:'Ranking'},{id:'laboratorio',label:'Laboratório'}];
+  if(STATE.role==='admin')pages.push({id:'admin',label:'⚙ Admin'});
+  document.getElementById('topbar-nav').innerHTML=pages.map((p,i)=>`<button class="nav-btn${i===0?' active':''}" onclick="showPage('${p.id}',this)">${p.label}</button>`).join('');
+  STATE.data=getData();STATE.uploads=getUploads();
+  updateDashboard();renderUploads();renderUsers();renderRanking();renderLab();
 }
 
-// ============================
-// FILE UPLOAD
-// ============================
-function dragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
-function dragLeave() { document.getElementById('upload-zone').classList.remove('drag'); }
-function dropFile(e) { e.preventDefault(); dragLeave(); handleFile(e.dataTransfer.files[0]); }
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
 
-function handleFile(file) {
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  const status = document.getElementById('upload-status');
-  const progress = document.getElementById('upload-progress');
-  const bar = document.getElementById('upload-bar');
+function norm(s){return String(s||'').toLowerCase().trim().normalize('NFD').replace(/\p{Diacritic}/gu,'')}
+function fmtN(v){return (parseFloat(v)||0).toLocaleString('pt-BR',{maximumFractionDigits:0})}
+function fmtR(v){return 'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function sumC(arr,col){return arr.reduce((a,r)=>a+(parseFloat(r[col])||0),0)}
 
-  progress.style.display = 'block';
-  status.style.display = 'block';
-  status.textContent = '⏳ Lendo arquivo...';
-  bar.style.width = '30%';
+function filterData(){
+  if(!STATE.data)return[];
+  let rows=STATE.data;
+  const vet=document.getElementById('filter-vet')?.value;
+  const mon=document.getElementById('filter-month')?.value;
+  if(vet)rows=rows.filter(r=>norm(r.Veterinarios)===norm(vet));
+  if(mon)rows=rows.filter(r=>norm(String(r.Data||r.Mes||'')).includes(norm(mon)));
+  return rows;
+}
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    bar.style.width = '60%';
-    try {
-      let newData = {};
-
-      if (ext === 'csv') {
-        const wb = XLSX.read(e.target.result, {type:'binary'});
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet);
-        // Map to petcare by default
-        newData = { ...STATE.data, petcare: rows };
-      } else {
-        const wb = XLSX.read(e.target.result, {type:'binary'});
-        const sheetMap = {
-          'Petcare': 'petcare', 'Petcare-2026': 'petcare',
-          'Ranking': 'ranking',
-          'Bloco Ciru': 'ciru', 'Ciru': 'ciru',
-          'Clinica Medica': 'clinica', 'Clínica Médica': 'clinica', 'Clinica': 'clinica',
-          'Inter': 'inter',
-          'Laboratorio': 'lab', 'Laboratório': 'lab', 'Lab': 'lab'
-        };
-        newData = { ...STATE.data };
-        let mapped = [];
-        wb.SheetNames.forEach(name => {
-          const key = sheetMap[name];
-          if (key) {
-            const sheet = wb.Sheets[name];
-            newData[key] = XLSX.utils.sheet_to_json(sheet);
-            mapped.push(name);
-          }
-        });
-        if (mapped.length === 0) {
-          // Try to load first sheet to petcare anyway
-          const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-          newData.petcare = rows;
-          mapped = [wb.SheetNames[0]];
-        }
-      }
-
-      bar.style.width = '100%';
-      STATE.data = newData;
-      saveData(newData);
-
-      status.textContent = `✅ Arquivo carregado! ${Object.values(newData).reduce((s,v)=>s+v.length,0)} registros importados.`;
-      status.style.color = '#22c55e';
-
-      // Re-render all pages
-      renderPetcare();
-      renderRanking();
-      renderCiru();
-      renderClinica();
-      renderInter();
-      renderLab();
-
-      // Show preview
-      const preview = document.getElementById('data-preview');
-      preview.style.display = 'block';
-      preview.innerHTML = `<div style="font-size:13px;color:var(--text2);margin-top:8px;">
-        📊 <strong style="color:var(--text)">Abas carregadas:</strong>
-        ${Object.entries(newData).map(([k,v])=>`<span class="badge badge-blue" style="margin:2px">${k}: ${v.length} linhas</span>`).join(' ')}
-      </div>`;
-
-    } catch(err) {
-      status.textContent = '❌ Erro ao ler arquivo: ' + err.message;
-      status.style.color = '#ef4444';
-    }
-    setTimeout(()=>{ bar.style.width='0'; progress.style.display='none'; }, 2000);
-  };
-
-  if (ext === 'csv') {
-    reader.readAsBinaryString(file);
-  } else {
-    reader.readAsBinaryString(file);
+function updateDashboard(){
+  const rows=filterData();
+  document.getElementById('kpi-prod').textContent=STATE.data?fmtN(sumC(rows,'Producao')):'—';
+  document.getElementById('kpi-valor').textContent=STATE.data?fmtR(sumC(rows,'Valor total')):'—';
+  document.getElementById('kpi-fixo').textContent=STATE.data?fmtR(sumC(rows,'Valores fixos')):'—';
+  document.getElementById('kpi-var').textContent=STATE.data?fmtR(sumC(rows,'Valores variaveis')):'—';
+  document.getElementById('kpi-horas').textContent=STATE.data?fmtN(sumC(rows,'Qnt Horas'))+'h':'—';
+  const vets=STATE.data?[...new Set(rows.map(r=>r.Veterinarios).filter(Boolean))]:[];
+  document.getElementById('kpi-vets').textContent=STATE.data?vets.length:'—';
+  if(STATE.data){
+    const allV=[...new Set(STATE.data.map(r=>r.Veterinarios).filter(Boolean))];
+    const sel=document.getElementById('filter-vet');const cur=sel.value;
+    sel.innerHTML='<option value="">Todos os Veterinários</option>'+allV.map(v=>`<option value="${v}"${cur===v?' selected':''}>${v}</option>`).join('');
   }
+  if(STATE.uploads.length)document.getElementById('dash-subtitle').textContent='Última atualização: '+STATE.uploads[STATE.uploads.length-1].date;
+  buildCharts(rows);buildTable(rows);
 }
+
+function destroyCharts(){Object.values(STATE.charts).forEach(c=>{try{c.destroy()}catch(e){}});STATE.charts={}}
+
+function buildCharts(rows){
+  destroyCharts();if(!rows.length)return;
+  const byP={};
+  rows.forEach(r=>{const k=r.Semana||r.Data||'S/período';if(!byP[k])byP[k]={fixo:0,var:0,horas:0};byP[k].fixo+=parseFloat(r['Valores fixos'])||0;byP[k].var+=parseFloat(r['Valores variaveis'])||0;byP[k].horas+=parseFloat(r['Qnt Horas'])||0});
+  const labels=Object.keys(byP).sort();
+  const fixos=labels.map(l=>byP[l].fixo);
+  const vars=labels.map(l=>byP[l].var);
+  const horas=labels.map(l=>byP[l].horas);
+  const baseOpts={responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#9ca3af',font:{family:'DM Mono',size:11}}}}};
+  const gridColor='rgba(255,255,255,0.04)';
+  const tickStyle={color:'#6b7280',font:{family:'DM Mono',size:10}};
+  STATE.charts.main=new Chart(document.getElementById('chart-main').getContext('2d'),{type:'bar',data:{labels,datasets:[{label:'Fixo',data:fixos,backgroundColor:'rgba(124,58,237,0.75)',borderRadius:4,order:2,stack:'s'},{label:'Variável',data:vars,backgroundColor:'rgba(34,197,94,0.75)',borderRadius:4,order:2,stack:'s'},{label:'Horas',data:horas,type:'line',borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,0.1)',borderWidth:2,tension:0.4,pointRadius:3,yAxisID:'y2',order:1,fill:true}]},options:{...baseOpts,scales:{x:{ticks:tickStyle,grid:{color:gridColor},stacked:true},y:{ticks:{...tickStyle,callback:v=>'R$'+fmtN(v)},grid:{color:gridColor},stacked:true},y2:{position:'right',ticks:{color:'#00e5ff',font:{family:'DM Mono',size:10},callback:v=>v+'h'},grid:{display:false}}}}});
+  const tF=sumC(rows,'Valores fixos'),tV=sumC(rows,'Valores variaveis');
+  STATE.charts.donut=new Chart(document.getElementById('chart-donut').getContext('2d'),{type:'doughnut',data:{labels:['Fixo','Variável'],datasets:[{data:[tF,tV],backgroundColor:['rgba(124,58,237,0.8)','rgba(34,197,94,0.8)'],borderColor:'#12121a',borderWidth:3}]},options:{...baseOpts,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{family:'DM Mono',size:11},padding:16}},tooltip:{callbacks:{label:c=>' '+fmtR(c.raw)}}}}});
+}
+
+function buildTable(rows){
+  const byV={};
+  rows.forEach(r=>{const v=r.Veterinarios||'Sem nome';if(!byV[v])byV[v]={prod:0,fixo:0,var:0,horas:0,total:0};byV[v].prod+=parseFloat(r.Producao)||0;byV[v].fixo+=parseFloat(r['Valores fixos'])||0;byV[v].var+=parseFloat(r['Valores variaveis'])||0;byV[v].horas+=parseFloat(r['Qnt Horas'])||0;byV[v].total+=parseFloat(r['Valor total'])||0});
+  const vets=Object.entries(byV).sort((a,b)=>b[1].total-a[1].total);
+  document.getElementById('table-count').textContent=vets.length+' profissionais';
+  const maxT=Math.max(...vets.map(v=>v[1].total),1);
+  document.getElementById('main-table-body').innerHTML=vets.length?`<table><thead><tr><th>Veterinário</th><th>Produção</th><th>Valor Fixo</th><th>Valor Variável</th><th>Horas</th><th>Total</th></tr></thead><tbody>${vets.map(([n,d])=>`<tr><td style="font-weight:500">${n}</td><td>${fmtN(d.prod)}</td><td>${fmtR(d.fixo)}</td><td>${fmtR(d.var)}</td><td>${fmtN(d.horas)}h</td><td>${fmtR(d.total)}<div class="progress-bar"><div class="progress-fill" style="width:${(d.total/maxT*100).toFixed(1)}%"></div></div></td></tr>`).join('')}</tbody></table>`:'<div class="no-data"><div class="no-data-icon">📂</div>Nenhum dado. Faça upload no painel Admin.</div>';
+}
+
+function renderRanking(){
+  const rows=STATE.data||[];
+  const byV={};
+  rows.forEach(r=>{const v=r.Veterinarios||'Sem nome';if(!byV[v])byV[v]={prod:0,total:0,horas:0};byV[v].prod+=parseFloat(r.Producao)||0;byV[v].total+=parseFloat(r['Valor total'])||0;byV[v].horas+=parseFloat(r['Qnt Horas'])||0});
+  const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('ranking-content').innerHTML=ranked.length?`<div class="table-wrap"><table><thead><tr><th>#</th><th>Veterinário</th><th>Produção</th><th>Valor Total</th><th>Horas</th></tr></thead><tbody>${ranked.map(([n,d],i)=>`<tr><td><span class="medal">${medals[i]||'#'+(i+1)}</span></td><td style="font-weight:600">${n}</td><td style="color:var(--accent)">${fmtN(d.prod)}</td><td style="color:var(--accent3)">${fmtR(d.total)}</td><td>${fmtN(d.horas)}h</td></tr>`).join('')}</tbody></table></div>`:'<div class="no-data"><div class="no-data-icon">🏆</div>Faça upload de dados para ver o ranking.</div>';
+}
+
+function renderLab(){
+  const rows=STATE.data||[];
+  if(!rows.length){document.getElementById('lab-content').innerHTML='<div class="no-data"><div class="no-data-icon">🔬</div>Faça upload de dados para ver análises.</div>';return}
+  const byS={};
+  rows.forEach(r=>{const s=r.Semana||'S/semana';if(!byS[s])byS[s]={prod:0,fixo:0,var:0,total:0};byS[s].prod+=parseFloat(r.Producao)||0;byS[s].fixo+=parseFloat(r['Valores fixos'])||0;byS[s].var+=parseFloat(r['Valores variaveis'])||0;byS[s].total+=parseFloat(r['Valor total'])||0});
+  const semanas=Object.entries(byS).sort();
+  document.getElementById('lab-content').innerHTML=`<div class="table-wrap"><div class="table-header"><span>Produção por Semana</span></div><table><thead><tr><th>Semana</th><th>Produção</th><th>Valor Fixo</th><th>Valor Variável</th><th>Total</th></tr></thead><tbody>${semanas.map(([s,d])=>`<tr><td style="font-weight:500">${s}</td><td style="color:var(--accent)">${fmtN(d.prod)}</td><td>${fmtR(d.fixo)}</td><td>${fmtR(d.var)}</td><td style="color:var(--accent3)">${fmtR(d.total)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processFile(f)}
+function handleFile(e){const f=e.target.files[0];if(f)processFile(f);e.target.value=''}
+
+function processFile(file){
+  if(!file.name.endsWith('.csv')){showToast('Use CSV. Exporte do Excel como CSV UTF-8.','error');return}
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
+    if(!res.data.length){showToast('CSV vazio ou inválido.','error');return}
+    STATE.data=res.data;saveData(res.data);
+    const up={name:file.name,date:new Date().toLocaleString('pt-BR'),size:(file.size/1024).toFixed(1)+'KB'};
+    STATE.uploads=[up];saveUploads(STATE.uploads);
+    renderUploads();updateDashboard();renderRanking();renderLab();
+    showToast(res.data.length+' linhas carregadas com sucesso ✓','success');
+  },error:()=>showToast('Erro ao ler CSV.','error')});
+}
+
+function renderUploads(){
+  document.getElementById('upload-items').innerHTML=STATE.uploads.length?STATE.uploads.map((u,i)=>`<div class="upload-item"><div class="upload-item-icon">📊</div><div class="upload-item-info"><div class="upload-item-name">${u.name}</div><div class="upload-item-meta">${u.date} · ${u.size}</div></div><span class="upload-item-status status-active">Ativo</span><button class="del-btn" onclick="deleteUpload(${i})">remover</button></div>`).join(''):'<div class="no-data"><div class="no-data-icon">📁</div>Nenhum arquivo carregado.</div>';
+}
+
+function deleteUpload(i){STATE.uploads.splice(i,1);saveUploads(STATE.uploads);STATE.data=null;saveData(null);renderUploads();updateDashboard();renderRanking();renderLab();showToast('Arquivo removido.','success')}
+
+function renderUsers(){
+  document.getElementById('users-list').innerHTML=getUsers().map((u,i)=>`<div class="user-item"><div class="user-avatar ${u.role==='admin'?'avatar-admin':'avatar-viewer'}">${u.user[0].toUpperCase()}</div><div class="user-info"><div class="user-name">${u.user}</div><div class="user-role">${u.role}</div></div>${u.role!=='admin'?`<button class="del-btn" onclick="removeUser(${i})">remover</button>`:''}</div>`).join('');
+}
+
+function addUser(){
+  const user=document.getElementById('new-user').value.trim();
+  const pass=document.getElementById('new-pass').value.trim();
+  if(!user||!pass){showToast('Preencha usuário e senha.','error');return}
+  const users=getUsers();
+  if(users.find(u=>u.user===user)){showToast('Usuário já existe.','error');return}
+  users.push({user,pass,role:'viewer'});saveUsers(users);
+  document.getElementById('new-user').value='';document.getElementById('new-pass').value='';
+  renderUsers();showToast(`Visualizador "${user}" criado ✓`,'success');
+}
+
+function removeUser(i){const users=getUsers();if(users[i].role==='admin'){showToast('Não é possível remover o admin.','error');return}users.splice(i,1);saveUsers(users);renderUsers();showToast('Usuário removido.','success')}
+
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3500)}
 </script>
 </body>
 </html>
