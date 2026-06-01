@@ -22,6 +22,9 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .ll{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--ac);letter-spacing:-1px;margin-bottom:4px}
 .ll span{color:var(--tx);font-weight:400}
 .ls{color:var(--mu);font-size:12px;margin-bottom:30px}
+.rtabs{display:flex;gap:8px;margin-bottom:26px}
+.rtab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
+.rtab.on{border-color:var(--ac);color:var(--ac);background:rgba(0,229,255,.06)}
 .ll2{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
 .li{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:11px 13px;color:var(--tx);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:16px;outline:none;transition:border-color .2s}
 .li:focus{border-color:var(--ac)}
@@ -394,7 +397,6 @@ const firebaseConfig = {
   measurementId: "G-KJXWV2W24M"
 };
 
-// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -424,12 +426,11 @@ window.onload = () => {
     }
 };
 
-// Sincroniza usuários com Anti-Quebra (Ignora dados nulos vindos do Firebase)
+// Sincroniza usuários com Anti-Quebra
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         let raw = snap.val();
         if(!Array.isArray(raw)) raw = Object.values(raw);
-        // Filtra "buracos" no banco caso alguém exclua itens manualmente no Console do Firebase
         globalUsers = raw.filter(x => x && x.user);
     } else {
         // SEMENTE DE BANCO NOVO
@@ -519,7 +520,6 @@ function doLogin(){
   const u = document.getElementById('lu').value.trim().toLowerCase();
   const p = document.getElementById('lp').value;
   
-  // Busca na nuvem usando proteção Anti-Quebra
   db.ref('laborbi/users').once('value').then(snap => {
       let users = snap.val() || [];
       if(!Array.isArray(users)) users = Object.values(users);
@@ -581,7 +581,6 @@ function initApp(){
     `<button class="nb${i===0?' on':''}" data-pg="${p.id}" onclick="showPg('${p.id}',this)">${p.label}</button>`
   ).join('');
 
-  // Busca dados na nuvem com proteção Anti-Quebra
   db.ref('laborbi').on('value', (snap) => {
     const data = snap.val() || {};
     
@@ -778,7 +777,7 @@ function getAdjustedBase() {
      const valVar = r2(perc * prodReal);
      const valTotal = r2(valVar + x.valFixo);
      
-     return { ...x, prod: prodReal, perc, valVar, valTotal };
+     return { ...x, rawProd: val, prod: prodReal, perc, valVar, valTotal };
   });
 }
 
@@ -872,21 +871,33 @@ function renderRanking(){
   if(mes)rows=rows.filter(r=>r.mes===mes);
 
   const byV={};
-  rows.forEach(r=>{if(!byV[r.vet])byV[r.vet]={prod:0,total:0,horas:0};byV[r.vet].prod+=r.prod;byV[r.vet].total+=r.valTotal;byV[r.vet].horas+=r.horas});
+  rows.forEach(r=>{
+    if(!byV[r.vet])byV[r.vet]={prod:0,total:0,horas:0,perc:0};
+    
+    // Para o ranking visual, usa a produção bruta (sem desconto do cirúrgico)
+    const prodBruta = r.rawProd !== undefined ? r.rawProd : r.prod;
+    byV[r.vet].prod+=prodBruta;
+    byV[r.vet].total+=r.valTotal;
+    byV[r.vet].horas+=r.horas;
+    
+    // Registra qual foi a porcentagem final calculada pela dedução
+    if(r.perc > byV[r.vet].perc) byV[r.vet].perc = r.perc;
+  });
+  
   const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
   const medals=['🥇','🥈','🥉'];
 
   if(ranked.length){
     const top=ranked.slice(0,12);
-    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção',data:top.map(([,d])=>d.prod),backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:4}],{yFmt:v=>'R$'+fN(v)});
+    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção Bruta',data:top.map(([,d])=>d.prod),backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:4}],{yFmt:v=>'R$'+fN(v)});
   }else killChart('ch-rank');
 
   document.getElementById('r-count').textContent=ranked.length+' profissionais';
   const maxP=Math.max(...ranked.map(v=>v[1].prod),1);
   document.getElementById('rank-table').innerHTML=ranked.length
-    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção R$</th><th>% Comissão</th><th>Total</th><th>Horas</th></tr></thead><tbody>
+    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção Bruta R$</th><th>% Comissão (Ajustada)</th><th>Total</th><th>Horas</th></tr></thead><tbody>
     ${ranked.map(([n,d],i)=>{
-      const pc=calcPerc(d.prod);
+      const pc=d.perc; // Exibe a % baseada no cálculo com desconto
       return `<tr><td><span style="font-size:16px">${medals[i]||'#'+(i+1)}</span></td>
       <td style="font-weight:600">${n}</td>
       <td style="color:var(--ac)">${fR(d.prod)}<div class="pbar"><div class="pfill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
