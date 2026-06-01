@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Scripts do Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -46,6 +45,7 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .brl.adm{background:rgba(0,229,255,.1);color:var(--ac);border-color:rgba(0,229,255,.25)}
 .lgbtn{padding:5px 11px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
 .lgbtn:hover{border-color:var(--dn);color:var(--dn)}
+.last-upd{font-size:10px;color:var(--ac);background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);padding:4px 9px;border-radius:6px;display:none}
 
 /* ── PAGES ── */
 .pg{display:none;padding:22px;animation:fi .25s ease}
@@ -97,7 +97,17 @@ select:focus{border-color:var(--ac)}
 .br{background:rgba(239,68,68,.12);color:var(--dn)}
 .bc{background:rgba(0,229,255,.1);color:var(--ac)}
 
-/* ── ADMIN ── */
+/* ── ADMIN LAYOUT ── */
+.admin-layout{display:flex;gap:20px;align-items:flex-start}
+.admin-sidebar{width:220px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.as-btn{padding:12px 14px;text-align:left;background:transparent;border:none;color:var(--mu);border-radius:8px;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s}
+.as-btn:hover{background:var(--sf2);color:var(--tx)}
+.as-btn.on{background:rgba(0,229,255,.1);color:var(--ac)}
+.admin-content{flex:1;min-width:0}
+.ab-sec{display:none;animation:fi .25s ease}
+.ab-sec.on{display:block}
+
+/* ADMIN COMPONENTS */
 .ibox{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:11px;color:var(--ac);line-height:1.7}
 .ugrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 .uzn{border:2px dashed var(--bd);border-radius:12px;padding:28px 18px;text-align:center;cursor:pointer;transition:all .2s;background:var(--sf)}
@@ -127,6 +137,14 @@ select:focus{border-color:var(--ac)}
 .uin{flex:1}.unm{font-size:12px;font-weight:500}.url{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px}
 .dbtn{padding:3px 8px;background:transparent;border:1px solid transparent;border-radius:5px;color:var(--mu);font-size:10px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
 .dbtn:hover{border-color:var(--dn);color:var(--dn)}
+.ebtn{padding:3px 8px;background:transparent;border:1px solid transparent;border-radius:5px;color:var(--ac);font-size:10px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.ebtn:hover{border-color:var(--ac)}
+
+/* LOGS TABLE */
+.log-table{width:100%;border-collapse:collapse;font-size:11px}
+.log-table th{background:var(--sf2);padding:10px;text-align:left;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:10px;border-bottom:1px solid var(--bd)}
+.log-table td{padding:10px;border-bottom:1px solid var(--bd);color:var(--tx)}
+.log-table tr:hover td{background:rgba(255,255,255,.015)}
 
 /* ── NO DATA ── */
 .nd{padding:40px;text-align:center;color:var(--mu);font-size:12px}
@@ -142,13 +160,18 @@ select:focus{border-color:var(--ac)}
 /* ── TWO-COL ── */
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 
-@media(max-width:900px){.cgrid-2{grid-template-columns:1fr}.ugrid{grid-template-columns:1fr}.twocol{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .cgrid-2{grid-template-columns:1fr}
+  .ugrid{grid-template-columns:1fr}
+  .twocol{grid-template-columns:1fr}
+  .admin-layout{flex-direction:column}
+  .admin-sidebar{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center}
+}
 @media(max-width:600px){.kgrid{grid-template-columns:repeat(2,1fr)}.pg{padding:12px}.tb{padding:0 12px}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="ls">
   <div class="lb">
     <div class="ll">Labor<span>BI</span></div>
@@ -166,18 +189,17 @@ select:focus{border-color:var(--ac)}
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <div class="tb">
     <div class="tbl">Labor<span>BI</span></div>
     <div class="tnav" id="tnav"></div>
     <div class="tbr">
+      <span class="last-upd" id="last-upd"></span>
       <span class="brl" id="brl">VIEWER</span>
       <button class="lgbtn" onclick="doLogout()">sair</button>
     </div>
   </div>
 
-  <!-- ██ PETCARE-2026 ██ -->
   <div class="pg on" id="pg-petcare">
     <div class="ptitle">Petcare <span>2026</span></div>
     <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
@@ -195,7 +217,6 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
   </div>
 
-  <!-- ██ RANKING ██ -->
   <div class="pg" id="pg-ranking">
     <div class="ptitle">Ranking <span>Veterinários</span></div>
     <div class="psub">Produção total — filtro por mês</div>
@@ -207,7 +228,6 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
   </div>
 
-  <!-- ██ CLINICA MÉDICA ██ -->
   <div class="pg" id="pg-clinica">
     <div class="ptitle">Clínica <span>Médica</span></div>
     <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
@@ -223,7 +243,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ INTER ██ -->
   <div class="pg" id="pg-inter">
     <div class="ptitle">Internação <span>— INTER</span></div>
     <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
@@ -239,7 +258,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ BLOCO CIRÚRGICO ██ -->
   <div class="pg" id="pg-cirurgico">
     <div class="ptitle">Bloco <span>Cirúrgico</span></div>
     <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
@@ -255,7 +273,6 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ LABORATÓRIO ██ -->
   <div class="pg" id="pg-laboratorio">
     <div class="ptitle">Laboratório <span>— LAB</span></div>
     <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
@@ -271,50 +288,81 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
-  <!-- ██ ADMIN ██ -->
   <div class="pg" id="pg-admin">
     <div class="ptitle">Painel <span>Admin</span></div>
-    <div class="psub">Upload de planilhas sincronizado em nuvem</div>
-    <div class="ibox">
-      ℹ️ Faça upload dos dois arquivos Excel exatamente como exportados do sistema. Os dados <strong>substituem completamente</strong> os anteriores a cada upload e atualizam para todos os visualizadores.<br>
-      <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados": Veterinarios, Produção, Semana, Horas normais, Horas noturnas…<br>
-      <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB
-    </div>
-    <div class="ugrid">
-      <div>
-        <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
-          <div class="ui">📋</div>
-          <div class="ut">Base de Dados</div>
-          <div class="uh">Planilha_sem_título.xlsx</div>
-          <div><span class="utag">BASE DE DADOS</span></div>
-          <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
-        </div>
-        <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
-        <div class="fst" id="fst-base"></div>
+    <div class="psub">Controle central de arquivos, acessos e auditoria.</div>
+    
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <button class="as-btn on" onclick="switchAdmin('ab-base', this)">📂 Alterar Base</button>
+        <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Usuários</button>
+        <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Logs de Acesso</button>
       </div>
-      <div>
-        <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
-          <div class="ui">🔬</div>
-          <div class="ut">Análises Balneário</div>
-          <div class="uh">Analises_Balneario.xlsx</div>
-          <div><span class="utag">INTER · CIRÚRGICO · CLÍNICA · LAB</span></div>
-          <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
-        </div>
-        <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
-        <div class="fst" id="fst-anal"></div>
-      </div>
-    </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div class="panel">
-        <div class="ptl">Adicionar Visualizador</div>
-        <div class="fg"><label class="fgl">Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
-        <div class="fg"><label class="fgl">Senha</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
-        <button class="abtn" onclick="addUser()">Adicionar</button>
-      </div>
-      <div class="panel">
-        <div class="ptl">Usuários do Sistema</div>
-        <div id="ulist"></div>
+      <div class="admin-content">
+        
+        <div id="ab-base" class="ab-sec on">
+          <div class="ibox">
+            ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
+            <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados"<br>
+            <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB
+          </div>
+          <div class="ugrid">
+            <div>
+              <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
+                <div class="ui">📋</div>
+                <div class="ut">Base de Dados</div>
+                <div class="uh">Planilha_sem_título.xlsx</div>
+                <div><span class="utag">BASE DE DADOS</span></div>
+                <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
+              </div>
+              <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
+              <div class="fst" id="fst-base"></div>
+            </div>
+            <div>
+              <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
+                <div class="ui">🔬</div>
+                <div class="ut">Análises Balneário</div>
+                <div class="uh">Analises_Balneario.xlsx</div>
+                <div><span class="utag">INTER · CIRÚRGICO · CLÍNICA · LAB</span></div>
+                <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
+              </div>
+              <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
+              <div class="fst" id="fst-anal"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="ab-users" class="ab-sec">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="panel">
+              <div class="ptl">Adicionar Usuário</div>
+              <div class="fg"><label class="fgl">Tipo</label>
+                <select id="nrole" style="width:100%;margin-bottom:10px">
+                  <option value="viewer">Visualizador (Viewer)</option>
+                  <option value="admin">Administrador (Admin)</option>
+                </select>
+              </div>
+              <div class="fg"><label class="fgl">Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
+              <div class="fg"><label class="fgl">Senha</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
+              <button class="abtn" onclick="addUser()">Adicionar</button>
+            </div>
+            <div class="panel">
+              <div class="ptl">Usuários do Sistema</div>
+              <div id="ulist"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="ab-logs" class="ab-sec">
+          <div class="panel">
+            <div class="ptl">Auditoria de Acessos Recentes</div>
+            <div style="overflow-x:auto">
+              <div id="log-list"><div class="nd">Carregando logs...</div></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -343,7 +391,7 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 // ════════════════════════════════
-//  CONSTANTS & STATE
+//  STATE
 // ════════════════════════════════
 const CHART_COLORS = ['#00e5ff','#7c3aed','#22c55e','#f59e0b','#fb7185','#818cf8','#34d399','#fbbf24','#60a5fa','#e879f9'];
 const GC = 'rgba(255,255,255,.035)';
@@ -353,7 +401,9 @@ const DEF_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass
 
 const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
 let globalUsers = [...DEF_USERS];
+let globalLogs = [];
 
+// Sincroniza usuários
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         globalUsers = snap.val();
@@ -365,6 +415,16 @@ db.ref('laborbi/users').on('value', (snap) => {
     }
 });
 
+// Sincroniza logs
+db.ref('laborbi/logs').orderByChild('timestamp').limitToLast(100).on('value', snap => {
+    const logs = [];
+    snap.forEach(c => { logs.unshift(c.val()); }); // Mais recentes primeiro
+    globalLogs = logs;
+    if(S.role === 'admin' && document.getElementById('ab-logs').classList.contains('on')) {
+        renderLogs();
+    }
+});
+
 // ════════════════════════════════
 //  FORMATTERS & MATH
 // ════════════════════════════════
@@ -373,6 +433,7 @@ const fR=v=>'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigi
 const fP=v=>((parseFloat(v)||0)*100).toFixed(1)+'%';
 const sumC=(a,k)=>a.reduce((s,r)=>s+(r[k]||0),0);
 
+// ▼ TABELA DE COMISSÕES ▼
 function calcPerc(p){
   if(p >= 61000) return 0.10; 
   if(p >= 51000) return 0.07; 
@@ -396,10 +457,39 @@ function getMes(ds){
 function r2(v){return Math.round(v*100)/100}
 
 // ════════════════════════════════
-//  LOGIN / LOGOUT
+//  LOGIN / LOGOUT & AUDITORIA
 // ════════════════════════════════
 let selRole_='viewer';
 function selR(r,el){selRole_=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on')}
+
+async function logAccess(username) {
+  let loc = "Desconhecida";
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if(res.ok) {
+      const data = await res.json();
+      if(data.city) loc = `${data.city}, ${data.region} - ${data.country_name}`;
+    }
+  } catch(e) {}
+
+  const ua = navigator.userAgent;
+  let device = "Desktop";
+  if (/android/i.test(ua)) device = "Android";
+  else if (/ipad|iphone|ipod/i.test(ua)) device = "iOS";
+  else if (/windows/i.test(ua)) device = "Windows";
+  else if (/mac/i.test(ua)) device = "Mac";
+  else if (/linux/i.test(ua)) device = "Linux";
+
+  const now = new Date().toLocaleString('pt-BR');
+
+  db.ref('laborbi/logs').push({
+    user: username,
+    time: now,
+    device: device,
+    location: loc,
+    timestamp: Date.now()
+  });
+}
 
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
@@ -409,6 +499,10 @@ function doLogin(){
     S.user=f.user;S.role=f.role;
     document.getElementById('ls').style.display='none';
     document.getElementById('app').style.display='block';
+    
+    // Grava log de acesso silenciosamente
+    logAccess(S.user).catch(()=>console.log('Sem tracking de ip'));
+    
     initApp();
   }else{
     const e=document.getElementById('lerr');e.style.display='block';
@@ -421,6 +515,7 @@ function doLogout(){
   document.getElementById('app').style.display='none';
   document.getElementById('ls').style.display='flex';
   document.getElementById('lu').value='';document.getElementById('lp').value='';
+  document.getElementById('last-upd').style.display='none';
   killAll();
 }
 
@@ -451,12 +546,18 @@ function initApp(){
   db.ref('laborbi').on('value', (snap) => {
     const data = snap.val() || {};
     
-    S.base = data.base || [];
-    S.anal = data.anal || {};
+    S.base = data.base || null;
+    S.anal = data.anal || null;
     S.meta = data.meta || {};
 
     if(S.meta.base) setFst('base', S.meta.base, true);
     if(S.meta.anal) setFst('anal', S.meta.anal, true);
+
+    if(S.meta.lastUpdated) {
+      const upd = document.getElementById('last-upd');
+      upd.textContent = 'Atualizado em: ' + S.meta.lastUpdated;
+      upd.style.display = 'inline-block';
+    }
 
     populateAllFilters();
     renderPetcare();
@@ -465,7 +566,10 @@ function initApp(){
     renderInter();
     renderCirurgico();
     renderLab();
-    if(S.role==='admin') renderUsers();
+    if(S.role==='admin') {
+        renderUsers();
+        renderLogs();
+    }
   });
 }
 
@@ -478,6 +582,14 @@ function showPg(id,btn){
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+id).classList.add('on');
   if(btn)btn.classList.add('on');
+}
+
+function switchAdmin(id, btn){
+  document.querySelectorAll('.ab-sec').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.as-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+  if(id === 'ab-logs') renderLogs();
 }
 
 // ════════════════════════════════
@@ -575,10 +687,53 @@ function fillSel(id,placeholder,opts,capFirst=false){
 function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 
 // ════════════════════════════════
-//  FILTER HELPERS
+//  DEDUÇÃO DINÂMICA DO BLOCO CIRÚRGICO
 // ════════════════════════════════
+function getAdjustedBase() {
+  let r = S.base || [];
+  
+  // 1. Agrupar produção real mensal
+  const mProd = {};
+  r.forEach(x => {
+    const val = x.rawProd !== undefined ? x.rawProd : x.prod;
+    const key = x.vet + '|' + x.mes;
+    mProd[key] = (mProd[key] || 0) + val;
+  });
+  
+  // 2. Somar deduções (apenas larissa.iozzi e vitor.tridapalli)
+  const cDed = {};
+  if (S.anal && S.anal['C_CIRURGICO']) {
+    S.anal['C_CIRURGICO'].forEach(a => {
+      if (a.vet === 'larissa.iozzi' || a.vet === 'vitor.tridapalli') {
+        const key = a.vet + '|' + a.mes;
+        cDed[key] = (cDed[key] || 0) + a.valL;
+      }
+    });
+  }
+  
+  // 3. Mapear as linhas ajustando os valores
+  return r.map(x => {
+     const val = x.rawProd !== undefined ? x.rawProd : x.prod;
+     const key = x.vet + '|' + x.mes;
+     const totalMes = mProd[key];
+     const ded = (x.vet === 'larissa.iozzi' || x.vet === 'vitor.tridapalli') ? (cDed[key] || 0) : 0;
+     
+     let elig = totalMes - ded;
+     if (elig < 0) elig = 0;
+     
+     const prop = totalMes > 0 ? val / totalMes : 0;
+     const prodReal = elig * prop;
+     
+     const perc = calcPerc(elig);
+     const valVar = r2(perc * prodReal);
+     const valTotal = r2(valVar + x.valFixo);
+     
+     return { ...x, prod: prodReal, perc, valVar, valTotal };
+  });
+}
+
 function fBase(){
-  let r=S.base||[];
+  let r = getAdjustedBase();
   const vet=document.getElementById('f-vet')?.value;
   const mes=document.getElementById('f-mes')?.value;
   const sem=document.getElementById('f-sem')?.value;
@@ -663,7 +818,7 @@ function renderPetcare(){
 // ════════════════════════════════
 function renderRanking(){
   const mes=document.getElementById('r-mes')?.value||'';
-  let rows=S.base||[];
+  let rows=getAdjustedBase();
   if(mes)rows=rows.filter(r=>r.mes===mes);
 
   const byV={};
@@ -824,9 +979,7 @@ function parseBase(wb,fname){
   
   if(hi<0){setFst('base','Cabeçalho "Veterinarios" não encontrado.',false);return}
 
-  const tempRows=[];
-  const mProd={};
-
+  const rows=[];
   for(let i=hi+1;i<rawN.length;i++){
     const r=rawN[i];
     if(!r||!r[col.vet])continue;
@@ -856,26 +1009,11 @@ function parseBase(wb,fname){
     }
 
     const mes=getMes(ds);
-    const key=vet+'|'+mes;
-    
-    if(!mProd[key]) mProd[key]=0;
-    mProd[key] += prod;
 
-    tempRows.push({vet, prod, vFixo, hN, hNt, sem, ds, mes});
-  }
-  
-  const rows=[];
-  for(const r of tempRows){
-    const mTotal = mProd[r.vet+'|'+r.mes];
-    const perc = calcPerc(mTotal); 
-    const valVar = r2(perc * r.prod); 
-    const valFixo = r.vFixo; 
-    const valTotal = r2(valVar + valFixo);
-    
+    // Salva o rawProd puro. O fBase() aplica a comissão depois
     rows.push({
-      vet: r.vet, prod: r.prod, valVar, valFixo, valTotal,
-      sem: r.sem, data: r.ds, mes: r.mes, horas: r.hN + r.hNt,
-      hNorm: r.hN, hNot: r.hNt, perc
+      vet, prod, rawProd: prod, valVar: 0, valFixo: vFixo, valTotal: 0,
+      sem, data: ds, mes, horas: hN + hNt, hNorm: hN, hNot: hNt, perc: 0
     });
   }
   
@@ -884,6 +1022,7 @@ function parseBase(wb,fname){
   toast('Enviando Base de Dados para a nuvem...', 'inf');
   db.ref('laborbi/base').set(rows).then(() => {
     db.ref('laborbi/meta/base').set(fname+' ('+rows.length+' linhas)');
+    db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
     toast('Base de dados sincronizada com sucesso! ✓','ok');
   }).catch(err => {
     toast('Erro de sincronização: ' + err.message, 'err');
@@ -895,13 +1034,12 @@ function parseAnal(wb,fname){
   const anal={'INTER':[], 'C_CIRURGICO':[], 'CLINICA':[], 'LAB':[]};
   let total=0;
 
-  // Busca as abas independentemente de como estão escritas (espaços, maiúsculas, minúsculas, etc.)
   wb.SheetNames.forEach(sh => {
     const norm = sh.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     let safeKey = null;
     
     if(norm.includes('inter')) safeKey = 'INTER';
-    else if(norm.includes('cirurgico')) safeKey = 'C_CIRURGICO'; // Sempre salva seguro
+    else if(norm.includes('cirurgico')) safeKey = 'C_CIRURGICO';
     else if(norm.includes('clinica')) safeKey = 'CLINICA';
     else if(norm.includes('lab')) safeKey = 'LAB';
 
@@ -933,6 +1071,7 @@ function parseAnal(wb,fname){
   toast('Enviando Análises para a nuvem...', 'inf');
   db.ref('laborbi/anal').set(anal).then(() => {
     db.ref('laborbi/meta/anal').set(fname+' ('+total+' linhas)');
+    db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
     toast('Análises sincronizadas com sucesso! ✓','ok');
   }).catch(err => {
     toast('Erro de sincronização: ' + err.message, 'err');
@@ -947,37 +1086,72 @@ function setFst(type,msg,ok){
 }
 
 // ════════════════════════════════
-//  USERS (CLOUD SYNC)
+//  USERS UI
 // ════════════════════════════════
 function renderUsers(){
   document.getElementById('ulist').innerHTML=globalUsers.map((u,i)=>`
     <div class="ui-item">
       <div class="uav ${u.role==='admin'?'ua':'uv'}">${u.user[0].toUpperCase()}</div>
       <div class="uin"><div class="unm">${u.user}</div><div class="url">${u.role}</div></div>
+      <button class="ebtn" onclick="editUser(${i})">editar senha</button>
       ${u.role!=='admin'?`<button class="dbtn" onclick="rmUser(${i})">remover</button>`:''}
     </div>`).join('');
 }
 function addUser(){
-  if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
+  if(S.role !== 'admin') return;
   const u=document.getElementById('nu').value.trim();
   const p=document.getElementById('np').value.trim();
+  const r=document.getElementById('nrole').value;
   if(!u||!p){toast('Preencha usuário e senha.','err');return}
   if(globalUsers.find(x=>x.user===u)){toast('Usuário já existe.','err');return}
   
-  globalUsers.push({user:u,pass:p,role:'viewer'});
+  globalUsers.push({user:u,pass:p,role:r});
   db.ref('laborbi/users').set(globalUsers).then(() => {
       document.getElementById('nu').value='';document.getElementById('np').value='';
       toast(`"${u}" adicionado na nuvem ✓`,'ok');
   });
 }
+function editUser(i){
+  if(S.role !== 'admin') return;
+  const u = globalUsers[i];
+  if(u.role === 'admin' && S.user !== u.user){toast('Apenas o dono pode alterar sua própria senha.','err');return}
+  const np = prompt(`Nova senha para ${u.user}:`, u.pass);
+  if(np && np.trim()!==''){
+      globalUsers[i].pass = np.trim();
+      db.ref('laborbi/users').set(globalUsers).then(() => toast('Senha atualizada! ✓','ok'));
+  }
+}
 function rmUser(i){
-  if(S.role !== 'admin') { toast('Acesso negado.','err'); return; }
+  if(S.role !== 'admin') return;
   if(globalUsers[i]?.role==='admin'){toast('Não é possível remover o admin.','err');return}
   
   globalUsers.splice(i,1);
   db.ref('laborbi/users').set(globalUsers).then(() => {
       toast('Usuário removido da nuvem.','ok');
   });
+}
+
+// ════════════════════════════════
+//  LOGS UI
+// ════════════════════════════════
+function renderLogs() {
+  if(!globalLogs.length) {
+    document.getElementById('log-list').innerHTML = '<div class="nd">Nenhum log registrado ainda.</div>';
+    return;
+  }
+  document.getElementById('log-list').innerHTML = `
+    <table class="log-table">
+      <thead><tr><th>Data / Hora</th><th>Usuário</th><th>Dispositivo</th><th>Localização</th></tr></thead>
+      <tbody>
+        ${globalLogs.map(l => `<tr>
+          <td style="color:var(--ac);white-space:nowrap">${l.time}</td>
+          <td><strong>${l.user}</strong></td>
+          <td>${l.device}</td>
+          <td>${l.location}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // ════════════════════════════════
