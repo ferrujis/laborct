@@ -264,7 +264,7 @@ select:focus{border-color:var(--ac)}
 
   <div class="pg" id="pg-admin">
     <div class="ptitle">Painel <span>Admin</span></div>
-    <div class="psub">Upload de planilhas e gerenciamento de usuários</div>
+    <div class="psub">Upload de planilhas sincronizado em nuvem</div>
     <div class="ibox">
       ℹ️ Faça upload dos dois arquivos Excel exatamente como exportados do sistema. Os dados <strong>substituem completamente</strong> os anteriores a cada upload e atualizam para todos os visualizadores.<br>
       <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados": Veterinarios, Produção, Semana, Horas normais, Horas noturnas…<br>
@@ -345,7 +345,7 @@ const DEF_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass
 const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
 let globalUsers = [...DEF_USERS];
 
-// Escuta a lista de usuários em tempo real
+// Escuta a lista de usuários em tempo real no Database
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         globalUsers = snap.val();
@@ -398,6 +398,7 @@ function selR(r,el){selRole_=r;document.querySelectorAll('.rtab').forEach(t=>t.c
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
+  // Compara com os usuários recebidos do Firebase (Sem Firebase Auth)
   const f=globalUsers.find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
   if(f){
     S.user=f.user;S.role=f.role;
@@ -548,14 +549,15 @@ function populateAllFilters(){
     fillSel('r-mes','Todos os Meses',meses,true);
   }
   if(S.anal){
+    // UTILIZA O NOME SEGURO 'C_CIRURGICO' SEM PONTO
     const clM=[...new Set((S.anal.CLINICA||[]).map(r=>r.mes).filter(Boolean))];
     const clV=[...new Set((S.anal.CLINICA||[]).map(r=>r.vet).filter(Boolean))].sort();
     fillSel('cl-mes','Todos os Meses',clM,true);fillSel('cl-vet','Todos os Veterinários',clV);
     const itM=[...new Set((S.anal.INTER||[]).map(r=>r.mes).filter(Boolean))];
     const itV=[...new Set((S.anal.INTER||[]).map(r=>r.vet).filter(Boolean))].sort();
     fillSel('it-mes','Todos os Meses',itM,true);fillSel('it-vet','Todos os Veterinários',itV);
-    const ciM=[...new Set((S.anal['C. CIRURGICO']||[]).map(r=>r.mes).filter(Boolean))];
-    const ciV=[...new Set((S.anal['C. CIRURGICO']||[]).map(r=>r.vet).filter(Boolean))].sort();
+    const ciM=[...new Set((S.anal['C_CIRURGICO']||[]).map(r=>r.mes).filter(Boolean))];
+    const ciV=[...new Set((S.anal['C_CIRURGICO']||[]).map(r=>r.vet).filter(Boolean))].sort();
     fillSel('ci-mes','Todos os Meses',ciM,true);fillSel('ci-vet','Todos os Veterinários',ciV);
     const lbM=[...new Set((S.anal.LAB||[]).map(r=>r.mes).filter(Boolean))];
     const lbV=[...new Set((S.anal.LAB||[]).map(r=>r.vet).filter(Boolean))].sort();
@@ -607,7 +609,6 @@ function renderPetcare(){
   const rows=fBase();
   const has=rows.length>0;
   
-  // Mensagem amigável focada na permissão (lendo S.meta em vez de DB.meta())
   document.getElementById('petcare-sub').textContent=S.meta.base
     ?'Base: '+S.meta.base+(S.meta.anal?' · Análises: '+S.meta.anal:'')
     :(S.role==='admin'?'Carregue os arquivos no painel Admin.':'Aguardando atualização dos dados da nuvem.');
@@ -625,7 +626,6 @@ function renderPetcare(){
     kpiCard('Horas no Mês',has?fN(tHoras)+'h':'—','normais + noturnas','var(--ac)'),
   ].join('');
 
-  // Combo chart: group by semana
   if(has){
     const byS={};
     rows.forEach(r=>{const k=r.sem||r.data;if(!byS[k])byS[k]={fixo:0,var:0,horas:0};byS[k].fixo+=r.valFixo;byS[k].var+=r.valVar;byS[k].horas+=r.horas});
@@ -634,7 +634,6 @@ function renderPetcare(){
     mkDonut('ch-donut',['Fixo','Variável'],[tFixo,tVar]);
   }else{killChart('ch-combo');killChart('ch-donut')}
 
-  // Table by vet
   const byV={};
   rows.forEach(r=>{
     if(!byV[r.vet])byV[r.vet]={prod:0,fixo:0,var:0,total:0,horas:0,hN:0,hNt:0};
@@ -700,7 +699,6 @@ function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAcce
   const nVets=new Set(rows.map(r=>r.vet)).size;
   const nProc=new Set(rows.map(r=>r.proc)).size;
 
-  // KPIs
   document.getElementById(kpiId).innerHTML=[
     kpiCard('Valor Lançado',rows.length?fR(tVal):'—','total faturado',colorAccent),
     kpiCard('Qtd Lançamentos',rows.length?fN(rows.length):'—','registros','#60a5fa'),
@@ -717,14 +715,12 @@ function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAcce
   }
 
   if(mode==='byVet'){
-    // Bar: value by vet
     const byV={};
     rows.forEach(r=>{if(!byV[r.vet])byV[r.vet]={val:0,n:0};byV[r.vet].val+=r.valL;byV[r.vet].n++});
     const sorted=Object.entries(byV).sort((a,b)=>b[1].val-a[1].val);
     const top=sorted.slice(0,12);
     mkHBar(barId,top.map(([n])=>n.split('.')[0]),top.map(([,d])=>d.val),colorAccent);
 
-    // Table: vet summary
     const maxV=Math.max(...sorted.map(v=>v[1].val),1);
     document.getElementById(countId).textContent=sorted.length+' veterinários';
     document.getElementById(tableId).innerHTML=`<table><thead><tr><th>Veterinário</th><th>Lançamentos</th><th>Valor Lançado</th></tr></thead><tbody>
@@ -733,13 +729,11 @@ function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAcce
     </tbody></table>`;
 
   } else if(mode==='byProc'){
-    // Bar: count by procedure (lab style)
     const byP={};
     rows.forEach(r=>{if(!byP[r.proc])byP[r.proc]={n:0,val:0};byP[r.proc].n++;byP[r.proc].val+=r.valL});
     const sorted=Object.entries(byP).sort((a,b)=>b[1].n-a[1].n);
     const top10=sorted.slice(0,10);
     mkHBar(barId,top10.map(([n])=>n.length>30?n.slice(0,30)+'…':n),top10.map(([,d])=>d.n),colorAccent,{yFmt:v=>v});
-    // override y callback for count
     if(S.charts[barId]){
       S.charts[barId].options.scales.x.ticks.callback=v=>fN(v);
       S.charts[barId].update();
@@ -762,7 +756,8 @@ function renderInter(){
   renderAnalPage({sheet:'INTER',mesId:'it-mes',vetId:'it-vet',kpiId:'it-kpi',barId:'ch-it-bar',tableId:'it-table',countId:'it-tcount',colorAccent:'#22c55e',mode:'byVet'});
 }
 function renderCirurgico(){
-  renderAnalPage({sheet:'C. CIRURGICO',mesId:'ci-mes',vetId:'ci-vet',kpiId:'ci-kpi',barId:'ch-ci-bar',tableId:'ci-table',countId:'ci-tcount',colorAccent:'#f59e0b',mode:'byVet'});
+  // CHAMA COM A CHAVE SEGURA C_CIRURGICO
+  renderAnalPage({sheet:'C_CIRURGICO',mesId:'ci-mes',vetId:'ci-vet',kpiId:'ci-kpi',barId:'ch-ci-bar',tableId:'ci-table',countId:'ci-tcount',colorAccent:'#f59e0b',mode:'byVet'});
 }
 function renderLab(){
   renderAnalPage({sheet:'LAB',mesId:'lb-mes',vetId:'lb-vet',kpiId:'lb-kpi',barId:'ch-lb-bar',tableId:'lb-table',countId:'lb-tcount',colorAccent:'#a78bfa',mode:'byProc'});
@@ -872,31 +867,20 @@ function parseBase(wb,fname){
   const rows=[];
   for(const r of tempRows){
     const mTotal = mProd[r.vet+'|'+r.mes];
-    
     const perc = calcPerc(mTotal); 
     const valVar = r2(perc * r.prod); 
     const valFixo = r.vFixo; 
     const valTotal = r2(valVar + valFixo);
     
     rows.push({
-      vet: r.vet,
-      prod: r.prod,
-      valVar,
-      valFixo,
-      valTotal,
-      sem: r.sem,
-      data: r.ds,
-      mes: r.mes,
-      horas: r.hN + r.hNt,
-      hNorm: r.hN,
-      hNot: r.hNt,
-      perc
+      vet: r.vet, prod: r.prod, valVar, valFixo, valTotal,
+      sem: r.sem, data: r.ds, mes: r.mes, horas: r.hN + r.hNt,
+      hNorm: r.hN, hNot: r.hNt, perc
     });
   }
   
   if(!rows.length){setFst('base','Nenhuma linha válida.',false);return}
 
-  // ENVIO PARA O FIREBASE
   toast('Enviando Base de Dados para a nuvem...', 'inf');
   db.ref('laborbi/base').set(rows).then(() => {
     db.ref('laborbi/meta/base').set(fname+' ('+rows.length+' linhas)');
@@ -908,11 +892,15 @@ function parseBase(wb,fname){
 
 // ── Parse Analises_Balneario.xlsx ──
 function parseAnal(wb,fname){
-  const shts=['INTER','C. CIRURGICO','CLINICA','LAB'];
+  // AQUI FAZEMOS O MAPEAMENTO PARA EVITAR O ERRO DO PONTO NO FIREBASE
+  const shts={'INTER':'INTER', 'C. CIRURGICO':'C_CIRURGICO', 'CLINICA':'CLINICA', 'LAB':'LAB'};
   const anal={};let total=0;
-  for(const sh of shts){
+  
+  for(const sh in shts){
     const ws=wb.Sheets[sh];
-    if(!ws){anal[sh]=[];continue}
+    const safeKey = shts[sh]; // Será C_CIRURGICO na nuvem
+    
+    if(!ws){anal[safeKey]=[];continue}
     const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
     const rows=[];
     for(let i=1;i<raw.length;i++){
@@ -931,10 +919,9 @@ function parseAnal(wb,fname){
       if(!vet&&!proc)continue;
       rows.push({data:ds,mes,vet,proc,pet,valL,valT});
     }
-    anal[sh]=rows;total+=rows.length;
+    anal[safeKey]=rows;total+=rows.length;
   }
 
-  // ENVIO PARA O FIREBASE
   toast('Enviando Análises para a nuvem...', 'inf');
   db.ref('laborbi/anal').set(anal).then(() => {
     db.ref('laborbi/meta/anal').set(fname+' ('+total+' linhas)');
