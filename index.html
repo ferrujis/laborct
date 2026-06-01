@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Scripts do Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -169,6 +170,7 @@ select:focus{border-color:var(--ac)}
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="ls">
   <div class="lb">
     <div class="ll">Labor<span>BI</span></div>
@@ -183,6 +185,7 @@ select:focus{border-color:var(--ac)}
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="tb">
     <div class="tbl">Labor<span>BI</span></div>
@@ -194,6 +197,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ PETCARE-2026 ██ -->
   <div class="pg on" id="pg-petcare">
     <div class="ptitle">Petcare <span>2026</span></div>
     <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
@@ -211,6 +215,7 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
   </div>
 
+  <!-- ██ RANKING ██ -->
   <div class="pg" id="pg-ranking">
     <div class="ptitle">Ranking <span>Veterinários</span></div>
     <div class="psub">Produção total — filtro por mês</div>
@@ -222,6 +227,7 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
   </div>
 
+  <!-- ██ CLINICA MÉDICA ██ -->
   <div class="pg" id="pg-clinica">
     <div class="ptitle">Clínica <span>Médica</span></div>
     <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
@@ -237,6 +243,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ INTER ██ -->
   <div class="pg" id="pg-inter">
     <div class="ptitle">Internação <span>— INTER</span></div>
     <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
@@ -252,6 +259,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ BLOCO CIRÚRGICO ██ -->
   <div class="pg" id="pg-cirurgico">
     <div class="ptitle">Bloco <span>Cirúrgico</span></div>
     <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
@@ -267,6 +275,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ LABORATÓRIO ██ -->
   <div class="pg" id="pg-laboratorio">
     <div class="ptitle">Laboratório <span>— LAB</span></div>
     <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
@@ -282,19 +291,23 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ ADMIN ██ -->
   <div class="pg" id="pg-admin">
     <div class="ptitle">Painel <span>Admin</span></div>
     <div class="psub">Controle central de arquivos, acessos e auditoria.</div>
     
     <div class="admin-layout">
+      <!-- SIDEBAR -->
       <div class="admin-sidebar">
         <button class="as-btn on" onclick="switchAdmin('ab-base', this)">📂 Alterar Base</button>
         <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Usuários</button>
         <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Logs de Acesso</button>
       </div>
 
+      <!-- CONTENT -->
       <div class="admin-content">
         
+        <!-- SEC: ALTERAR BASE -->
         <div id="ab-base" class="ab-sec on">
           <div class="ibox">
             ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
@@ -327,6 +340,7 @@ select:focus{border-color:var(--ac)}
           </div>
         </div>
 
+        <!-- SEC: USUARIOS -->
         <div id="ab-users" class="ab-sec">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
             <div class="panel">
@@ -348,6 +362,7 @@ select:focus{border-color:var(--ac)}
           </div>
         </div>
 
+        <!-- SEC: LOGS -->
         <div id="ab-logs" class="ab-sec">
           <div class="panel">
             <div class="ptl">Auditoria de Acessos Recentes</div>
@@ -379,6 +394,7 @@ const firebaseConfig = {
   measurementId: "G-KJXWV2W24M"
 };
 
+// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -408,12 +424,15 @@ window.onload = () => {
     }
 };
 
-// Sincroniza usuários e planta o Admin Seed se o banco for novo
+// Sincroniza usuários com Anti-Quebra (Ignora dados nulos vindos do Firebase)
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
-        globalUsers = snap.val();
+        let raw = snap.val();
+        if(!Array.isArray(raw)) raw = Object.values(raw);
+        // Filtra "buracos" no banco caso alguém exclua itens manualmente no Console do Firebase
+        globalUsers = raw.filter(x => x && x.user);
     } else {
-        // SEMENTE DE BANCO NOVO (Será apagado depois de configurado)
+        // SEMENTE DE BANCO NOVO
         globalUsers = [{user:'clevis.junior', pass:'admin123', role:'admin'}];
         db.ref('laborbi/users').set(globalUsers);
     }
@@ -422,10 +441,12 @@ db.ref('laborbi/users').on('value', (snap) => {
     }
 });
 
-// Sincroniza logs
+// Sincroniza logs com Anti-Quebra
 db.ref('laborbi/logs').orderByChild('timestamp').limitToLast(100).on('value', snap => {
     const logs = [];
-    snap.forEach(c => { logs.unshift(c.val()); }); 
+    snap.forEach(c => { 
+        if(c.val()) logs.unshift(c.val()); 
+    }); 
     globalLogs = logs;
     if(S.role === 'admin' && document.getElementById('ab-logs').classList.contains('on')) {
         renderLogs();
@@ -495,19 +516,21 @@ async function logAccess(username) {
 }
 
 function doLogin(){
-  // Força para minúsculas e ignora espaços extras
   const u = document.getElementById('lu').value.trim().toLowerCase();
   const p = document.getElementById('lp').value;
   
-  // Como as senhas estão apenas no DB da nuvem, validamos por lá
+  // Busca na nuvem usando proteção Anti-Quebra
   db.ref('laborbi/users').once('value').then(snap => {
-      const users = snap.val() || [];
+      let users = snap.val() || [];
+      if(!Array.isArray(users)) users = Object.values(users);
+      users = users.filter(x => x && x.user);
+
       const f = users.find(x => x.user === u && x.pass === p);
       
       if(f){
         S.user = f.user;
         S.role = f.role;
-        sessionStorage.setItem('loggedUser', JSON.stringify(f)); // Salva a sessão
+        sessionStorage.setItem('loggedUser', JSON.stringify(f)); 
         
         document.getElementById('ls').style.display='none';
         document.getElementById('app').style.display='block';
@@ -558,11 +581,24 @@ function initApp(){
     `<button class="nb${i===0?' on':''}" data-pg="${p.id}" onclick="showPg('${p.id}',this)">${p.label}</button>`
   ).join('');
 
+  // Busca dados na nuvem com proteção Anti-Quebra
   db.ref('laborbi').on('value', (snap) => {
     const data = snap.val() || {};
     
-    S.base = data.base || null;
-    S.anal = data.anal || null;
+    let b = data.base || [];
+    if(!Array.isArray(b)) b = Object.values(b);
+    S.base = b.filter(x => x && typeof x === 'object' && x.vet);
+
+    let a = data.anal || {};
+    for(let k in a) {
+       if(a[k]) {
+           let sheetData = Array.isArray(a[k]) ? a[k] : Object.values(a[k]);
+           a[k] = sheetData.filter(x => x && typeof x === 'object');
+       } else {
+           a[k] = [];
+       }
+    }
+    S.anal = a;
     S.meta = data.meta || {};
 
     if(S.meta.base) setFst('base', S.meta.base, true);
@@ -716,7 +752,9 @@ function getAdjustedBase() {
   
   const cDed = {};
   if (S.anal && S.anal['C_CIRURGICO']) {
-    S.anal['C_CIRURGICO'].forEach(a => {
+    let cCir = S.anal['C_CIRURGICO'];
+    if(!Array.isArray(cCir)) cCir = Object.values(cCir);
+    cCir.filter(x=>x && x.vet).forEach(a => {
       if (a.vet === 'larissa.iozzi' || a.vet === 'vitor.tridapalli') {
         const key = a.vet + '|' + a.mes;
         cDed[key] = (cDed[key] || 0) + a.valL;
@@ -1112,7 +1150,6 @@ function renderUsers(){
 }
 function addUser(){
   if(S.role !== 'admin') return;
-  // Transforma tudo em minúscula para evitar erros bobos de login
   const u=document.getElementById('nu').value.trim().toLowerCase();
   const p=document.getElementById('np').value.trim();
   const r=document.getElementById('nrole').value;
