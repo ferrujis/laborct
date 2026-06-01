@@ -8,136 +8,144 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;--accent:#00e5ff;--accent2:#7c3aed;--accent3:#22c55e;--warn:#f59e0b;--danger:#ef4444;--text:#e8e8f0;--muted:#6b7280;--red:#f10000}
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;--accent:#00e5ff;--accent2:#7c3aed;--accent3:#22c55e;--warn:#f59e0b;--danger:#ef4444;--text:#e8e8f0;--muted:#6b7280}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
 
 /* LOGIN */
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,rgba(124,58,237,.14) 0,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.09) 0,transparent 50%),var(--bg)}
-.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:420px;box-shadow:0 0 60px rgba(0,229,255,.06),0 24px 48px rgba(0,0,0,.6)}
-.login-logo{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:6px}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 50%,rgba(124,58,237,.12) 0,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.08) 0,transparent 50%),var(--bg)}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px 40px;width:420px;box-shadow:0 0 60px rgba(0,229,255,.05),0 24px 48px rgba(0,0,0,.6)}
+.login-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:4px}
 .login-logo span{color:var(--text);font-weight:400}
-.login-sub{color:var(--muted);font-size:12px;margin-bottom:36px}
+.login-sub{color:var(--muted);font-size:12px;margin-bottom:32px}
 .role-tabs{display:flex;gap:8px;margin-bottom:28px}
 .role-tab{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
 .role-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.06)}
-.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;display:block}
-.lin{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:18px;outline:none;transition:border-color .2s}
-.lin:focus{border-color:var(--accent)}
+.login-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.login-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:18px;transition:border-color .2s;outline:none}
+.login-input:focus{border-color:var(--accent)}
 .login-btn{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:14px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px;transition:opacity .2s,transform .1s}
 .login-btn:hover{opacity:.9;transform:translateY(-1px)}
-.login-err{color:var(--danger);font-size:12px;margin-top:12px;background:rgba(239,68,68,.1);border-radius:6px;padding:8px 12px;display:none}
+.login-error{color:var(--danger);font-size:12px;margin-top:12px;background:rgba(239,68,68,.1);border-radius:6px;padding:8px 12px;display:none}
 
-/* APP */
+/* SHELL */
 #app{display:none;min-height:100vh}
 .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100}
-.tlogo{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--accent);letter-spacing:-.5px;flex-shrink:0}
-.tlogo span{color:var(--text);font-weight:400}
-#tnav{display:flex;gap:2px;flex:1}
-.nbtn{padding:6px 13px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
-.nbtn:hover{color:var(--text);background:var(--surface2)}
-.nbtn.active{color:var(--accent);background:rgba(0,229,255,.08)}
-.tright{display:flex;align-items:center;gap:10px;margin-left:auto}
-.brole{padding:3px 10px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:uppercase}
-.brole.admin{background:rgba(0,229,255,.1);color:var(--accent);border-color:rgba(0,229,255,.25)}
-.logoutbtn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
-.logoutbtn:hover{border-color:var(--danger);color:var(--danger)}
+.topbar-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent);letter-spacing:-.5px;flex-shrink:0}
+.topbar-logo span{color:var(--text);font-weight:400}
+.topbar-nav{display:flex;gap:2px;flex:1}
+.nav-btn{padding:6px 14px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s}
+.nav-btn:hover{color:var(--text);background:var(--surface2)}
+.nav-btn.active{color:var(--accent);background:rgba(0,229,255,.08)}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.badge-role{padding:3px 10px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:uppercase}
+.badge-role.admin{background:rgba(0,229,255,.1);color:var(--accent);border-color:rgba(0,229,255,.25)}
+.logout-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger)}
 
 /* PAGES */
-.page{display:none;padding:24px;animation:fi .3s ease}
+.page{display:none;padding:24px;animation:fadeIn .25s ease}
 .page.active{display:block}
-@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.ph{margin-bottom:24px}
-.pt{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.5px}
-.pt span{color:var(--accent)}
-.ps{color:var(--muted);font-size:12px;margin-top:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.page-title span{color:var(--accent)}
+.page-subtitle{color:var(--muted);font-size:12px;margin-bottom:22px}
 
 /* KPI */
-.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px;margin-bottom:22px}
-.kcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .2s}
-.kcard:hover{border-color:rgba(0,229,255,.2)}
-.klbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:7px}
-.kval{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-1px}
-.c{color:var(--accent)}.p{color:#a78bfa}.g{color:var(--accent3)}.a{color:var(--warn)}.r{color:var(--red)}
-.ksub{font-size:10px;color:var(--muted);margin-top:3px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color .2s}
+.kpi-card:hover{border-color:rgba(0,229,255,.2)}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-1px;line-height:1}
+.kpi-value.c{color:var(--accent)}.kpi-value.p{color:#a78bfa}.kpi-value.g{color:var(--accent3)}.kpi-value.a{color:var(--warn)}.kpi-value.r{color:#fb7185}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px}
 
 /* CHARTS */
-.cgrid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px}
-.ccard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px}
-.ctitle{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:14px}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:14px}
 
 /* TABLE */
-.twrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
-.thead{padding:14px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.table-header{padding:14px 18px;border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.table-header span:last-child{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;font-weight:400}
 table{width:100%;border-collapse:collapse}
-th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border)}
-td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border)}
+th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text)}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,.02)}
-.pb{height:3px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden}
-.pf{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .7s ease}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px}
 
 /* FILTERS */
-.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 30px 7px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;outline:none;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filter-label{font-size:11px;color:var(--muted)}
+select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 32px 7px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;outline:none;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 select:focus{border-color:var(--accent)}
 
+/* TABS (sub-navigation) */
+.sub-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:0}
+.sub-tab{padding:8px 16px;border:none;background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.sub-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.sub-tab:hover{color:var(--text)}
+
 /* ADMIN */
-.info-box{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12px;color:#67e8f9;line-height:1.6}
-.info-box code{background:rgba(0,229,255,.1);padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace}
+.info-box{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:12px;color:var(--accent);line-height:1.6}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,229,255,.04)}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px}
+.upload-hint{color:var(--muted);font-size:11px;margin-bottom:12px}
+.upload-tag{display:inline-block;padding:3px 8px;background:rgba(0,229,255,.1);color:var(--accent);border-radius:4px;font-size:10px;letter-spacing:1px}
+.file-input{display:none}
+.upload-btn{display:inline-block;margin-top:12px;padding:8px 20px;background:var(--accent);color:#000;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;border:none;transition:opacity .2s}
+.upload-btn:hover{opacity:.85}
+.file-status{margin-top:10px;padding:8px 12px;border-radius:8px;font-size:11px;display:none}
+.file-status.loaded{background:rgba(34,197,94,.1);color:var(--accent3);display:block}
+.file-status.error{background:rgba(239,68,68,.1);color:var(--danger);display:block}
 
-.uzone{border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);margin-bottom:16px}
-.uzone:hover,.uzone.drag{border-color:var(--accent);background:rgba(0,229,255,.04)}
-.uzone-icon{font-size:36px;margin-bottom:10px}
-.uzone-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:5px}
-.uzone-hint{color:var(--muted);font-size:11px}
-#fi1,#fi2{display:none}
-.ubtn{display:inline-block;margin-top:14px;padding:9px 22px;background:var(--accent);color:#000;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;border:none}
-.ubtn:hover{opacity:.85}
+.users-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.panel-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--accent)}
+.action-btn{padding:9px 18px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;background:var(--accent);color:#000}
+.action-btn:hover{opacity:.85}
+.user-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px}
+.user-item:last-child{border-bottom:none}
+.user-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;flex-shrink:0}
+.av-a{background:rgba(0,229,255,.15);color:var(--accent)}.av-v{background:rgba(124,58,237,.15);color:#a78bfa}
+.user-info{flex:1}
+.user-name{font-size:12px;font-weight:500}
+.user-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.del-btn{padding:3px 9px;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.del-btn:hover{border-color:var(--danger);color:var(--danger)}
 
-.files-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
-.fcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.fcard-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
-.fcard-body{padding:12px 16px}
-.fmeta{font-size:11px;color:var(--muted);margin-bottom:4px}
-.fstatus{display:inline-block;padding:3px 9px;border-radius:100px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-.fs-ok{background:rgba(34,197,94,.15);color:var(--accent3)}
-.fs-none{background:rgba(107,114,128,.12);color:var(--muted)}
-.delbtn{float:right;padding:3px 9px;background:transparent;border:1px solid transparent;border-radius:5px;color:var(--muted);font-size:10px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
-.delbtn:hover{border-color:var(--danger);color:var(--danger)}
+/* NO DATA */
+.no-data{padding:36px;text-align:center;color:var(--muted);font-size:13px}
+.no-data-icon{font-size:28px;margin-bottom:8px}
 
-.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px}
-.ptitle{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:18px}
-.fg{margin-bottom:14px}
-.fl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px;display:block}
-.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .2s}
-.fi:focus{border-color:var(--accent)}
-.abtn{padding:9px 18px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;background:var(--accent);color:#000;transition:opacity .2s}
-.abtn:hover{opacity:.85}
-.uitem{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:9px}
-.uitem:last-child{border-bottom:none}
-.uav{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;flex-shrink:0}
-.uav.adm{background:rgba(0,229,255,.15);color:var(--accent)}
-.uav.viw{background:rgba(124,58,237,.15);color:#a78bfa}
-.uinfo{flex:1}
-.uname{font-size:12px;font-weight:500}
-.urole{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+/* MEDAL */
+.medal{font-size:18px}
 
-/* MISC */
-.nodata{padding:40px;text-align:center;color:var(--muted);font-size:13px}
-.nodata-ic{font-size:30px;margin-bottom:10px}
-.medal{font-size:15px}
-.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;margin-left:6px;vertical-align:middle}
-.tag-inter{background:rgba(0,229,255,.1);color:var(--accent)}
-.tag-cc{background:rgba(239,68,68,.1);color:var(--danger)}
-.tag-cli{background:rgba(34,197,94,.1);color:var(--accent3)}
-.tag-lab{background:rgba(245,158,11,.1);color:var(--warn)}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:999}
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:9999;max-width:320px}
 .toast.show{transform:none;opacity:1}
-.toast.ok{border-color:var(--accent3);color:var(--accent3)}
-.toast.err{border-color:var(--danger);color:var(--danger)}
-@media(max-width:768px){.cgrid,.ugrid,.files-grid{grid-template-columns:1fr}.kgrid{grid-template-columns:repeat(2,1fr)}.page{padding:14px}}
+.toast.success{border-color:var(--accent3);color:var(--accent3)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+.toast.info{border-color:var(--accent);color:var(--accent)}
+
+/* BADGE inline */
+.badge{padding:2px 7px;border-radius:4px;font-size:10px;letter-spacing:.5px}
+.badge-g{background:rgba(34,197,94,.12);color:var(--accent3)}
+.badge-r{background:rgba(239,68,68,.12);color:var(--danger)}
+.badge-y{background:rgba(245,158,11,.12);color:var(--warn)}
+
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}.upload-grid{grid-template-columns:1fr}.users-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.page{padding:14px}.topbar{padding:0 14px}}
 </style>
 </head>
 <body>
@@ -146,133 +154,122 @@ select:focus{border-color:var(--accent)}
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Labor<span>BI</span></div>
-    <div class="login-sub">Dashboard de gestão laboral · Petcare Balneário</div>
+    <div class="login-sub">Dashboard de gestão · Petcare Balneário</div>
     <div class="role-tabs">
       <button class="role-tab active" onclick="selRole('viewer',this)">👁 Visualizador</button>
       <button class="role-tab" onclick="selRole('admin',this)">⚙️ Administrador</button>
     </div>
-    <label class="lbl">Usuário</label>
-    <input type="text" class="lin" id="lu" placeholder="nome.sobrenome" autocomplete="off">
-    <label class="lbl">Senha</label>
-    <input type="password" class="lin" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+    <div class="login-label">Usuário</div>
+    <input type="text" class="login-input" id="lu" placeholder="seu.usuario" autocomplete="off">
+    <div class="login-label">Senha</div>
+    <input type="password" class="login-input" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
     <button class="login-btn" onclick="login()">ENTRAR →</button>
-    <div class="login-err" id="lerr">Usuário ou senha incorretos.</div>
+    <div class="login-error" id="lerr">Usuário ou senha incorretos.</div>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="tlogo">Labor<span>BI</span></div>
-    <div id="tnav"></div>
-    <div class="tright">
-      <span class="brole" id="brole">VIEWER</span>
-      <button class="logoutbtn" onclick="logout()">sair</button>
+    <div class="topbar-logo">Labor<span>BI</span></div>
+    <div class="topbar-nav" id="tnav"></div>
+    <div class="topbar-right">
+      <span class="badge-role" id="brole">VIEWER</span>
+      <button class="logout-btn" onclick="logout()">sair</button>
     </div>
   </div>
 
   <!-- DASHBOARD -->
-  <div class="page active" id="pg-dashboard">
-    <div class="ph">
-      <div class="pt">Dashboard <span>Petcare-2026</span></div>
-      <div class="ps" id="dash-sub">Selecione um período para visualizar</div>
-    </div>
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">Dashboard <span id="dash-title">Petcare-2026</span></div>
+    <div class="page-subtitle" id="dash-sub">Carregue os arquivos no painel Admin para visualizar os dados.</div>
     <div class="filters">
+      <span class="filter-label">Filtrar:</span>
       <select id="f-vet" onchange="renderDash()"><option value="">Todos os Veterinários</option></select>
-      <select id="f-semana" onchange="renderDash()"><option value="">Todas as Semanas</option></select>
+      <select id="f-mes" onchange="renderDash()"><option value="">Todos os Meses</option></select>
+      <select id="f-sem" onchange="renderDash()"><option value="">Todas as Semanas</option></select>
     </div>
-    <div class="kgrid">
-      <div class="kcard"><div class="klbl">Produção Total</div><div class="kval c" id="k-prod">—</div><div class="ksub">soma de produção (R$)</div></div>
-      <div class="kcard"><div class="klbl">Valor Total</div><div class="kval g" id="k-total">—</div><div class="ksub">fixo + variável</div></div>
-      <div class="kcard"><div class="klbl">Valores Fixos</div><div class="kval p" id="k-fixo">—</div><div class="ksub">remuneração fixa</div></div>
-      <div class="kcard"><div class="klbl">Valores Variáveis</div><div class="kval a" id="k-var">—</div><div class="ksub">comissão por produção</div></div>
-      <div class="kcard"><div class="klbl">Horas Trabalhadas</div><div class="kval c" id="k-horas">—</div><div class="ksub">total de horas</div></div>
-      <div class="kcard"><div class="klbl">Veterinários</div><div class="kval g" id="k-vets">—</div><div class="ksub">profissionais no período</div></div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Produção + Valores por Semana</div><canvas id="ch-main" height="210"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Fixo vs Variável</div><canvas id="ch-donut" height="210"></canvas></div>
     </div>
-    <div class="cgrid">
-      <div class="ccard"><div class="ctitle">Valores Fixos + Variáveis por Semana <span style="color:var(--muted);font-weight:400;font-size:11px">(linha = Horas)</span></div><canvas id="chart-main" height="190"></canvas></div>
-      <div class="ccard"><div class="ctitle">Composição Fixa vs Variável</div><canvas id="chart-donut" height="190"></canvas></div>
-    </div>
-    <div class="twrap">
-      <div class="thead"><span>Resumo por Veterinário</span><span style="font-size:11px;color:var(--muted)" id="t-count"></span></div>
+    <div class="table-wrap">
+      <div class="table-header"><span>Por Veterinário</span><span id="t-count"></span></div>
       <div id="main-table"></div>
     </div>
   </div>
 
   <!-- RANKING -->
-  <div class="page" id="pg-ranking">
-    <div class="ph"><div class="pt">Ranking <span>Veterinários</span></div><div class="ps">Classificação por produção total</div></div>
+  <div class="page" id="page-ranking">
+    <div class="page-title">Ranking <span>Veterinários</span></div>
+    <div class="page-subtitle">Classificação por produção total</div>
     <div class="filters">
-      <select id="rk-semana" onchange="renderRanking()"><option value="">Todas as Semanas</option></select>
+      <select id="r-mes" onchange="renderRanking()"><option value="">Todos os Meses</option></select>
     </div>
-    <div id="ranking-body"></div>
+    <div id="ranking-content"></div>
   </div>
 
-  <!-- LABORATORIO -->
-  <div class="page" id="pg-laboratorio">
-    <div class="ph"><div class="pt">Laboratório <span>— Análises</span></div><div class="ps">Produção por setor: INTER · C. CIRÚRGICO · CLÍNICA · LAB</div></div>
-    <div class="filters">
-      <select id="lb-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
-      <select id="lb-setor" onchange="renderLab()">
-        <option value="">Todos os Setores</option>
-        <option value="INTER">Internação</option>
-        <option value="C. CIRURGICO">C. Cirúrgico</option>
-        <option value="CLINICA">Clínica</option>
-        <option value="LAB">Laboratório</option>
-      </select>
+  <!-- LABORATÓRIO -->
+  <div class="page" id="page-laboratorio">
+    <div class="page-title">Laboratório <span>— Análises</span></div>
+    <div class="page-subtitle">Procedimentos das abas INTER, C. CIRURGICO, CLINICA e LAB</div>
+    <div class="sub-tabs">
+      <button class="sub-tab active" onclick="selLabTab('INTER',this)">🏥 Internação</button>
+      <button class="sub-tab" onclick="selLabTab('C. CIRURGICO',this)">🔪 Cirúrgico</button>
+      <button class="sub-tab" onclick="selLabTab('CLINICA',this)">🩺 Clínica</button>
+      <button class="sub-tab" onclick="selLabTab('LAB',this)">🔬 Laboratório</button>
     </div>
-    <div class="kgrid" id="lab-kpis"></div>
-    <div class="twrap"><div class="thead"><span>Procedimentos por Veterinário</span><span style="font-size:11px;color:var(--muted)" id="lb-count"></span></div><div id="lab-table"></div></div>
+    <div class="filters">
+      <select id="l-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
+    </div>
+    <div id="lab-kpi" style="margin-bottom:18px"></div>
+    <div id="lab-content"></div>
   </div>
 
   <!-- ADMIN -->
-  <div class="page" id="pg-admin">
-    <div class="ph"><div class="pt">Painel <span>Admin</span></div><div class="ps">Upload de arquivos e gerenciamento de usuários</div></div>
-
+  <div class="page" id="page-admin">
+    <div class="page-title">Painel <span>Admin</span></div>
+    <div class="page-subtitle">Upload de planilhas e gerenciamento de usuários</div>
     <div class="info-box">
-      ℹ️ Faça upload dos <strong>dois arquivos Excel originais</strong> — o sistema identifica cada um automaticamente pelo nome e <strong>substitui</strong> os dados existentes.<br>
-      • <code>Planilha_sem_título.xlsx</code> → Base de Labor (produção, valores, horas por veterinário/semana)<br>
-      • <code>Analises_Balneario.xlsx</code> → Análises por setor (INTER, C. CIRÚRGICO, CLÍNICA, LAB)
+      ℹ️ Faça upload dos dois arquivos Excel exatamente como exportados do sistema.<br>
+      <strong>Planilha_sem_título.xlsx</strong> → aba "Base de dados" (Veterinarios, Produção, Semana, Horas…)<br>
+      <strong>Analises_Balneario.xlsx</strong> → abas INTER, C. CIRURGICO, CLINICA, LAB
     </div>
-
-    <div class="files-grid">
-      <div class="fcard">
-        <div class="fcard-head">📊 Base de Labor <span class="fstatus" id="stat-labor">—</span></div>
-        <div class="fcard-body">
-          <div class="fmeta" id="meta-labor">Nenhum arquivo carregado</div>
-          <div class="uzone" id="uz1" onclick="document.getElementById('fi1').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="drop(event,'labor')">
-            <div class="uzone-icon">📥</div>
-            <div class="uzone-title">Planilha_sem_título.xlsx</div>
-            <div class="uzone-hint">Base de dados · aba "Base de dados"</div>
-            <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi1').click()">Selecionar</button>
-          </div>
-          <input type="file" id="fi1" accept=".xlsx,.xls" onchange="handleFile(event,'labor')">
+    <div class="upload-grid">
+      <div>
+        <div class="upload-zone" onclick="document.getElementById('fi-base').click()" ondragover="ev.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropFile(event,'base')">
+          <div class="upload-icon">📋</div>
+          <div class="upload-title">Base de Dados</div>
+          <div class="upload-hint">Planilha_sem_título.xlsx</div>
+          <div><span class="upload-tag">BASE DE DADOS</span></div>
+          <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
         </div>
+        <input type="file" id="fi-base" class="file-input" accept=".xlsx,.xls" onchange="loadFile(event,'base')">
+        <div class="file-status" id="fs-base"></div>
       </div>
-      <div class="fcard">
-        <div class="fcard-head">🔬 Análises Balneário <span class="fstatus" id="stat-analises">—</span></div>
-        <div class="fcard-body">
-          <div class="fmeta" id="meta-analises">Nenhum arquivo carregado</div>
-          <div class="uzone" id="uz2" onclick="document.getElementById('fi2').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="drop(event,'analises')">
-            <div class="uzone-icon">📥</div>
-            <div class="uzone-title">Analises_Balneario.xlsx</div>
-            <div class="uzone-hint">Abas: INTER · C. CIRURGICO · CLINICA · LAB</div>
-            <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi2').click()">Selecionar</button>
-          </div>
-          <input type="file" id="fi2" accept=".xlsx,.xls" onchange="handleFile(event,'analises')">
+      <div>
+        <div class="upload-zone" onclick="document.getElementById('fi-anal').click()" ondragover="ev.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropFile(event,'anal')">
+          <div class="upload-icon">🔬</div>
+          <div class="upload-title">Análises Balneário</div>
+          <div class="upload-hint">Analises_Balneario.xlsx</div>
+          <div><span class="upload-tag">INTER · CIRÚRGICO · CLÍNICA · LAB</span></div>
+          <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
         </div>
+        <input type="file" id="fi-anal" class="file-input" accept=".xlsx,.xls" onchange="loadFile(event,'anal')">
+        <div class="file-status" id="fs-anal"></div>
       </div>
     </div>
 
-    <div class="ugrid">
+    <div class="users-grid">
       <div class="panel">
-        <div class="ptitle">Adicionar Visualizador</div>
-        <div class="fg"><label class="fl">Usuário</label><input type="text" class="fi" id="nu" placeholder="nome.sobrenome"></div>
-        <div class="fg"><label class="fl">Senha</label><input type="password" class="fi" id="np" placeholder="••••••••"></div>
-        <button class="abtn" onclick="addUser()">Adicionar</button>
+        <div class="panel-title">Adicionar Visualizador</div>
+        <div class="form-group"><label class="form-label">Usuário</label><input type="text" class="form-input" id="nu" placeholder="nome.sobrenome"></div>
+        <div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="np" placeholder="••••••••"></div>
+        <button class="action-btn" onclick="addUser()">Adicionar</button>
       </div>
       <div class="panel">
-        <div class="ptitle">Usuários do Sistema</div>
+        <div class="panel-title">Usuários do Sistema</div>
         <div id="users-list"></div>
       </div>
     </div>
@@ -282,31 +279,45 @@ select:focus{border-color:var(--accent)}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── STORAGE KEYS ──────────────────────────────────────────────
-const KEYS = { users:'lb_users', labor:'lb_labor', analises:'lb_analises', meta:'lb_meta' };
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const S = {
+  role: 'viewer', user: null,
+  base: null,   // rows from Planilha_sem_título
+  anal: null,   // { INTER:[], 'C. CIRURGICO':[], CLINICA:[], LAB:[] }
+  labTab: 'INTER',
+  charts: {}
+};
 
 const DEFAULT_USERS = [
   {user:'admin', pass:'admin123', role:'admin'},
   {user:'viewer', pass:'viewer123', role:'viewer'}
 ];
 
-function gs(k){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null} }
-function ss(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast('Armazenamento cheio — limpe dados antigos.','err')} }
-function getUsers(){ return gs(KEYS.users)||[...DEFAULT_USERS] }
-function saveUsers(u){ ss(KEYS.users,u) }
+const LS = {
+  users:  ()=>{ const s=localStorage.getItem('lb_users'); return s?JSON.parse(s):[...DEFAULT_USERS] },
+  setU:   u=>localStorage.setItem('lb_users',JSON.stringify(u)),
+  base:   ()=>{ const s=localStorage.getItem('lb_base'); return s?JSON.parse(s):null },
+  setB:   d=>localStorage.setItem('lb_base',JSON.stringify(d)),
+  anal:   ()=>{ const s=localStorage.getItem('lb_anal'); return s?JSON.parse(s):null },
+  setA:   d=>localStorage.setItem('lb_anal',JSON.stringify(d)),
+  meta:   ()=>{ const s=localStorage.getItem('lb_meta'); return s?JSON.parse(s):{} },
+  setM:   m=>localStorage.setItem('lb_meta',JSON.stringify(m))
+};
 
-// ── LOGIN ─────────────────────────────────────────────────────
-let selRole='viewer';
-function selRole_(r,el){ selRole=r; document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
-function selRole(r,el){ selRole=r; document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
-
-let S = { user:null, role:null };
+// ═══════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════
+let selRole_ = 'viewer';
+function selRole(r,el){ selRole_=r; document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
 
 function login(){
-  const u=document.getElementById('lu').value.trim(), p=document.getElementById('lp').value;
-  const f=getUsers().find(x=>x.user===u&&x.pass===p&&x.role===selRole);
-  if(f){
-    S.user=f.user; S.role=f.role;
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value;
+  const found=LS.users().find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
+  if(found){
+    S.user=found.user; S.role=found.role;
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     initApp();
@@ -315,416 +326,472 @@ function login(){
     setTimeout(()=>el.style.display='none',3000);
   }
 }
+
 function logout(){
-  S={user:null,role:null};
+  S.user=null; S.role=null;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
-  document.getElementById('lu').value=''; document.getElementById('lp').value='';
-  destroyCharts();
+  document.getElementById('lu').value='';
+  document.getElementById('lp').value='';
+  killCharts();
 }
 
-// ── APP INIT ─────────────────────────────────────────────────
+// ═══════════════════════════════════════
+//  APP INIT
+// ═══════════════════════════════════════
 function initApp(){
-  const b=document.getElementById('brole'); b.textContent=S.role.toUpperCase();
-  if(S.role==='admin') b.classList.add('admin');
-  const pages=[{id:'dashboard',lbl:'Dashboard'},{id:'ranking',lbl:'Ranking'},{id:'laboratorio',lbl:'Laboratório'}];
-  if(S.role==='admin') pages.push({id:'admin',lbl:'⚙ Admin'});
+  const br=document.getElementById('brole');
+  br.textContent=S.role.toUpperCase();
+  if(S.role==='admin') br.classList.add('admin'); else br.classList.remove('admin');
+
+  const pages=[{id:'dashboard',l:'Dashboard'},{id:'ranking',l:'Ranking'},{id:'laboratorio',l:'Laboratório'}];
+  if(S.role==='admin') pages.push({id:'admin',l:'⚙ Admin'});
   document.getElementById('tnav').innerHTML=pages.map((p,i)=>
-    `<button class="nbtn${i===0?' active':''}" onclick="showPg('${p.id}',this)">${p.lbl}</button>`
+    `<button class="nav-btn${i===0?' active':''}" onclick="showPage('${p.id}',this)">${p.l}</button>`
   ).join('');
-  // Init pages
-  refreshFilters();
+
+  S.base = LS.base();
+  S.anal = LS.anal();
+
+  // restore file status labels
+  const meta = LS.meta();
+  if(meta.base) showFileStatus('base', meta.base, true);
+  if(meta.anal) showFileStatus('anal', meta.anal, true);
+
+  populateFilters();
   renderDash();
   renderRanking();
   renderLab();
-  renderMeta();
   renderUsers();
 }
 
-function showPg(id,btn){
+function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('pg-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
 }
 
-// ── DATA HELPERS ─────────────────────────────────────────────
-function norm(s){ return String(s||'').trim().normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase() }
-function fR(v){ const n=parseFloat(v)||0; return 'R$\u00a0'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) }
-function fN(v){ return (parseFloat(v)||0).toLocaleString('pt-BR',{maximumFractionDigits:0}) }
-function sumC(arr,col){ return arr.reduce((a,r)=>a+(parseFloat(r[col])||0),0) }
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+const fN = v=>(parseFloat(v)||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
+const fR = v=>'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fP = v=>((parseFloat(v)||0)*100).toFixed(1)+'%';
+const sumC = (arr,k)=>arr.reduce((a,r)=>a+(r[k]||0),0);
+const norm = s=>String(s||'').toLowerCase().trim().normalize('NFD').replace(/\p{Diacritic}/gu,'');
 
-function getLaborData(){ return gs(KEYS.labor)||[] }
-function getAnalisesData(){ return gs(KEYS.analises)||{} }
-function getMeta(){ return gs(KEYS.meta)||{} }
-
-// ── FILTERS ──────────────────────────────────────────────────
-function refreshFilters(){
-  const labor = getLaborData();
-  const vets = [...new Set(labor.map(r=>r.Veterinarios).filter(Boolean))].sort();
-  const semanas = [...new Set(labor.map(r=>r.Semana).filter(Boolean))].sort();
-
-  // Dashboard
-  const fv=document.getElementById('f-vet'), fvCur=fv.value;
-  fv.innerHTML='<option value="">Todos os Veterinários</option>'+vets.map(v=>`<option value="${v}"${fvCur===v?' selected':''}>${v}</option>`).join('');
-  const fs=document.getElementById('f-semana'), fsCur=fs.value;
-  fs.innerHTML='<option value="">Todas as Semanas</option>'+semanas.map(s=>`<option value="${s}"${fsCur===s?' selected':''}>${s}</option>`).join('');
-
-  // Ranking
-  const rs=document.getElementById('rk-semana'), rsCur=rs.value;
-  rs.innerHTML='<option value="">Todas as Semanas</option>'+semanas.map(s=>`<option value="${s}"${rsCur===s?' selected':''}>${s}</option>`).join('');
-
-  // Lab
-  const analises = getAnalisesData();
-  const labVets=[...new Set(Object.values(analises).flat().map(r=>r.VET).filter(Boolean))].sort();
-  const lv=document.getElementById('lb-vet'), lvCur=lv.value;
-  lv.innerHTML='<option value="">Todos os Veterinários</option>'+labVets.map(v=>`<option value="${v}"${lvCur===v?' selected':''}>${v}</option>`).join('');
+function calcPerc(prod){
+  if(prod>15250) return .10;
+  if(prod>=12750.25) return .07;
+  if(prod>=10250.25) return .05;
+  if(prod>=8750.25) return .03;
+  return 0;
 }
 
-function filterLabor(){
-  const all=getLaborData();
-  const v=document.getElementById('f-vet')?.value;
-  const s=document.getElementById('f-semana')?.value;
-  let rows=all;
-  if(v) rows=rows.filter(r=>r.Veterinarios===v);
-  if(s) rows=rows.filter(r=>r.Semana===s);
-  return rows;
-}
+// ═══════════════════════════════════════
+//  FILE LOADING — XLSX
+// ═══════════════════════════════════════
+function dropFile(e, type){ e.preventDefault(); e.currentTarget.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) processXlsx(f, type); }
+function loadFile(e, type){ const f=e.target.files[0]; if(f) processXlsx(f, type); e.target.value=''; }
 
-// ── DASHBOARD ────────────────────────────────────────────────
-let charts={};
-function destroyCharts(){ Object.values(charts).forEach(c=>{try{c.destroy()}catch{}}); charts={}; }
-
-function renderDash(){
-  const rows=filterLabor();
-  const meta=getMeta();
-
-  // subtitle
-  const sub = meta.labor ? `Base de Labor: ${meta.labor.rows} linhas · Atualizado ${meta.labor.date}` : 'Nenhum dado de labor carregado';
-  document.getElementById('dash-sub').textContent=sub;
-
-  // KPIs
-  document.getElementById('k-prod').textContent   = rows.length ? fR(sumC(rows,'Producao')) : '—';
-  document.getElementById('k-total').textContent  = rows.length ? fR(sumC(rows,'Valor total')) : '—';
-  document.getElementById('k-fixo').textContent   = rows.length ? fR(sumC(rows,'Valores fixos')) : '—';
-  document.getElementById('k-var').textContent    = rows.length ? fR(sumC(rows,'Valores variaveis')) : '—';
-  document.getElementById('k-horas').textContent  = rows.length ? fN(sumC(rows,'Qnt Horas'))+'h' : '—';
-  const vets=[...new Set(rows.map(r=>r.Veterinarios).filter(Boolean))];
-  document.getElementById('k-vets').textContent   = rows.length ? vets.length : '—';
-
-  buildMainChart(rows);
-  buildDonut(rows);
-  buildMainTable(rows);
-}
-
-function buildMainChart(rows){
-  const byS={};
-  rows.forEach(r=>{
-    const k=r.Semana||'S/semana';
-    if(!byS[k])byS[k]={fixo:0,var:0,horas:0};
-    byS[k].fixo+=parseFloat(r['Valores fixos'])||0;
-    byS[k].var+=parseFloat(r['Valores variaveis'])||0;
-    byS[k].horas+=parseFloat(r['Qnt Horas'])||0;
-  });
-  const labels=Object.keys(byS).sort();
-  const gc={color:'rgba(255,255,255,0.04)'};
-  const tc={color:'#6b7280',font:{family:'DM Mono',size:10}};
-  destroyCharts();
-  if(!labels.length)return;
-  charts.main=new Chart(document.getElementById('chart-main').getContext('2d'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'Fixo',data:labels.map(l=>byS[l].fixo),backgroundColor:'rgba(124,58,237,.75)',borderRadius:3,order:2,stack:'s'},
-      {label:'Variável',data:labels.map(l=>byS[l].var),backgroundColor:'rgba(34,197,94,.75)',borderRadius:3,order:2,stack:'s'},
-      {label:'Horas',data:labels.map(l=>byS[l].horas),type:'line',borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,.08)',borderWidth:2,tension:.4,pointRadius:3,yAxisID:'y2',order:1,fill:true}
-    ]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#9ca3af',font:{family:'DM Mono',size:11}}}},
-      scales:{x:{ticks:tc,grid:gc,stacked:true},y:{ticks:{...tc,callback:v=>'R$'+fN(v)},grid:gc,stacked:true},y2:{position:'right',ticks:{color:'#00e5ff',font:{family:'DM Mono',size:10},callback:v=>v+'h'},grid:{display:false}}}}
-  });
-  const tF=rows.reduce((a,r)=>a+(parseFloat(r['Valores fixos'])||0),0);
-  const tV=rows.reduce((a,r)=>a+(parseFloat(r['Valores variaveis'])||0),0);
-  charts.donut=new Chart(document.getElementById('chart-donut').getContext('2d'),{
-    type:'doughnut',
-    data:{labels:['Fixo','Variável'],datasets:[{data:[tF,tV],backgroundColor:['rgba(124,58,237,.85)','rgba(34,197,94,.85)'],borderColor:'#12121a',borderWidth:3}]},
-    options:{responsive:true,maintainAspectRatio:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{family:'DM Mono',size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+fR(c.raw)}}}}
-  });
-}
-function buildDonut(){}// handled above
-
-function buildMainTable(rows){
-  const byV={};
-  rows.forEach(r=>{
-    const v=r.Veterinarios||'—';
-    if(!byV[v])byV[v]={prod:0,fixo:0,var:0,horas:0,total:0};
-    byV[v].prod+=parseFloat(r.Producao)||0;
-    byV[v].fixo+=parseFloat(r['Valores fixos'])||0;
-    byV[v].var+=parseFloat(r['Valores variaveis'])||0;
-    byV[v].horas+=parseFloat(r['Qnt Horas'])||0;
-    byV[v].total+=parseFloat(r['Valor total'])||0;
-  });
-  const list=Object.entries(byV).sort((a,b)=>b[1].total-a[1].total);
-  document.getElementById('t-count').textContent=list.length+' profissionais';
-  const maxT=Math.max(...list.map(v=>v[1].total),1);
-  document.getElementById('main-table').innerHTML=list.length?`
-    <table><thead><tr><th>Veterinário</th><th>Produção</th><th>Fixo</th><th>Variável</th><th>Horas</th><th>Total</th></tr></thead>
-    <tbody>${list.map(([n,d])=>`<tr>
-      <td style="font-weight:500">${n}</td>
-      <td>${fR(d.prod)}</td>
-      <td style="color:#a78bfa">${fR(d.fixo)}</td>
-      <td style="color:var(--accent3)">${fR(d.var)}</td>
-      <td>${fN(d.horas)}h</td>
-      <td style="color:var(--accent)">${fR(d.total)}<div class="pb"><div class="pf" style="width:${(d.total/maxT*100).toFixed(1)}%"></div></div></td>
-    </tr>`).join('')}</tbody></table>`
-  :'<div class="nodata"><div class="nodata-ic">📂</div>Nenhum dado. Faça upload no painel Admin.</div>';
-}
-
-// ── RANKING ──────────────────────────────────────────────────
-function renderRanking(){
-  const sem=document.getElementById('rk-semana')?.value;
-  let rows=getLaborData();
-  if(sem) rows=rows.filter(r=>r.Semana===sem);
-  const byV={};
-  rows.forEach(r=>{
-    const v=r.Veterinarios||'—';
-    if(!byV[v])byV[v]={prod:0,total:0,horas:0,var:0};
-    byV[v].prod+=parseFloat(r.Producao)||0;
-    byV[v].total+=parseFloat(r['Valor total'])||0;
-    byV[v].horas+=parseFloat(r['Qnt Horas'])||0;
-    byV[v].var+=parseFloat(r['Valores variaveis'])||0;
-  });
-  const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
-  const medals=['🥇','🥈','🥉'];
-  document.getElementById('ranking-body').innerHTML=ranked.length?`
-    <div class="twrap"><table>
-      <thead><tr><th>#</th><th>Veterinário</th><th>Produção</th><th>Valor Total</th><th>Variável</th><th>Horas</th></tr></thead>
-      <tbody>${ranked.map(([n,d],i)=>`<tr>
-        <td><span class="medal">${medals[i]||'#'+(i+1)}</span></td>
-        <td style="font-weight:600">${n}</td>
-        <td style="color:var(--accent)">${fR(d.prod)}</td>
-        <td style="color:var(--accent3)">${fR(d.total)}</td>
-        <td style="color:var(--warn)">${fR(d.var)}</td>
-        <td>${fN(d.horas)}h</td>
-      </tr>`).join('')}</tbody>
-    </table></div>`
-  :'<div class="nodata"><div class="nodata-ic">🏆</div>Faça upload da Base de Labor para ver o ranking.</div>';
-}
-
-// ── LABORATÓRIO ──────────────────────────────────────────────
-function renderLab(){
-  const analises=getAnalisesData();
-  const setores=['INTER','C. CIRURGICO','CLINICA','LAB'];
-  const setorSel=document.getElementById('lb-setor')?.value;
-  const vetSel=document.getElementById('lb-vet')?.value;
-  const tags={INTER:'tag-inter','C. CIRURGICO':'tag-cc',CLINICA:'tag-cli',LAB:'tag-lab'};
-  const names={INTER:'Internação','C. CIRURGICO':'C. Cirúrgico',CLINICA:'Clínica',LAB:'Laboratório'};
-
-  // KPIs por setor
-  const kpis=setores.map(s=>{
-    const rows=(analises[s]||[]);
-    const total=rows.reduce((a,r)=>a+(parseFloat(r['Valor Lançado'])||0),0);
-    return {s,n:names[s],tag:tags[s],rows:rows.length,total};
-  });
-  document.getElementById('lab-kpis').innerHTML=kpis.map(k=>`
-    <div class="kcard"><div class="klbl">${k.n}</div><div class="kval ${k.tag.replace('tag-','').replace('-','')==='inter'?'c':k.tag.includes('cc')?'r':k.tag.includes('cli')?'g':'a'}">${fR(k.total)}</div><div class="ksub">${fN(k.rows)} procedimentos</div></div>
-  `).join('');
-
-  // Table: group by vet + setor
-  let allRows=[];
-  const setFilter=setorSel?[setorSel]:setores;
-  setFilter.forEach(s=>{
-    (analises[s]||[]).forEach(r=>allRows.push({...r,_setor:s}));
-  });
-  if(vetSel) allRows=allRows.filter(r=>r.VET===vetSel);
-
-  const byV={};
-  allRows.forEach(r=>{
-    const v=r.VET||'—';
-    if(!byV[v])byV[v]={INTER:0,'C. CIRURGICO':0,CLINICA:0,LAB:0,total:0,count:0};
-    byV[v][r._setor]=(byV[v][r._setor]||0)+(parseFloat(r['Valor Lançado'])||0);
-    byV[v].total+=(parseFloat(r['Valor Lançado'])||0);
-    byV[v].count++;
-  });
-  const list=Object.entries(byV).sort((a,b)=>b[1].total-a[1].total);
-  document.getElementById('lb-count').textContent=list.length+' profissionais · '+allRows.length+' procedimentos';
-
-  document.getElementById('lab-table').innerHTML=list.length?`
-    <table><thead><tr><th>Veterinário</th><th><span class="tag tag-inter">INTER</span></th><th><span class="tag tag-cc">C.CIRÚRG</span></th><th><span class="tag tag-cli">CLÍNICA</span></th><th><span class="tag tag-lab">LAB</span></th><th>Total</th><th>Proced.</th></tr></thead>
-    <tbody>${list.map(([n,d])=>`<tr>
-      <td style="font-weight:500">${n}</td>
-      <td style="color:var(--accent)">${fR(d['INTER'])}</td>
-      <td style="color:var(--danger)">${fR(d['C. CIRURGICO'])}</td>
-      <td style="color:var(--accent3)">${fR(d['CLINICA'])}</td>
-      <td style="color:var(--warn)">${fR(d['LAB'])}</td>
-      <td style="color:var(--text);font-weight:600">${fR(d.total)}</td>
-      <td style="color:var(--muted)">${d.count}</td>
-    </tr>`).join('')}</tbody></table>`
-  :'<div class="nodata"><div class="nodata-ic">🔬</div>Faça upload de Analises_Balneario.xlsx para ver os dados.</div>';
-}
-
-// ── FILE UPLOAD ───────────────────────────────────────────────
-function drop(e,tipo){
-  e.preventDefault();
-  document.getElementById(tipo==='labor'?'uz1':'uz2').classList.remove('drag');
-  const file=e.dataTransfer.files[0];
-  if(file) processFile(file,tipo);
-}
-function handleFile(e,tipo){ const f=e.target.files[0]; if(f)processFile(f,tipo); e.target.value=''; }
-
-function detectTipo(filename){
-  const n=filename.toLowerCase();
-  if(n.includes('analises')||n.includes('balneario')) return 'analises';
-  if(n.includes('planilha')||n.includes('base')) return 'labor';
-  return null; // unknown
-}
-
-function processFile(file,tipo){
-  // Auto-detect if not specified
-  if(!tipo) tipo=detectTipo(file.name);
-  if(!tipo){ toast('Nome do arquivo não reconhecido. Renomeie para incluir "Planilha" ou "Analises".','err'); return; }
-  toast('Lendo arquivo...','ok');
+function processXlsx(file, type){
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=ev=>{
     try{
-      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
-      if(tipo==='labor') parseLaborWB(wb,file.name,file.size);
-      else parseAnalisesWB(wb,file.name,file.size);
-    }catch(err){ toast('Erro ao ler arquivo: '+err.message,'err'); }
+      const wb=XLSX.read(ev.target.result, {type:'array', cellDates:true, cellNF:true});
+      if(type==='base') parseBase(wb, file.name);
+      else parseAnal(wb, file.name);
+    } catch(err){
+      showFileStatus(type,'Erro ao ler arquivo: '+err.message, false);
+      toast('Erro ao ler o arquivo Excel.','error');
+    }
   };
   reader.readAsArrayBuffer(file);
 }
 
-function parseLaborWB(wb,fname,fsize){
-  const shName=wb.SheetNames.find(n=>n.toLowerCase().includes('base'))||wb.SheetNames[0];
-  const ws=wb.Sheets[shName];
-  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
+// Parse Planilha_sem_título.xlsx → aba "Base de dados"
+function parseBase(wb, fname){
+  const ws = wb.Sheets['Base de dados'];
+  if(!ws){ showFileStatus('base','Aba "Base de dados" não encontrada.',false); return; }
 
-  // Find header row (row with 'Veterinarios')
-  let hIdx=-1, hRow=null;
-  for(let i=0;i<raw.length;i++){
-    const r=raw[i];
-    if(r && r.some(v=>v&&String(v).toLowerCase().includes('veterinario'))){
-      hIdx=i; hRow=r; break;
-    }
-  }
-  if(hIdx<0||!hRow){ toast('Aba "Base de dados" não encontrada ou sem cabeçalho.','err'); return; }
+  const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:false});
+  
+  // Find header row (has 'Veterinarios')
+  let hi=-1;
+  for(let i=0;i<raw.length;i++){ if(raw[i] && String(raw[i][1]||'').trim()==='Veterinarios'){hi=i;break;} }
+  if(hi<0){ showFileStatus('base','Cabeçalho "Veterinarios" não encontrado.',false); return; }
 
-  // Map headers (strip extra spaces)
-  const headers=hRow.map(h=>h?String(h).trim():null);
-  const colIdx={};
-  ['Veterinarios','Produção','Valores variaveis','Valores fixos','Valor total','Semana','Data','Qnt Horas','Horas normais','Horas noturnas','porcentagem']
-    .forEach(col=>{
-      const idx=headers.findIndex(h=>h&&norm(h)===norm(col));
-      if(idx>=0) colIdx[col]=idx;
-    });
+  // Also load with raw numbers for formulas
+  const rawN = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
 
   const rows=[];
-  for(let i=hIdx+1;i<raw.length;i++){
-    const r=raw[i];
-    if(!r||!r[colIdx['Veterinarios']]||!String(r[colIdx['Veterinarios']]).trim()) continue;
-    const obj={};
-    Object.entries(colIdx).forEach(([col,idx])=>{ obj[col]=r[idx]!==null&&r[idx]!==undefined?String(r[idx]).trim():null; });
-    // Normalize vet name
-    obj['Veterinarios']=obj['Veterinarios']?obj['Veterinarios'].trim():null;
-    if(!obj['Veterinarios']) continue;
-    rows.push(obj);
+  for(let i=hi+1;i<raw.length;i++){
+    const r=rawN[i]; if(!r||!r[1]) continue;
+    const vet   = String(r[1]).trim();
+    const prod  = parseFloat(r[2])||0;
+    const hNorm = parseFloat(r[10])||0;
+    const hNot  = parseFloat(r[11])||0;
+    const sem   = String(r[7]||'').trim();
+    let dataStr = '';
+    // date: col index 8
+    const dc = r[8];
+    if(dc instanceof Date) dataStr=dc.toISOString().slice(0,10);
+    else if(typeof dc==='number'){ const d=XLSX.SSF.parse_date_code(dc); if(d) dataStr=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`; }
+    else if(dc) dataStr=String(dc).slice(0,10);
+
+    const mes=getMes(dataStr);
+    const perc=calcPerc(prod);
+    const valVar=round2(perc*prod);
+    const valFixo=round2(hNorm*26.22+hNot*37.79);
+    const valTotal=round2(valVar+valFixo);
+    rows.push({vet,prod,valVar,valFixo,valTotal,sem,data:dataStr,mes,horas:hNorm+hNot,hNorm,hNot,perc});
   }
 
-  ss(KEYS.labor,rows);
-  const meta=getMeta();
-  meta.labor={rows:rows.length,date:new Date().toLocaleString('pt-BR'),file:fname,size:(fsize/1024).toFixed(1)+'KB'};
-  ss(KEYS.meta,meta);
-  refreshFilters(); renderDash(); renderRanking(); renderMeta();
-  toast(`✓ Base de Labor atualizada — ${rows.length} linhas carregadas`,'ok');
+  if(!rows.length){ showFileStatus('base','Nenhuma linha válida encontrada.',false); return; }
+
+  S.base=rows; LS.setB(rows);
+  const meta=LS.meta(); meta.base=fname+' ('+rows.length+' linhas)'; LS.setM(meta);
+  showFileStatus('base', fname+' — '+rows.length+' registros carregados', true);
+  toast('Base de dados: '+rows.length+' registros ✓','success');
+  populateFilters(); renderDash(); renderRanking();
 }
 
-function parseAnalisesWB(wb,fname,fsize){
-  const SHEETS=['INTER','C. CIRURGICO','CLINICA','LAB'];
-  const analises={};
-  let totalRows=0;
-  SHEETS.forEach(sh=>{
-    const ws=wb.Sheets[sh];
-    if(!ws){ analises[sh]=[]; return; }
-    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:false});
-    if(!raw.length){ analises[sh]=[]; return; }
-    const headers=raw[0].map(h=>h?String(h).trim():null);
+// Parse Analises_Balneario.xlsx → abas INTER, C. CIRURGICO, CLINICA, LAB
+function parseAnal(wb, fname){
+  const expected=['INTER','C. CIRURGICO','CLINICA','LAB'];
+  const anal={};
+  let total=0;
+  for(const shn of expected){
+    const ws=wb.Sheets[shn];
+    if(!ws){ anal[shn]=[]; continue; }
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    // header: Data, Hora, Procedimento, VET, Ficha, PET, Valor Lançado, Valor de Tabela
     const rows=[];
     for(let i=1;i<raw.length;i++){
-      const r=raw[i];
-      if(!r||!r[0]) continue;
-      const obj={};
-      headers.forEach((h,idx)=>{ if(h) obj[h]=r[idx]!==null&&r[idx]!==undefined?String(r[idx]).trim():null; });
-      // normalize VET
-      if(obj.VET) obj.VET=obj.VET.trim();
-      // normalize PET (6th column header varies)
-      const petKey=headers.find(h=>h&&!['Data','Hora','Procedimento','VET','Ficha','Valor Lançado','Valor de Tabela'].includes(h));
-      if(petKey&&obj[petKey]) obj['PET']=obj[petKey].trim();
-      rows.push(obj);
+      const r=raw[i]; if(!r||(!r[0]&&!r[3])) continue;
+      let dataStr='';
+      const dc=r[0];
+      if(dc instanceof Date) dataStr=dc.toISOString().slice(0,10);
+      else if(typeof dc==='number'){ const d=XLSX.SSF.parse_date_code(dc); if(d) dataStr=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`; }
+      else if(dc) dataStr=String(dc).slice(0,10);
+      const vet=String(r[3]||'').trim();
+      const proc=String(r[2]||'').trim();
+      const pet=String(r[5]||'').trim();
+      const ficha=String(r[4]||'').trim();
+      const valL=parseFloat(r[6])||0;
+      const valT=parseFloat(r[7])||0;
+      const mes=getMes(dataStr);
+      rows.push({data:dataStr,mes,vet,proc,pet,ficha,valL,valT});
     }
-    analises[sh]=rows;
-    totalRows+=rows.length;
+    anal[shn]=rows; total+=rows.length;
+  }
+
+  S.anal=anal; LS.setA(anal);
+  const meta=LS.meta(); meta.anal=fname+' ('+total+' linhas)'; LS.setM(meta);
+  showFileStatus('anal', fname+' — '+total+' registros ('+expected.map(s=>`${s}:${(anal[s]||[]).length}`).join(', ')+')', true);
+  toast('Análises: '+total+' registros ✓','success');
+  populateLabVets(); renderLab();
+}
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+const MESES_PT=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function getMes(dateStr){
+  if(!dateStr) return '';
+  const m=parseInt(dateStr.slice(5,7));
+  return MESES_PT[m]||'';
+}
+function round2(v){ return Math.round(v*100)/100; }
+
+function showFileStatus(type, msg, ok){
+  const el=document.getElementById('fs-'+type);
+  el.textContent=(ok?'✓ ':'⚠ ')+msg;
+  el.className='file-status '+(ok?'loaded':'error');
+}
+
+// ═══════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════
+function populateFilters(){
+  if(!S.base) return;
+  const vets=[...new Set(S.base.map(r=>r.vet))].sort();
+  const meses=[...new Set(S.base.map(r=>r.mes).filter(Boolean))];
+  const semanas=[...new Set(S.base.map(r=>r.sem).filter(Boolean))].sort();
+
+  const sel = (id,opts)=>{
+    const el=document.getElementById(id); const cur=el.value;
+    el.innerHTML=`<option value="">Todos</option>`+opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+  };
+  sel('f-vet',vets); sel('r-mes',meses);
+  document.getElementById('f-mes').innerHTML=`<option value="">Todos os Meses</option>`+meses.map(m=>`<option value="${m}">${m.charAt(0).toUpperCase()+m.slice(1)}</option>`).join('');
+  document.getElementById('f-sem').innerHTML=`<option value="">Todas as Semanas</option>`+semanas.map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+
+function populateLabVets(){
+  if(!S.anal) return;
+  const allVets=[...new Set(Object.values(S.anal).flat().map(r=>r.vet).filter(Boolean))].sort();
+  document.getElementById('l-vet').innerHTML=`<option value="">Todos os Veterinários</option>`+allVets.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+
+function getBaseFiltered(){
+  if(!S.base) return [];
+  let rows=S.base;
+  const vet=document.getElementById('f-vet')?.value;
+  const mes=document.getElementById('f-mes')?.value;
+  const sem=document.getElementById('f-sem')?.value;
+  if(vet) rows=rows.filter(r=>r.vet===vet);
+  if(mes) rows=rows.filter(r=>r.mes===mes);
+  if(sem) rows=rows.filter(r=>r.sem===sem);
+  return rows;
+}
+
+// ═══════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════
+function renderDash(){
+  const rows=getBaseFiltered();
+  const hasData=rows.length>0;
+
+  // subtitle
+  const meta=LS.meta();
+  document.getElementById('dash-sub').textContent = meta.base
+    ? 'Base: '+meta.base + (meta.anal?' · Análises: '+meta.anal:'')
+    : 'Carregue os arquivos no painel Admin para visualizar os dados.';
+
+  // KPIs
+  const totalProd=sumC(rows,'prod');
+  const totalVar=sumC(rows,'valVar');
+  const totalFixo=sumC(rows,'valFixo');
+  const totalTotal=sumC(rows,'valTotal');
+  const totalHoras=sumC(rows,'horas');
+  const nVets=new Set(rows.map(r=>r.vet)).size;
+
+  document.getElementById('kpi-grid').innerHTML=`
+    <div class="kpi-card"><div class="kpi-label">Produção Total</div><div class="kpi-value c">${hasData?fR(totalProd):'—'}</div><div class="kpi-sub">soma das produções</div></div>
+    <div class="kpi-card"><div class="kpi-label">Valor Variável</div><div class="kpi-value g">${hasData?fR(totalVar):'—'}</div><div class="kpi-sub">comissão por produção</div></div>
+    <div class="kpi-card"><div class="kpi-label">Valor Fixo</div><div class="kpi-value p">${hasData?fR(totalFixo):'—'}</div><div class="kpi-sub">horas × tarifa</div></div>
+    <div class="kpi-card"><div class="kpi-label">Valor Total</div><div class="kpi-value a">${hasData?fR(totalTotal):'—'}</div><div class="kpi-sub">fixo + variável</div></div>
+    <div class="kpi-card"><div class="kpi-label">Horas Trabalhadas</div><div class="kpi-value c">${hasData?fN(totalHoras)+'h':'—'}</div><div class="kpi-sub">normais + noturnas</div></div>
+    <div class="kpi-card"><div class="kpi-label">Veterinários</div><div class="kpi-value g">${hasData?nVets:'—'}</div><div class="kpi-sub">profissionais ativos</div></div>
+  `;
+
+  buildMainCharts(rows);
+  buildMainTable(rows);
+}
+
+function killCharts(){ Object.values(S.charts).forEach(c=>{try{c.destroy()}catch(e){}}); S.charts={}; }
+
+function buildMainCharts(rows){
+  killCharts();
+  if(!rows.length) return;
+
+  // Group by semana
+  const byS={};
+  rows.forEach(r=>{
+    const k=r.sem||r.data||'S/período';
+    if(!byS[k])byS[k]={prod:0,fixo:0,var:0,horas:0};
+    byS[k].prod+=r.prod; byS[k].fixo+=r.valFixo; byS[k].var+=r.valVar; byS[k].horas+=r.horas;
   });
+  const labels=Object.keys(byS).sort();
+  const gc='rgba(255,255,255,.04)',tc={color:'#6b7280',font:{family:'DM Mono',size:10}};
 
-  ss(KEYS.analises,analises);
-  const meta=getMeta();
-  meta.analises={rows:totalRows,date:new Date().toLocaleString('pt-BR'),file:fname,size:(fsize/1024).toFixed(1)+'KB'};
-  ss(KEYS.meta,meta);
-  refreshFilters(); renderLab(); renderMeta();
-  toast(`✓ Análises atualizadas — ${totalRows} procedimentos em ${SHEETS.length} setores`,'ok');
+  const c1=document.getElementById('ch-main').getContext('2d');
+  S.charts.main=new Chart(c1,{type:'bar',data:{labels,datasets:[
+    {label:'Valor Fixo',data:labels.map(l=>byS[l].fixo),backgroundColor:'rgba(124,58,237,.75)',borderRadius:3,stack:'s',order:2},
+    {label:'Valor Variável',data:labels.map(l=>byS[l].var),backgroundColor:'rgba(34,197,94,.75)',borderRadius:3,stack:'s',order:2},
+    {label:'Produção',data:labels.map(l=>byS[l].prod),type:'line',borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,.08)',borderWidth:2,tension:.4,pointRadius:3,yAxisID:'y2',order:1,fill:true}
+  ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#9ca3af',font:{family:'DM Mono',size:11}}}},scales:{x:{ticks:tc,grid:{color:gc},stacked:true},y:{ticks:{...tc,callback:v=>'R$'+fN(v)},grid:{color:gc},stacked:true},y2:{position:'right',ticks:{color:'#00e5ff',font:{family:'DM Mono',size:10},callback:v=>'R$'+fN(v)},grid:{display:false}}}}});
+
+  const c2=document.getElementById('ch-donut').getContext('2d');
+  const tF=sumC(rows,'valFixo'),tV=sumC(rows,'valVar');
+  S.charts.donut=new Chart(c2,{type:'doughnut',data:{labels:['Fixo','Variável'],datasets:[{data:[tF,tV],backgroundColor:['rgba(124,58,237,.8)','rgba(34,197,94,.8)'],borderColor:'#12121a',borderWidth:3}]},options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{family:'DM Mono',size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+fR(c.raw)}}}}});
 }
 
-function renderMeta(){
-  const meta=getMeta();
-  // Labor card
-  if(meta.labor){
-    document.getElementById('stat-labor').textContent='Ativo';
-    document.getElementById('stat-labor').className='fstatus fs-ok';
-    document.getElementById('meta-labor').textContent=`${meta.labor.rows} linhas · ${meta.labor.size} · ${meta.labor.date}`;
-  } else {
-    document.getElementById('stat-labor').textContent='Vazio';
-    document.getElementById('stat-labor').className='fstatus fs-none';
-    document.getElementById('meta-labor').textContent='Nenhum arquivo carregado';
-  }
-  // Analises card
-  if(meta.analises){
-    document.getElementById('stat-analises').textContent='Ativo';
-    document.getElementById('stat-analises').className='fstatus fs-ok';
-    document.getElementById('meta-analises').textContent=`${meta.analises.rows} procedimentos · ${meta.analises.size} · ${meta.analises.date}`;
-  } else {
-    document.getElementById('stat-analises').textContent='Vazio';
-    document.getElementById('stat-analises').className='fstatus fs-none';
-    document.getElementById('meta-analises').textContent='Nenhum arquivo carregado';
-  }
+function buildMainTable(rows){
+  const byV={};
+  rows.forEach(r=>{
+    if(!byV[r.vet])byV[r.vet]={prod:0,fixo:0,var:0,total:0,horas:0,hNorm:0,hNot:0};
+    const v=byV[r.vet];
+    v.prod+=r.prod;v.fixo+=r.valFixo;v.var+=r.valVar;v.total+=r.valTotal;v.horas+=r.horas;v.hNorm+=r.hNorm;v.hNot+=r.hNot;
+  });
+  const vets=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
+  document.getElementById('t-count').textContent=vets.length+' profissionais';
+  const maxP=Math.max(...vets.map(v=>v[1].prod),1);
+
+  if(!vets.length){ document.getElementById('main-table').innerHTML='<div class="no-data"><div class="no-data-icon">📂</div>Nenhum dado. Carregue a planilha no painel Admin.</div>'; return; }
+
+  document.getElementById('main-table').innerHTML=`
+    <table><thead><tr>
+      <th>Veterinário</th><th>Produção (R$)</th><th>% Comissão</th><th>Valor Variável</th><th>Valor Fixo</th><th>Total</th><th>Horas</th>
+    </tr></thead><tbody>
+    ${vets.map(([n,d])=>{
+      const perc=calcPerc(d.prod);
+      return `<tr>
+        <td style="font-weight:500">${n}</td>
+        <td>${fR(d.prod)}<div class="progress-bar"><div class="progress-fill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
+        <td><span class="badge ${perc>=.07?'badge-g':perc>=.03?'badge-y':'badge-r'}">${fP(perc)}</span></td>
+        <td style="color:var(--accent3)">${fR(d.var)}</td>
+        <td style="color:#a78bfa">${fR(d.fixo)}</td>
+        <td style="color:var(--warn);font-weight:600">${fR(d.total)}</td>
+        <td>${fN(d.hNorm)}h+${fN(d.hNot)}h<span style="color:var(--muted)"> =${fN(d.horas)}h</span></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
 }
 
-// ── USERS ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════
+//  RANKING
+// ═══════════════════════════════════════
+function renderRanking(){
+  const mes=document.getElementById('r-mes')?.value||'';
+  let rows=S.base||[];
+  if(mes) rows=rows.filter(r=>r.mes===mes);
+
+  const byV={};
+  rows.forEach(r=>{
+    if(!byV[r.vet])byV[r.vet]={prod:0,total:0,horas:0,var:0,fixo:0};
+    byV[r.vet].prod+=r.prod;byV[r.vet].total+=r.valTotal;byV[r.vet].horas+=r.horas;byV[r.vet].var+=r.valVar;byV[r.vet].fixo+=r.valFixo;
+  });
+  const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
+  const medals=['🥇','🥈','🥉'];
+  const maxP=Math.max(...ranked.map(v=>v[1].prod),1);
+
+  document.getElementById('ranking-content').innerHTML=ranked.length?`
+    <div class="table-wrap"><table><thead><tr>
+      <th>#</th><th>Veterinário</th><th>Produção (R$)</th><th>% Comissão</th><th>Variável</th><th>Fixo</th><th>Total</th><th>Horas</th>
+    </tr></thead><tbody>
+    ${ranked.map(([n,d],i)=>{
+      const perc=calcPerc(d.prod);
+      return `<tr>
+        <td><span class="medal">${medals[i]||'#'+(i+1)}</span></td>
+        <td style="font-weight:600">${n}</td>
+        <td style="color:var(--accent)">${fR(d.prod)}<div class="progress-bar"><div class="progress-fill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
+        <td><span class="badge ${perc>=.07?'badge-g':perc>=.03?'badge-y':'badge-r'}">${fP(perc)}</span></td>
+        <td>${fR(d.var)}</td><td>${fR(d.fixo)}</td>
+        <td style="color:var(--accent3);font-weight:600">${fR(d.total)}</td>
+        <td>${fN(d.horas)}h</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`
+  :'<div class="no-data"><div class="no-data-icon">🏆</div>Carregue os dados no painel Admin.</div>';
+}
+
+// ═══════════════════════════════════════
+//  LABORATÓRIO
+// ═══════════════════════════════════════
+function selLabTab(tab,el){
+  S.labTab=tab;
+  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderLab();
+}
+
+function renderLab(){
+  if(!S.anal){ document.getElementById('lab-content').innerHTML='<div class="no-data"><div class="no-data-icon">🔬</div>Carregue o arquivo Analises_Balneario.xlsx no painel Admin.</div>'; document.getElementById('lab-kpi').innerHTML=''; return; }
+
+  const vetF=document.getElementById('l-vet')?.value||'';
+  let rows=(S.anal[S.labTab]||[]);
+  if(vetF) rows=rows.filter(r=>r.vet===vetF);
+
+  // KPIs
+  const totalL=sumC(rows,'valL');
+  const totalT=sumC(rows,'valT');
+  const nVets=new Set(rows.map(r=>r.vet)).size;
+  const nProc=new Set(rows.map(r=>r.proc)).size;
+  document.getElementById('lab-kpi').innerHTML=`
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+      <div class="kpi-card"><div class="kpi-label">Procedimentos</div><div class="kpi-value c">${fN(rows.length)}</div><div class="kpi-sub">registros</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valor Lançado</div><div class="kpi-value g">${fR(totalL)}</div><div class="kpi-sub">total faturado</div></div>
+      <div class="kpi-card"><div class="kpi-label">Valor de Tabela</div><div class="kpi-value p">${fR(totalT)}</div><div class="kpi-sub">valor referência</div></div>
+      <div class="kpi-card"><div class="kpi-label">Veterinários</div><div class="kpi-value a">${nVets}</div><div class="kpi-sub">nesta aba</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tipos de Proc.</div><div class="kpi-value r">${nProc}</div><div class="kpi-sub">procedimentos únicos</div></div>
+    </div>`;
+
+  if(!rows.length){ document.getElementById('lab-content').innerHTML='<div class="no-data"><div class="no-data-icon">📋</div>Nenhum registro para os filtros selecionados.</div>'; return; }
+
+  // Top procedures by value
+  const byProc={};
+  rows.forEach(r=>{
+    if(!byProc[r.proc])byProc[r.proc]={n:0,val:0};
+    byProc[r.proc].n++;byProc[r.proc].val+=r.valL;
+  });
+  const topProc=Object.entries(byProc).sort((a,b)=>b[1].val-a[1].val).slice(0,8);
+
+  // By vet summary
+  const byVet={};
+  rows.forEach(r=>{
+    if(!byVet[r.vet])byVet[r.vet]={n:0,val:0};
+    byVet[r.vet].n++;byVet[r.vet].val+=r.valL;
+  });
+  const vetRank=Object.entries(byVet).sort((a,b)=>b[1].val-a[1].val);
+  const maxVV=Math.max(...vetRank.map(v=>v[1].val),1);
+
+  document.getElementById('lab-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="table-wrap">
+        <div class="table-header"><span>Top Procedimentos</span><span>por valor</span></div>
+        <table><thead><tr><th>Procedimento</th><th>Qtd</th><th>Valor</th></tr></thead><tbody>
+        ${topProc.map(([p,d])=>`<tr><td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p}">${p}</td><td>${d.n}</td><td style="color:var(--accent3)">${fR(d.val)}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span>Por Veterinário</span><span>produção</span></div>
+        <table><thead><tr><th>Veterinário</th><th>Proc.</th><th>Valor</th></tr></thead><tbody>
+        ${vetRank.map(([v,d])=>`<tr><td style="font-weight:500">${v}</td><td>${d.n}</td><td style="color:var(--accent)">${fR(d.val)}<div class="progress-bar"><div class="progress-fill" style="width:${(d.val/maxVV*100).toFixed(1)}%"></div></div></td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><span>Últimos Registros</span><span>${rows.length} total</span></div>
+      <table><thead><tr><th>Data</th><th>Veterinário</th><th>Procedimento</th><th>Pet</th><th>Valor Lançado</th><th>Valor Tabela</th></tr></thead><tbody>
+      ${rows.slice(-50).reverse().map(r=>`<tr>
+        <td style="white-space:nowrap">${r.data}</td>
+        <td>${r.vet}</td>
+        <td style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.proc}">${r.proc}</td>
+        <td>${r.pet}</td>
+        <td style="color:var(--accent3)">${fR(r.valL)}</td>
+        <td style="color:var(--muted)">${fR(r.valT)}</td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+//  ADMIN — USERS
+// ═══════════════════════════════════════
 function renderUsers(){
-  document.getElementById('users-list').innerHTML=getUsers().map((u,i)=>`
-    <div class="uitem">
-      <div class="uav ${u.role==='admin'?'adm':'viw'}">${u.user[0].toUpperCase()}</div>
-      <div class="uinfo"><div class="uname">${u.user}</div><div class="urole">${u.role}</div></div>
-      ${u.role!=='admin'?`<button class="delbtn" onclick="removeUser(${i})">remover</button>`:''}
+  document.getElementById('users-list').innerHTML=LS.users().map((u,i)=>`
+    <div class="user-item">
+      <div class="user-avatar ${u.role==='admin'?'av-a':'av-v'}">${u.user[0].toUpperCase()}</div>
+      <div class="user-info"><div class="user-name">${u.user}</div><div class="user-role">${u.role}</div></div>
+      ${u.role!=='admin'?`<button class="del-btn" onclick="removeUser(${i})">remover</button>`:''}
     </div>`).join('');
 }
 function addUser(){
-  const u=document.getElementById('nu').value.trim(), p=document.getElementById('np').value.trim();
-  if(!u||!p){toast('Preencha usuário e senha.','err');return}
-  const users=getUsers();
-  if(users.find(x=>x.user===u)){toast('Usuário já existe.','err');return}
-  users.push({user:u,pass:p,role:'viewer'});
-  saveUsers(users); document.getElementById('nu').value=''; document.getElementById('np').value='';
-  renderUsers(); toast(`Visualizador "${u}" criado ✓`,'ok');
+  const u=document.getElementById('nu').value.trim();
+  const p=document.getElementById('np').value.trim();
+  if(!u||!p){toast('Preencha usuário e senha.','error');return}
+  const users=LS.users();
+  if(users.find(x=>x.user===u)){toast('Usuário já existe.','error');return}
+  users.push({user:u,pass:p,role:'viewer'});LS.setU(users);
+  document.getElementById('nu').value='';document.getElementById('np').value='';
+  renderUsers();toast(`Visualizador "${u}" criado ✓`,'success');
 }
 function removeUser(i){
-  const users=getUsers();
-  if(users[i].role==='admin'){toast('Não é possível remover o admin.','err');return}
-  users.splice(i,1); saveUsers(users); renderUsers(); toast('Usuário removido.','ok');
+  const users=LS.users();
+  if(users[i].role==='admin'){toast('Não é possível remover o admin.','error');return}
+  users.splice(i,1);LS.setU(users);renderUsers();toast('Usuário removido.','success');
 }
 
-// ── TOAST ─────────────────────────────────────────────────────
-function toast(msg,type='ok'){
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg,type='info'){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast '+type+' show';
-  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),4000);
+  t.textContent=msg;t.className='toast '+type+' show';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),4000);
 }
 </script>
 </body>
