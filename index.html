@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Scripts do Firebase v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -147,6 +148,7 @@ select:focus{border-color:var(--ac)}
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="ls">
   <div class="lb">
     <div class="ll">Labor<span>BI</span></div>
@@ -164,6 +166,7 @@ select:focus{border-color:var(--ac)}
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="tb">
     <div class="tbl">Labor<span>BI</span></div>
@@ -174,6 +177,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ PETCARE-2026 ██ -->
   <div class="pg on" id="pg-petcare">
     <div class="ptitle">Petcare <span>2026</span></div>
     <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
@@ -191,6 +195,7 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
   </div>
 
+  <!-- ██ RANKING ██ -->
   <div class="pg" id="pg-ranking">
     <div class="ptitle">Ranking <span>Veterinários</span></div>
     <div class="psub">Produção total — filtro por mês</div>
@@ -202,6 +207,7 @@ select:focus{border-color:var(--ac)}
     <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
   </div>
 
+  <!-- ██ CLINICA MÉDICA ██ -->
   <div class="pg" id="pg-clinica">
     <div class="ptitle">Clínica <span>Médica</span></div>
     <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
@@ -217,6 +223,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ INTER ██ -->
   <div class="pg" id="pg-inter">
     <div class="ptitle">Internação <span>— INTER</span></div>
     <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
@@ -232,6 +239,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ BLOCO CIRÚRGICO ██ -->
   <div class="pg" id="pg-cirurgico">
     <div class="ptitle">Bloco <span>Cirúrgico</span></div>
     <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
@@ -247,6 +255,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ LABORATÓRIO ██ -->
   <div class="pg" id="pg-laboratorio">
     <div class="ptitle">Laboratório <span>— LAB</span></div>
     <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
@@ -262,6 +271,7 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ ADMIN ██ -->
   <div class="pg" id="pg-admin">
     <div class="ptitle">Painel <span>Admin</span></div>
     <div class="psub">Upload de planilhas sincronizado em nuvem</div>
@@ -327,7 +337,6 @@ const firebaseConfig = {
   measurementId: "G-KJXWV2W24M"
 };
 
-// Inicializa o Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -345,12 +354,10 @@ const DEF_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass
 const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
 let globalUsers = [...DEF_USERS];
 
-// Escuta a lista de usuários em tempo real no Database
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         globalUsers = snap.val();
     } else {
-        // Se o banco estiver vazio, grava os usuários padrão
         db.ref('laborbi/users').set(globalUsers);
     }
     if(S.role === 'admin' && document.getElementById('pg-admin').classList.contains('on')) {
@@ -366,13 +373,12 @@ const fR=v=>'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigi
 const fP=v=>((parseFloat(v)||0)*100).toFixed(1)+'%';
 const sumC=(a,k)=>a.reduce((s,r)=>s+(r[k]||0),0);
 
-// ▼ TABELA DE COMISSÕES ▼
 function calcPerc(p){
-  if(p >= 61000) return 0.10; // 10%
-  if(p >= 51000) return 0.07; // 7%
-  if(p >= 41000) return 0.05; // 5%
-  if(p >= 35000) return 0.03; // 3%
-  return 0; // Abaixo de 35k
+  if(p >= 61000) return 0.10; 
+  if(p >= 51000) return 0.07; 
+  if(p >= 41000) return 0.05; 
+  if(p >= 35000) return 0.03; 
+  return 0; 
 }
 
 const MESES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -398,7 +404,6 @@ function selR(r,el){selRole_=r;document.querySelectorAll('.rtab').forEach(t=>t.c
 function doLogin(){
   const u=document.getElementById('lu').value.trim();
   const p=document.getElementById('lp').value;
-  // Compara com os usuários recebidos do Firebase (Sem Firebase Auth)
   const f=globalUsers.find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
   if(f){
     S.user=f.user;S.role=f.role;
@@ -420,7 +425,7 @@ function doLogout(){
 }
 
 // ════════════════════════════════
-//  APP INIT (CLOUD SYNC)
+//  APP INIT
 // ════════════════════════════════
 const PAGES=[
   {id:'petcare',  label:'Petcare-2026'},
@@ -437,19 +442,17 @@ function initApp(){
   br.className='brl'+(S.role==='admin'?' adm':'');
 
   const pages=[...PAGES];
-  // Apenas Admin vê e tem a página de admin injetada na navbar
   if(S.role==='admin') pages.push({id:'admin',label:'⚙ Admin'});
 
   document.getElementById('tnav').innerHTML=pages.map((p,i)=>
     `<button class="nb${i===0?' on':''}" data-pg="${p.id}" onclick="showPg('${p.id}',this)">${p.label}</button>`
   ).join('');
 
-  // ESCUTANDO O FIREBASE EM TEMPO REAL
   db.ref('laborbi').on('value', (snap) => {
     const data = snap.val() || {};
     
-    S.base = data.base || null;
-    S.anal = data.anal || null;
+    S.base = data.base || [];
+    S.anal = data.anal || {};
     S.meta = data.meta || {};
 
     if(S.meta.base) setFst('base', S.meta.base, true);
@@ -467,7 +470,6 @@ function initApp(){
 }
 
 function showPg(id,btn){
-  // Trava de segurança extra: impede o visualizador de forçar a tela admin
   if(id === 'admin' && S.role !== 'admin') {
     toast('Acesso negado: apenas Administrador.','err');
     return;
@@ -549,7 +551,6 @@ function populateAllFilters(){
     fillSel('r-mes','Todos os Meses',meses,true);
   }
   if(S.anal){
-    // UTILIZA O NOME SEGURO 'C_CIRURGICO' SEM PONTO
     const clM=[...new Set((S.anal.CLINICA||[]).map(r=>r.mes).filter(Boolean))];
     const clV=[...new Set((S.anal.CLINICA||[]).map(r=>r.vet).filter(Boolean))].sort();
     fillSel('cl-mes','Todos os Meses',clM,true);fillSel('cl-vet','Todos os Veterinários',clV);
@@ -756,7 +757,6 @@ function renderInter(){
   renderAnalPage({sheet:'INTER',mesId:'it-mes',vetId:'it-vet',kpiId:'it-kpi',barId:'ch-it-bar',tableId:'it-table',countId:'it-tcount',colorAccent:'#22c55e',mode:'byVet'});
 }
 function renderCirurgico(){
-  // CHAMA COM A CHAVE SEGURA C_CIRURGICO
   renderAnalPage({sheet:'C_CIRURGICO',mesId:'ci-mes',vetId:'ci-vet',kpiId:'ci-kpi',barId:'ch-ci-bar',tableId:'ci-table',countId:'ci-tcount',colorAccent:'#f59e0b',mode:'byVet'});
 }
 function renderLab(){
@@ -892,35 +892,43 @@ function parseBase(wb,fname){
 
 // ── Parse Analises_Balneario.xlsx ──
 function parseAnal(wb,fname){
-  // AQUI FAZEMOS O MAPEAMENTO PARA EVITAR O ERRO DO PONTO NO FIREBASE
-  const shts={'INTER':'INTER', 'C. CIRURGICO':'C_CIRURGICO', 'CLINICA':'CLINICA', 'LAB':'LAB'};
-  const anal={};let total=0;
-  
-  for(const sh in shts){
-    const ws=wb.Sheets[sh];
-    const safeKey = shts[sh]; // Será C_CIRURGICO na nuvem
+  const anal={'INTER':[], 'C_CIRURGICO':[], 'CLINICA':[], 'LAB':[]};
+  let total=0;
+
+  // Busca as abas independentemente de como estão escritas (espaços, maiúsculas, minúsculas, etc.)
+  wb.SheetNames.forEach(sh => {
+    const norm = sh.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    let safeKey = null;
     
-    if(!ws){anal[safeKey]=[];continue}
-    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-    const rows=[];
-    for(let i=1;i<raw.length;i++){
-      const r=raw[i];if(!r||(!r[0]&&!r[3]))continue;
-      let ds='';
-      const dc=r[0];
-      if(dc instanceof Date)ds=dc.toISOString().slice(0,10);
-      else if(typeof dc==='number'){const d=XLSX.SSF.parse_date_code(dc);if(d)ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}
-      else if(dc)ds=String(dc).slice(0,10);
-      const vet=String(r[3]||'').trim();
-      const proc=String(r[2]||'').trim();
-      const pet=String(r[5]||'').trim();
-      const valL=parseFloat(r[6])||0;
-      const valT=parseFloat(r[7])||0;
-      const mes=getMes(ds);
-      if(!vet&&!proc)continue;
-      rows.push({data:ds,mes,vet,proc,pet,valL,valT});
+    if(norm.includes('inter')) safeKey = 'INTER';
+    else if(norm.includes('cirurgico')) safeKey = 'C_CIRURGICO'; // Sempre salva seguro
+    else if(norm.includes('clinica')) safeKey = 'CLINICA';
+    else if(norm.includes('lab')) safeKey = 'LAB';
+
+    if(safeKey) {
+      const ws = wb.Sheets[sh];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      const rows = [];
+      for(let i=1;i<raw.length;i++){
+        const r=raw[i];if(!r||(!r[0]&&!r[3]))continue;
+        let ds='';
+        const dc=r[0];
+        if(dc instanceof Date)ds=dc.toISOString().slice(0,10);
+        else if(typeof dc==='number'){const d=XLSX.SSF.parse_date_code(dc);if(d)ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`}
+        else if(dc)ds=String(dc).slice(0,10);
+        const vet=String(r[3]||'').trim();
+        const proc=String(r[2]||'').trim();
+        const pet=String(r[5]||'').trim();
+        const valL=parseFloat(r[6])||0;
+        const valT=parseFloat(r[7])||0;
+        const mes=getMes(ds);
+        if(!vet&&!proc)continue;
+        rows.push({data:ds,mes,vet,proc,pet,valL,valT});
+      }
+      anal[safeKey] = rows;
+      total += rows.length;
     }
-    anal[safeKey]=rows;total+=rows.length;
-  }
+  });
 
   toast('Enviando Análises para a nuvem...', 'inf');
   db.ref('laborbi/anal').set(anal).then(() => {
