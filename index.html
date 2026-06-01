@@ -21,9 +21,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .ll{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--ac);letter-spacing:-1px;margin-bottom:4px}
 .ll span{color:var(--tx);font-weight:400}
 .ls{color:var(--mu);font-size:12px;margin-bottom:30px}
-.rtabs{display:flex;gap:8px;margin-bottom:26px}
-.rtab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
-.rtab.on{border-color:var(--ac);color:var(--ac);background:rgba(0,229,255,.06)}
 .ll2{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
 .li{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:11px 13px;color:var(--tx);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:16px;outline:none;transition:border-color .2s}
 .li:focus{border-color:var(--ac)}
@@ -176,12 +173,9 @@ select:focus{border-color:var(--ac)}
   <div class="lb">
     <div class="ll">Labor<span>BI</span></div>
     <div class="ls">Dashboard de gestão · Petcare Balneário</div>
-    <div class="rtabs">
-      <button class="rtab on" onclick="selR('viewer',this)">👁 Visualizador</button>
-      <button class="rtab" onclick="selR('admin',this)">⚙️ Administrador</button>
-    </div>
-    <div class="ll2">Usuário</div>
-    <input type="text" class="li" id="lu" placeholder="seu.usuario" autocomplete="off">
+    
+    <div class="ll2">Usuário Corporativo</div>
+    <input type="text" class="li" id="lu" placeholder="nome.sobrenome" autocomplete="off">
     <div class="ll2">Senha</div>
     <input type="password" class="li" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="lbtn" onclick="doLogin()">ENTRAR →</button>
@@ -337,14 +331,14 @@ select:focus{border-color:var(--ac)}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
             <div class="panel">
               <div class="ptl">Adicionar Usuário</div>
-              <div class="fg"><label class="fgl">Tipo</label>
+              <div class="fg"><label class="fgl">Tipo de Acesso</label>
                 <select id="nrole" style="width:100%;margin-bottom:10px">
                   <option value="viewer">Visualizador (Viewer)</option>
                   <option value="admin">Administrador (Admin)</option>
                 </select>
               </div>
-              <div class="fg"><label class="fgl">Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
-              <div class="fg"><label class="fgl">Senha</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
+              <div class="fg"><label class="fgl">Nome de Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
+              <div class="fg"><label class="fgl">Senha Inicial</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
               <button class="abtn" onclick="addUser()">Adicionar</button>
             </div>
             <div class="panel">
@@ -391,23 +385,36 @@ if (!firebase.apps.length) {
 const db = firebase.database();
 
 // ════════════════════════════════
-//  STATE
+//  STATE & INITIALIZATION
 // ════════════════════════════════
 const CHART_COLORS = ['#00e5ff','#7c3aed','#22c55e','#f59e0b','#fb7185','#818cf8','#34d399','#fbbf24','#60a5fa','#e879f9'];
 const GC = 'rgba(255,255,255,.035)';
 const TC = {color:'#64748b',font:{family:'DM Mono',size:10}};
 
-const DEF_USERS=[{user:'admin',pass:'admin123',role:'admin'},{user:'viewer',pass:'viewer123',role:'viewer'}];
-
 const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
-let globalUsers = [...DEF_USERS];
+let globalUsers = [];
 let globalLogs = [];
 
-// Sincroniza usuários
+// Checagem de Sessão Ativa
+window.onload = () => {
+    const savedUser = sessionStorage.getItem('loggedUser');
+    if(savedUser) {
+        const parsed = JSON.parse(savedUser);
+        S.user = parsed.user;
+        S.role = parsed.role;
+        document.getElementById('ls').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        initApp();
+    }
+};
+
+// Sincroniza usuários e planta o Admin Seed se o banco for novo
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         globalUsers = snap.val();
     } else {
+        // SEMENTE DE BANCO NOVO (Será apagado depois de configurado)
+        globalUsers = [{user:'clevis.junior', pass:'admin123', role:'admin'}];
         db.ref('laborbi/users').set(globalUsers);
     }
     if(S.role === 'admin' && document.getElementById('pg-admin').classList.contains('on')) {
@@ -418,7 +425,7 @@ db.ref('laborbi/users').on('value', (snap) => {
 // Sincroniza logs
 db.ref('laborbi/logs').orderByChild('timestamp').limitToLast(100).on('value', snap => {
     const logs = [];
-    snap.forEach(c => { logs.unshift(c.val()); }); // Mais recentes primeiro
+    snap.forEach(c => { logs.unshift(c.val()); }); 
     globalLogs = logs;
     if(S.role === 'admin' && document.getElementById('ab-logs').classList.contains('on')) {
         renderLogs();
@@ -433,7 +440,6 @@ const fR=v=>'R$ '+(parseFloat(v)||0).toLocaleString('pt-BR',{minimumFractionDigi
 const fP=v=>((parseFloat(v)||0)*100).toFixed(1)+'%';
 const sumC=(a,k)=>a.reduce((s,r)=>s+(r[k]||0),0);
 
-// ▼ TABELA DE COMISSÕES ▼
 function calcPerc(p){
   if(p >= 61000) return 0.10; 
   if(p >= 51000) return 0.07; 
@@ -459,9 +465,6 @@ function r2(v){return Math.round(v*100)/100}
 // ════════════════════════════════
 //  LOGIN / LOGOUT & AUDITORIA
 // ════════════════════════════════
-let selRole_='viewer';
-function selR(r,el){selRole_=r;document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));el.classList.add('on')}
-
 async function logAccess(username) {
   let loc = "Desconhecida";
   try {
@@ -492,30 +495,42 @@ async function logAccess(username) {
 }
 
 function doLogin(){
-  const u=document.getElementById('lu').value.trim();
-  const p=document.getElementById('lp').value;
-  const f=globalUsers.find(x=>x.user===u&&x.pass===p&&x.role===selRole_);
-  if(f){
-    S.user=f.user;S.role=f.role;
-    document.getElementById('ls').style.display='none';
-    document.getElementById('app').style.display='block';
-    
-    // Grava log de acesso silenciosamente
-    logAccess(S.user).catch(()=>console.log('Sem tracking de ip'));
-    
-    initApp();
-  }else{
-    const e=document.getElementById('lerr');e.style.display='block';
-    setTimeout(()=>e.style.display='none',3000);
-  }
+  // Força para minúsculas e ignora espaços extras
+  const u = document.getElementById('lu').value.trim().toLowerCase();
+  const p = document.getElementById('lp').value;
+  
+  // Como as senhas estão apenas no DB da nuvem, validamos por lá
+  db.ref('laborbi/users').once('value').then(snap => {
+      const users = snap.val() || [];
+      const f = users.find(x => x.user === u && x.pass === p);
+      
+      if(f){
+        S.user = f.user;
+        S.role = f.role;
+        sessionStorage.setItem('loggedUser', JSON.stringify(f)); // Salva a sessão
+        
+        document.getElementById('ls').style.display='none';
+        document.getElementById('app').style.display='block';
+        
+        logAccess(S.user).catch(()=>console.log('Sem tracking de ip'));
+        initApp();
+      } else {
+        const e=document.getElementById('lerr');
+        e.style.display='block';
+        setTimeout(()=>e.style.display='none',3000);
+      }
+  });
 }
 
 function doLogout(){
-  S.user=null;S.role=null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('ls').style.display='flex';
-  document.getElementById('lu').value='';document.getElementById('lp').value='';
-  document.getElementById('last-upd').style.display='none';
+  sessionStorage.removeItem('loggedUser');
+  S.user = null;
+  S.role = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('ls').style.display = 'flex';
+  document.getElementById('lu').value = '';
+  document.getElementById('lp').value = '';
+  document.getElementById('last-upd').style.display = 'none';
   killAll();
 }
 
@@ -692,7 +707,6 @@ function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 function getAdjustedBase() {
   let r = S.base || [];
   
-  // 1. Agrupar produção real mensal
   const mProd = {};
   r.forEach(x => {
     const val = x.rawProd !== undefined ? x.rawProd : x.prod;
@@ -700,7 +714,6 @@ function getAdjustedBase() {
     mProd[key] = (mProd[key] || 0) + val;
   });
   
-  // 2. Somar deduções (apenas larissa.iozzi e vitor.tridapalli)
   const cDed = {};
   if (S.anal && S.anal['C_CIRURGICO']) {
     S.anal['C_CIRURGICO'].forEach(a => {
@@ -711,7 +724,6 @@ function getAdjustedBase() {
     });
   }
   
-  // 3. Mapear as linhas ajustando os valores
   return r.map(x => {
      const val = x.rawProd !== undefined ? x.rawProd : x.prod;
      const key = x.vet + '|' + x.mes;
@@ -979,7 +991,9 @@ function parseBase(wb,fname){
   
   if(hi<0){setFst('base','Cabeçalho "Veterinarios" não encontrado.',false);return}
 
-  const rows=[];
+  const tempRows=[];
+  const mProd={};
+
   for(let i=hi+1;i<rawN.length;i++){
     const r=rawN[i];
     if(!r||!r[col.vet])continue;
@@ -1010,7 +1024,6 @@ function parseBase(wb,fname){
 
     const mes=getMes(ds);
 
-    // Salva o rawProd puro. O fBase() aplica a comissão depois
     rows.push({
       vet, prod, rawProd: prod, valVar: 0, valFixo: vFixo, valTotal: 0,
       sem, data: ds, mes, horas: hN + hNt, hNorm: hN, hNot: hNt, perc: 0
@@ -1099,10 +1112,13 @@ function renderUsers(){
 }
 function addUser(){
   if(S.role !== 'admin') return;
-  const u=document.getElementById('nu').value.trim();
+  // Transforma tudo em minúscula para evitar erros bobos de login
+  const u=document.getElementById('nu').value.trim().toLowerCase();
   const p=document.getElementById('np').value.trim();
   const r=document.getElementById('nrole').value;
+  
   if(!u||!p){toast('Preencha usuário e senha.','err');return}
+  if(!u.includes('.')){toast('O usuário deve conter um PONTO (ex: nome.sobrenome)', 'err'); return;}
   if(globalUsers.find(x=>x.user===u)){toast('Usuário já existe.','err');return}
   
   globalUsers.push({user:u,pass:p,role:r});
