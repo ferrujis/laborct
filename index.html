@@ -12,7 +12,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <style>
-:root{--bg:#0b0b11;--sf:#13131d;--sf2:#1b1b28;--bd:#252535;--ac:#00e5ff;--ac2:#7c3aed;--ac3:#22c55e;--wn:#f59e0b;--dn:#ef4444;--tx:#e8e8f2;--mu:#64748b}
+:root{--bg:#0b0b11;--sf:#13131d;--sf2:#1b1b28;--bd:#252535;--ac:#00e5ff;--ac2:#7c3aed;--ac3:#22c55e;--wn:#f59e0b;--dn:#ef4444;--pk:#ec4899;--tx:#e8e8f2;--mu:#64748b}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
 
@@ -52,7 +52,7 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .nb.on{color:var(--ac);background:rgba(0,229,255,.09)}
 .nb.cogs.on{color:var(--ac2);background:rgba(124,58,237,.09)}
 .tbr{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
-.brl{padding:3px 9px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:uppercase}
+.brl{padding:3px 9px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:none}
 .brl.adm{background:rgba(0,229,255,.1);color:var(--ac);border-color:rgba(0,229,255,.25)}
 .lgbtn{padding:5px 11px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
 .lgbtn:hover{border-color:var(--dn);color:var(--dn)}
@@ -111,6 +111,18 @@ select:focus{border-color:var(--ac)}
 .br{background:rgba(239,68,68,.12);color:var(--dn)}
 .bc{background:rgba(0,229,255,.1);color:var(--ac)}
 
+/* ── INSIGHTS AI MODULE ── */
+@keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+.ai-box { background: var(--sf); border: 1px solid var(--bd); border-radius: 12px; padding: 24px; position: relative; overflow: hidden; margin-bottom: 20px;}
+.ai-box::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--pk), var(--ac)); }
+.ai-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.ai-icon { font-size: 24px; }
+.ai-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--tx); }
+.ai-block { margin-bottom: 24px; background: var(--bg); padding: 18px; border-radius: 8px; border: 1px solid var(--bd); }
+.ai-block h4 { font-family: 'Syne', sans-serif; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.ai-block p { font-size: 13px; color: var(--mu); line-height: 1.6; margin-bottom: 8px; }
+.ai-block strong { color: var(--tx); font-weight: 600; }
+
 /* ── ADMIN LAYOUT ── */
 .admin-layout{display:flex;gap:20px;align-items:flex-start}
 .admin-sidebar{width:220px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
@@ -120,8 +132,6 @@ select:focus{border-color:var(--ac)}
 .admin-content{flex:1;min-width:0}
 .ab-sec{display:none;animation:fi .25s ease}
 .ab-sec.on{display:block}
-
-/* ADMIN COMPONENTS */
 .ibox{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:11px;color:var(--ac);line-height:1.7}
 .ugrid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:16px}
 .uzn{border:2px dashed var(--bd);border-radius:12px;padding:28px 18px;text-align:center;cursor:pointer;transition:all .2s;background:var(--sf)}
@@ -153,25 +163,17 @@ select:focus{border-color:var(--ac)}
 .dbtn:hover{border-color:var(--dn);color:var(--dn)}
 .ebtn{padding:3px 8px;background:transparent;border:1px solid transparent;border-radius:5px;color:var(--ac);font-size:10px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
 .ebtn:hover{border-color:var(--ac)}
-
-/* LOGS TABLE */
 .log-table{width:100%;border-collapse:collapse;font-size:11px}
 .log-table th{background:var(--sf2);padding:10px;text-align:left;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:10px;border-bottom:1px solid var(--bd)}
 .log-table td{padding:10px;border-bottom:1px solid var(--bd);color:var(--tx)}
 .log-table tr:hover td{background:rgba(255,255,255,.015)}
-
-/* ── NO DATA ── */
 .nd{padding:40px;text-align:center;color:var(--mu);font-size:12px}
 .nd-i{font-size:28px;margin-bottom:8px}
-
-/* ── TOAST ── */
 .toast{position:fixed;bottom:18px;right:18px;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:11px 16px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s ease;z-index:9999;max-width:300px}
 .toast.show{transform:none;opacity:1}
 .toast.ok{border-color:var(--ac3);color:var(--ac3)}
 .toast.err{border-color:var(--dn);color:var(--dn)}
 .toast.inf{border-color:var(--ac);color:var(--ac)}
-
-/* ── TWO-COL ── */
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 
 @media(max-width:900px){
@@ -207,7 +209,7 @@ select:focus{border-color:var(--ac)}
   <!-- ██ HUB CENTRAL ██ -->
   <div id="hub-view">
     <div class="hub-header">
-      <span class="brl" id="brl-hub">VIEWER</span>
+      <span class="brl" id="brl-hub"></span>
       <button class="lgbtn" onclick="doLogout()">sair</button>
     </div>
     <div class="hub-container">
@@ -221,7 +223,13 @@ select:focus{border-color:var(--ac)}
         <div class="hub-title">Cogs<span>BI</span></div>
         <div class="hub-desc">Gestão de Custos, Lucro Bruto e Inteligência Financeira.</div>
       </div>
-      <!-- CARD ADMIN (Aparece apenas para Administradores) -->
+      <!-- CARD INSIGHTS -->
+      <div class="hub-card" style="--clr: var(--pk);" onclick="openInsights()">
+        <div class="hub-icon">🧠</div>
+        <div class="hub-title">Insights<span>AI</span></div>
+        <div class="hub-desc">Análise profunda focada no mês em vigor e planos de ação.</div>
+      </div>
+      <!-- CARD ADMIN -->
       <div class="hub-card" id="card-admin" style="--clr: var(--wn); display: none;" onclick="openAdmin()">
         <div class="hub-icon">⚙️</div>
         <div class="hub-title">Admin<span>Center</span></div>
@@ -238,6 +246,7 @@ select:focus{border-color:var(--ac)}
       <div class="tnav" id="tnav-labor"></div>
       <div class="tbr">
         <span class="last-upd" id="last-upd-labor"></span>
+        <span class="brl" id="brl-labor"></span>
         <button class="lgbtn" onclick="doLogout()">sair</button>
       </div>
     </div>
@@ -342,6 +351,7 @@ select:focus{border-color:var(--ac)}
       </div>
       <div class="tbr">
         <span class="last-upd" id="last-upd-cogs"></span>
+        <span class="brl" id="brl-cogs"></span>
         <button class="lgbtn" onclick="doLogout()">sair</button>
       </div>
     </div>
@@ -366,6 +376,34 @@ select:focus{border-color:var(--ac)}
     </div>
   </div>
 
+  <!-- ██ MÓDULO: INSIGHTS AI ██ -->
+  <div id="insights-view" style="display:none;">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Início</button>
+      <div class="tbl" style="color:var(--pk)">Insights<span style="color:var(--tx)">AI</span></div>
+      <div class="tnav"></div>
+      <div class="tbr">
+        <span class="brl" id="brl-insights"></span>
+        <button class="lgbtn" onclick="doLogout()">sair</button>
+      </div>
+    </div>
+
+    <div class="pg on">
+      <div class="ptitle" style="color:var(--tx)">Análise <span style="color:var(--pk)">Executiva</span></div>
+      <div class="psub">Motor Analítico processando dados financeiros e operacionais.</div>
+      
+      <div class="ai-box">
+        <div class="ai-header">
+          <div class="ai-icon">🧠</div>
+          <div class="ai-title">Diagnóstico Gerencial</div>
+        </div>
+        <div id="ai-content">
+           <div class="nd">Aguardando dados...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ██ MÓDULO: ADMIN CENTER ██ -->
   <div id="admin-view" style="display:none;">
     <div class="tb">
@@ -373,6 +411,7 @@ select:focus{border-color:var(--ac)}
       <div class="tbl" style="color:var(--wn)">Admin<span>Center</span></div>
       <div class="tnav"></div>
       <div class="tbr">
+        <span class="brl" id="brl-admin"></span>
         <button class="lgbtn" onclick="doLogout()">sair</button>
       </div>
     </div>
@@ -503,13 +542,14 @@ let globalUsers = [];
 let globalLogs = [];
 
 window.onload = () => {
-    const savedUser = sessionStorage.getItem('loggedUser');
+    const savedUser = localStorage.getItem('loggedUser');
     if(savedUser) {
         const parsed = JSON.parse(savedUser);
         S.user = parsed.user;
         S.role = parsed.role;
         document.getElementById('ls').style.display = 'none';
         document.getElementById('app').style.display = 'block';
+        updateTopBar();
         showHub();
     }
 };
@@ -589,25 +629,28 @@ db.ref('laborbi').on('value', (snap) => {
 });
 
 // ════════════════════════════════
-//  ROUTING (HUB & MÓDULOS)
+//  ROUTING E ATUALIZAÇÃO DO USUÁRIO
 // ════════════════════════════════
-function showHub() {
-  document.getElementById('brl-hub').textContent = S.role.toUpperCase();
-  document.getElementById('brl-hub').className = 'brl' + (S.role === 'admin' ? ' adm' : '');
-  
-  // Mostra o card de admin apenas se for admin
-  document.getElementById('card-admin').style.display = (S.role === 'admin') ? 'block' : 'none';
+function updateTopBar() {
+  if(!S.user) return;
+  const badgeClass = 'brl' + (S.role === 'admin' ? ' adm' : '');
+  ['brl-hub', 'brl-labor', 'brl-cogs', 'brl-admin', 'brl-insights'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) { el.textContent = S.user; el.className = badgeClass; }
+  });
+}
 
+function showHub() {
+  document.getElementById('card-admin').style.display = (S.role === 'admin') ? 'block' : 'none';
   document.getElementById('hub-view').style.display = 'block';
   document.getElementById('labor-view').style.display = 'none';
   document.getElementById('cogs-view').style.display = 'none';
   document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('insights-view').style.display = 'none';
   killAll();
 }
 
-function goHub() {
-  showHub();
-}
+function goHub() { showHub(); }
 
 function openLabor() {
   document.getElementById('hub-view').style.display = 'none';
@@ -620,6 +663,12 @@ function openCogs() {
   document.getElementById('cogs-view').style.display = 'block';
   populateAllFilters();
   renderCogs();
+}
+
+function openInsights() {
+  document.getElementById('hub-view').style.display = 'none';
+  document.getElementById('insights-view').style.display = 'block';
+  generateInsights();
 }
 
 function openAdmin() {
@@ -647,17 +696,12 @@ function calcPerc(p){
 }
 
 const MESES=['','janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-
 function getMes(ds){
   if(!ds) return '';
   const p = ds.split('-');
-  if(p.length >= 2){
-    const m = parseInt(p[1], 10);
-    return MESES[m] || '';
-  }
+  if(p.length >= 2) return MESES[parseInt(p[1], 10)] || '';
   return '';
 }
-
 function r2(v){return Math.round(v*100)/100}
 
 // ════════════════════════════════
@@ -682,14 +726,7 @@ async function logAccess(username) {
   else if (/linux/i.test(ua)) device = "Linux";
 
   const now = new Date().toLocaleString('pt-BR');
-
-  db.ref('laborbi/logs').push({
-    user: username,
-    time: now,
-    device: device,
-    location: loc,
-    timestamp: Date.now()
-  });
+  db.ref('laborbi/logs').push({ user: username, time: now, device: device, location: loc, timestamp: Date.now() });
 }
 
 function doLogin(){
@@ -700,17 +737,15 @@ function doLogin(){
       let users = snap.val() || [];
       if(!Array.isArray(users)) users = Object.values(users);
       users = users.filter(x => x && x.user);
-
       const f = users.find(x => x.user === u && x.pass === p);
       
       if(f){
         S.user = f.user;
         S.role = f.role;
-        sessionStorage.setItem('loggedUser', JSON.stringify(f)); 
-        
+        localStorage.setItem('loggedUser', JSON.stringify(f)); 
         document.getElementById('ls').style.display='none';
         document.getElementById('app').style.display='block';
-        
+        updateTopBar();
         logAccess(S.user).catch(()=>console.log('Sem tracking de ip'));
         showHub();
       } else {
@@ -722,13 +757,15 @@ function doLogin(){
 }
 
 function doLogout(){
-  sessionStorage.removeItem('loggedUser');
+  localStorage.removeItem('loggedUser');
   S.user = null;
   S.role = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('ls').style.display = 'flex';
   document.getElementById('lu').value = '';
   document.getElementById('lp').value = '';
+  document.getElementById('last-upd-labor').style.display = 'none';
+  document.getElementById('last-upd-cogs').style.display = 'none';
   killAll();
 }
 
@@ -751,7 +788,6 @@ function initLaborApp(){
 
   document.querySelectorAll('#labor-view .pg').forEach(p=>p.classList.remove('on'));
   document.getElementById('pg-petcare').classList.add('on');
-  
   populateAllFilters();
   renderPetcare();
 }
@@ -873,7 +909,6 @@ function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 // ════════════════════════════════
 function getAdjustedBase() {
   let r = S.base || [];
-  
   const mProd = {};
   r.forEach(x => {
     const val = x.rawProd !== undefined ? x.rawProd : x.prod;
@@ -1090,17 +1125,32 @@ function renderLab(){ renderAnalPage({sheet:'LAB',mesId:'lb-mes',vetId:'lb-vet',
 // ════════════════════════════════
 function renderCogs(){
   const mes = document.getElementById('cg-mes')?.value || '';
-  let baseRows = getAdjustedBase();
   let cogsRows = S.cogs || [];
   
   if(mes) {
-      baseRows = baseRows.filter(x => x.mes === mes);
       cogsRows = cogsRows.filter(x => x.mes === mes);
   }
 
-  const fatBruto = sumC(baseRows, 'rawProd');
-  const custoVet = sumC(baseRows, 'valTotal'); 
-  const custoOp = sumC(cogsRows, 'val');
+  let fatBruto = 0;
+  let custoVet = 0; 
+  let custoOp = 0;
+
+  cogsRows.forEach(r => {
+      const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if(catNorm.includes('faturamento') || catNorm.includes('receita')) {
+          fatBruto += r.val;
+      } else if(catNorm.includes('vet') || catNorm.includes('clt') || catNorm.includes('equipe') || catNorm.includes('medico') || catNorm.includes('comissao')) {
+          custoVet += r.val;
+      } else {
+          custoOp += r.val;
+      }
+  });
+
+  if (fatBruto === 0) {
+      let baseRows = getAdjustedBase();
+      if(mes) baseRows = baseRows.filter(x => x.mes === mes);
+      fatBruto = sumC(baseRows, 'rawProd');
+  }
 
   const custoTotal = custoVet + custoOp;
   const lucroBruto = fatBruto - custoTotal;
@@ -1108,7 +1158,7 @@ function renderCogs(){
 
   document.getElementById('cg-kpi').innerHTML = [
     kpiCard('Faturamento Total', fR(fatBruto), 'produção bruta global', '#00e5ff'),
-    kpiCard('Custo de Equipe', fR(custoVet), 'repasse veterinários', '#f59e0b'),
+    kpiCard('Custo de Equipe', fR(custoVet), 'comissões + clt + externos', '#f59e0b'),
     kpiCard('Custos Operacionais', fR(custoOp), 'labs, insumos, gases', '#ef4444'),
     kpiCard('Lucro Bruto', fR(lucroBruto), 'fat. menos custos diretos', lucroBruto >= 0 ? '#22c55e' : '#ef4444'),
     kpiCard('Margem Bruta', fP(margem), 'lucro / faturamento', lucroBruto >= 0 ? '#22c55e' : '#ef4444'),
@@ -1120,6 +1170,9 @@ function renderCogs(){
 
   const opByForn = {};
   cogsRows.forEach(r => {
+      const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if(catNorm.includes('faturamento') || catNorm.includes('receita')) return;
+      
       const k = r.forn || r.cat || 'Outros';
       opByForn[k] = (opByForn[k]||0) + r.val;
   });
@@ -1141,6 +1194,161 @@ function renderCogs(){
   } else {
       document.getElementById('cg-table').innerHTML = '<div class="nd"><div class="nd-i">📊</div>Nenhum custo operacional lançado para este período.</div>';
   }
+}
+
+// ════════════════════════════════
+//  PAGE: INSIGHTS AI (MOTOR HEURÍSTICO)
+// ════════════════════════════════
+function generateInsights() {
+  const content = document.getElementById('ai-content');
+  
+  if(!S.base || !S.base.length) {
+      content.innerHTML = '<div class="nd"><div class="nd-i">❌</div>Sem dados para analisar. Carregue as planilhas primeiro no Admin Center.</div>';
+      return;
+  }
+
+  content.innerHTML = `
+    <div style="text-align:center; padding: 40px;">
+        <div style="font-size:42px; margin-bottom:16px; animation: pulse 1.5s infinite;">🧠</div>
+        <div style="color:var(--pk); font-family:'Syne'; font-weight:700; font-size:16px;">Processando Análise Profunda...</div>
+        <div style="font-size:11px; color:var(--mu); margin-top:8px;">Filtrando dados do período mais recente...</div>
+    </div>
+  `;
+
+  setTimeout(() => {
+      let baseRowsAll = getAdjustedBase();
+      let cogsRowsAll = S.cogs || [];
+
+      // Identifica Mês Atual via Javascript
+      const hoje = new Date();
+      const mesAtualIdx = hoje.getMonth() + 1;
+      const mesAtualNome = MESES[mesAtualIdx];
+      const mesAntIdx = mesAtualIdx === 1 ? 12 : mesAtualIdx - 1;
+      const mesAntNome = MESES[mesAntIdx];
+
+      let baseRows = baseRowsAll.filter(x => x.mes === mesAtualNome);
+      let cogsRows = cogsRowsAll.filter(x => x.mes === mesAtualNome);
+      let targetMes = mesAtualNome;
+
+      // Se não houver nada no mês atual, tenta o mês anterior
+      if(baseRows.length === 0 && cogsRows.length === 0) {
+          baseRows = baseRowsAll.filter(x => x.mes === mesAntNome);
+          cogsRows = cogsRowsAll.filter(x => x.mes === mesAntNome);
+          targetMes = mesAntNome;
+      }
+
+      // Se ainda for zero, pega o último mês que existe nos dados do Firebase
+      if(baseRows.length === 0 && cogsRows.length === 0) {
+          const todosMeses = [...new Set([...baseRowsAll.map(x=>x.mes), ...cogsRowsAll.map(x=>x.mes)])].filter(Boolean);
+          if(todosMeses.length > 0) {
+              targetMes = todosMeses[todosMeses.length - 1]; 
+              baseRows = baseRowsAll.filter(x => x.mes === targetMes);
+              cogsRows = cogsRowsAll.filter(x => x.mes === targetMes);
+          } else {
+              content.innerHTML = '<div class="nd"><div class="nd-i">❌</div>Não há dados suficientes para gerar insights.</div>';
+              return;
+          }
+      }
+
+      // 1. DRE Básico
+      let fatBruto = 0;
+      let custoVet = 0;
+      let custoOpTotal = 0;
+
+      cogsRows.forEach(r => {
+          const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          if(catNorm.includes('faturamento') || catNorm.includes('receita')) {
+              fatBruto += r.val;
+          } else if(catNorm.includes('vet') || catNorm.includes('clt') || catNorm.includes('equipe') || catNorm.includes('medico') || catNorm.includes('comissao')) {
+              custoVet += r.val;
+          } else {
+              custoOpTotal += r.val;
+          }
+      });
+
+      if (fatBruto === 0) fatBruto = sumC(baseRows, 'rawProd');
+      if (custoVet === 0) custoVet = sumC(baseRows, 'valTotal');
+
+      const lucro = fatBruto - custoVet - custoOpTotal;
+      const margem = fatBruto > 0 ? (lucro / fatBruto) : 0;
+      const margemOp = fatBruto > 0 ? (custoOpTotal / fatBruto) : 0;
+      const margemVet = fatBruto > 0 ? (custoVet / fatBruto) : 0;
+
+      // 2. Análise de Vets
+      const mProd = {};
+      baseRows.forEach(x => { mProd[x.vet] = (mProd[x.vet] || 0) + (x.rawProd !== undefined ? x.rawProd : x.prod); });
+      const vetsSorted = Object.entries(mProd).sort((a,b)=>b[1]-a[1]);
+      const topVet = vetsSorted[0] || ['Nenhum', 0];
+      const vetDependence = fatBruto > 0 ? (topVet[1] / fatBruto) * 100 : 0;
+
+      // 3. Análise Setorial
+      const analSoma = { 'Clínica':0, 'Internação':0, 'Cirúrgico':0, 'Laboratório Interno':0 };
+      if(S.anal) {
+          analSoma['Clínica'] = sumC((S.anal['CLINICA']||[]).filter(x=>x.mes===targetMes), 'valL');
+          analSoma['Internação'] = sumC((S.anal['INTER']||[]).filter(x=>x.mes===targetMes), 'valL');
+          analSoma['Cirúrgico'] = sumC((S.anal['C_CIRURGICO']||[]).filter(x=>x.mes===targetMes), 'valL');
+          analSoma['Laboratório Interno'] = sumC((S.anal['LAB']||[]).filter(x=>x.mes===targetMes), 'valL');
+      }
+      const topSetor = Object.entries(analSoma).sort((a,b)=>b[1]-a[1])[0] || ['Nenhum', 0];
+
+      // 4. Análise de Custos Operacionais
+      const opByForn = {};
+      cogsRows.forEach(r => {
+          const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          if(!(catNorm.includes('faturamento') || catNorm.includes('receita') || catNorm.includes('vet') || catNorm.includes('clt') || catNorm.includes('equipe') || catNorm.includes('medico') || catNorm.includes('comissao'))) {
+              opByForn[r.forn || r.cat] = (opByForn[r.forn || r.cat]||0) + r.val;
+          }
+      });
+      const topCusto = Object.entries(opByForn).sort((a,b)=>b[1]-a[1])[0] || ['Nenhum Custo Extra', 0];
+
+      // 5. Geração das Conclusões
+      let saudeFinanceira = "";
+      let saudeCor = "";
+      if(margem >= 0.20) { saudeFinanceira = "Excelente (Crescimento Saudável)"; saudeCor = "var(--ac3)"; }
+      else if(margem >= 0.10) { saudeFinanceira = "Estável (Atenção na Margem)"; saudeCor = "var(--wn)"; }
+      else { saudeFinanceira = "Alerta Crítico (Margem Baixa/Prejuízo)"; saudeCor = "var(--dn)"; }
+
+      let diagOp = margemOp > 0.35 ? `⚠️ O Custo Operacional está consumindo ${(margemOp*100).toFixed(1)}% do faturamento. É urgente revisar contratos ou volume de uso com <strong>${topCusto[0]}</strong>.` : `✅ Custos Operacionais altamente controlados (${(margemOp*100).toFixed(1)}% da receita).`;
+      let diagVet = margemVet > 0.50 ? `⚠️ O Custo com Equipe Médica atingiu ${(margemVet*100).toFixed(1)}%. Avalie a escala de plantões e a relação CLT vs Comissionados.` : `✅ Repasse médico financeiramente saudável (${(margemVet*100).toFixed(1)}% da receita).`;
+      let diagDep = vetDependence > 40 ? `⚠️ Alto risco de dependência: <strong>${topVet[0]}</strong> representa ${vetDependence.toFixed(1)}% de todo o faturamento da clínica.` : `✅ Receita de serviços médicos está bem distribuída entre a equipe.`;
+
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid var(--bd); padding-bottom:16px; margin-bottom:24px;">
+            <div>
+                <div style="font-size:10px; color:var(--mu); text-transform:uppercase; letter-spacing:1px;">Diagnóstico Gerencial — Focado em ${cap(targetMes)}</div>
+                <div style="font-size:20px; font-family:'Syne'; font-weight:800; color:${saudeCor};">${saudeFinanceira}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:10px; color:var(--mu); text-transform:uppercase; letter-spacing:1px;">Margem Líquida DRE (${cap(targetMes)})</div>
+                <div style="font-size:28px; font-family:'DM Mono'; font-weight:400; color:var(--tx);">${(margem*100).toFixed(2)}%</div>
+            </div>
+        </div>
+
+        <div class="twocol">
+            <div class="ai-block" style="margin-bottom:0;">
+              <h4 style="color:var(--ac3)">📊 Operação e Clínicas</h4>
+              <p>${diagOp}</p>
+              <p>${diagVet}</p>
+              <p>O setor de <strong>${topSetor[0]}</strong> é a sua principal âncora atual de receita médica operacional (${fR(topSetor[1])}).</p>
+            </div>
+            <div class="ai-block" style="margin-bottom:0;">
+              <h4 style="color:var(--wn)">👥 Comportamento da Equipe</h4>
+              <p><strong>Top Producer:</strong> ${topVet[0]} gerou a maior produção bruta do período (${fR(topVet[1])}).</p>
+              <p>${diagDep}</p>
+              <p><strong>Custo Insumo Líder:</strong> O parceiro/item <strong>${topCusto[0]}</strong> drenou ${fR(topCusto[1])} do seu caixa líquido.</p>
+            </div>
+        </div>
+
+        <div class="ai-block" style="margin-top:16px; border-color:var(--pk); background:rgba(236, 72, 153, 0.03);">
+          <h4 style="color:var(--pk)"><span style="font-size:16px">🎯</span> Plano de Ação Estratégico (${cap(targetMes)})</h4>
+          <ul style="padding-left:18px; font-size:13px; color:var(--tx); line-height:1.8; margin-top:8px;">
+            <li style="margin-bottom:8px;"><strong>Otimização de Fornecedores:</strong> Marque uma reunião com o representante de <strong>${topCusto[0]}</strong> para negociar uma tabela de preços ou bônus por volume. Eles representam seu maior vazamento financeiro atual.</li>
+            <li style="margin-bottom:8px;"><strong>Expansão de Receita:</strong> O setor de <strong>${topSetor[0]}</strong> tem excelente tração com os clientes. Treine a recepção para oferecer serviços associados a este setor logo na entrada.</li>
+            <li><strong>Gestão de Risco Médico:</strong> ${vetDependence > 30 ? 'Reduza o risco de dependência do profissional líder ('+topVet[0]+') criando campanhas para atrair clientes para os veterinários com horários ociosos.' : 'Sua equipe está equilibrada. Foque em premiar e manter os veterinários no topo do ranking para não perder talentos.'}</li>
+          </ul>
+        </div>
+      `;
+  }, 1800);
 }
 
 // ════════════════════════════════
@@ -1205,8 +1413,6 @@ function parseBase(wb,fname){
   if(hi<0){setFst('base','Cabeçalho "Veterinarios" não encontrado.',false);return}
 
   const tempRows=[];
-  const mProd={};
-
   for(let i=hi+1;i<rawN.length;i++){
     const r=rawN[i];
     if(!r||!r[col.vet])continue;
