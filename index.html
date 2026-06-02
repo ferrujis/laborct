@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LaborBI — Dashboard</title>
+<title>Ecossistema BI — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -22,9 +22,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .ll{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--ac);letter-spacing:-1px;margin-bottom:4px}
 .ll span{color:var(--tx);font-weight:400}
 .ls{color:var(--mu);font-size:12px;margin-bottom:30px}
-.rtabs{display:flex;gap:8px;margin-bottom:26px}
-.rtab{flex:1;padding:9px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;text-align:center;transition:all .2s}
-.rtab.on{border-color:var(--ac);color:var(--ac);background:rgba(0,229,255,.06)}
 .ll2{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
 .li{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:11px 13px;color:var(--tx);font-family:'DM Mono',monospace;font-size:14px;margin-bottom:16px;outline:none;transition:border-color .2s}
 .li:focus{border-color:var(--ac)}
@@ -32,21 +29,36 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 .lbtn:hover{opacity:.9;transform:translateY(-1px)}
 .lerr{color:var(--dn);font-size:12px;margin-top:10px;background:rgba(239,68,68,.1);border-radius:6px;padding:8px 12px;display:none}
 
-/* ── SHELL ── */
-#app{display:none;min-height:100vh}
+/* ── HUB (SELEÇÃO DE MÓDULOS) ── */
+#hub-view { min-height: 100vh; background: var(--bg); display: none; position: relative; }
+.hub-header { padding: 22px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; border-bottom: 1px solid var(--bd); background: var(--sf); }
+.hub-container { display: flex; gap: 24px; justify-content: center; align-items: center; min-height: calc(100vh - 80px); flex-wrap: wrap; padding: 20px;}
+.hub-card { background: var(--sf); border: 1px solid var(--bd); border-radius: 16px; padding: 40px; width: 340px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.hub-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background: var(--clr); opacity: 0.8;}
+.hub-card:hover { border-color: var(--clr); transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+.hub-icon { font-size: 54px; margin-bottom: 18px; }
+.hub-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--clr); margin-bottom: 8px; letter-spacing: -0.5px;}
+.hub-title span { color: var(--tx); font-weight: 400;}
+.hub-desc { font-size: 13px; color: var(--mu); line-height: 1.6;}
+
+/* ── SHELL GERAL ── */
 .tb{height:54px;background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
 .tbl{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--ac);letter-spacing:-.5px;flex-shrink:0}
 .tbl span{color:var(--tx);font-weight:400}
+.tbl.cogs{color:var(--ac2)}
 .tnav{display:flex;gap:2px;flex:1;overflow-x:auto}
 .nb{padding:6px 13px;border-radius:6px;border:none;background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .nb:hover{color:var(--tx);background:var(--sf2)}
 .nb.on{color:var(--ac);background:rgba(0,229,255,.09)}
+.nb.cogs.on{color:var(--ac2);background:rgba(124,58,237,.09)}
 .tbr{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0}
 .brl{padding:3px 9px;border-radius:100px;font-size:10px;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);letter-spacing:1px;text-transform:uppercase}
 .brl.adm{background:rgba(0,229,255,.1);color:var(--ac);border-color:rgba(0,229,255,.25)}
 .lgbtn{padding:5px 11px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s}
 .lgbtn:hover{border-color:var(--dn);color:var(--dn)}
 .last-upd{font-size:10px;color:var(--ac);background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);padding:4px 9px;border-radius:6px;display:none}
+.btn-back { border-color:var(--bd); color:var(--tx); margin-right: 8px; }
+.btn-back:hover { border-color: var(--tx); color: #fff; }
 
 /* ── PAGES ── */
 .pg{display:none;padding:22px;animation:fi .25s ease}
@@ -54,6 +66,7 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Mono',monospace;min-he
 @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ptitle{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:3px}
 .ptitle span{color:var(--ac)}
+.ptitle.cogs span{color:var(--ac2)}
 .psub{color:var(--mu);font-size:11px;margin-bottom:20px}
 
 /* ── KPI ── */
@@ -110,7 +123,7 @@ select:focus{border-color:var(--ac)}
 
 /* ADMIN COMPONENTS */
 .ibox{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:11px;color:var(--ac);line-height:1.7}
-.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:16px}
 .uzn{border:2px dashed var(--bd);border-radius:12px;padding:28px 18px;text-align:center;cursor:pointer;transition:all .2s;background:var(--sf)}
 .uzn:hover,.uzn.drag{border-color:var(--ac);background:rgba(0,229,255,.04)}
 .ui{font-size:28px;margin-bottom:6px}
@@ -176,8 +189,8 @@ select:focus{border-color:var(--ac)}
 <!-- LOGIN -->
 <div id="ls">
   <div class="lb">
-    <div class="ll">Labor<span>BI</span></div>
-    <div class="ls">Dashboard de gestão · Petcare Balneário</div>
+    <div class="ll">Petcare<span>BI</span></div>
+    <div class="ls">Ecossistema de Inteligência de Negócios</div>
     
     <div class="ll2">Usuário Corporativo</div>
     <input type="text" class="li" id="lu" placeholder="nome.sobrenome" autocomplete="off">
@@ -188,196 +201,272 @@ select:focus{border-color:var(--ac)}
   </div>
 </div>
 
-<!-- APP -->
+<!-- APP WRAPPER -->
 <div id="app">
-  <div class="tb">
-    <div class="tbl">Labor<span>BI</span></div>
-    <div class="tnav" id="tnav"></div>
-    <div class="tbr">
-      <span class="last-upd" id="last-upd"></span>
-      <span class="brl" id="brl">VIEWER</span>
+  
+  <!-- ██ HUB CENTRAL ██ -->
+  <div id="hub-view">
+    <div class="hub-header">
+      <span class="brl" id="brl-hub">VIEWER</span>
       <button class="lgbtn" onclick="doLogout()">sair</button>
     </div>
-  </div>
-
-  <!-- ██ PETCARE-2026 ██ -->
-  <div class="pg on" id="pg-petcare">
-    <div class="ptitle">Petcare <span>2026</span></div>
-    <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
-    <div class="frow">
-      <span class="flbl">Filtrar:</span>
-      <select id="f-vet" onchange="renderPetcare()"><option value="">Todos os Veterinários</option></select>
-      <select id="f-mes" onchange="renderPetcare()"><option value="">Todos os Meses</option></select>
-      <select id="f-sem" onchange="renderPetcare()"><option value="">Todas as Semanas</option></select>
-    </div>
-    <div class="kgrid" id="pc-kpi"></div>
-    <div class="cgrid cgrid-2">
-      <div class="cc"><div class="ctitle">Valores Fixos + Variáveis + Horas por Semana</div><canvas id="ch-combo" height="200"></canvas></div>
-      <div class="cc"><div class="ctitle">Fixo vs Variável</div><canvas id="ch-donut" height="200"></canvas></div>
-    </div>
-    <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
-  </div>
-
-  <!-- ██ RANKING ██ -->
-  <div class="pg" id="pg-ranking">
-    <div class="ptitle">Ranking <span>Veterinários</span></div>
-    <div class="psub">Produção total — filtro por mês</div>
-    <div class="frow">
-      <span class="flbl">Mês:</span>
-      <select id="r-mes" onchange="renderRanking()"><option value="">Todos os Meses</option></select>
-    </div>
-    <div class="cc" style="margin-bottom:16px"><div class="ctitle">Produção por Veterinário</div><canvas id="ch-rank" height="220"></canvas></div>
-    <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
-  </div>
-
-  <!-- ██ CLINICA MÉDICA ██ -->
-  <div class="pg" id="pg-clinica">
-    <div class="ptitle">Clínica <span>Médica</span></div>
-    <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
-    <div class="frow">
-      <span class="flbl">Mês:</span>
-      <select id="cl-mes" onchange="renderClinica()"><option value="">Todos os Meses</option></select>
-      <select id="cl-vet" onchange="renderClinica()"><option value="">Todos os Veterinários</option></select>
-    </div>
-    <div class="kgrid" id="cl-kpi"></div>
-    <div class="cgrid cgrid-2">
-      <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-cl-bar" height="220"></canvas></div>
-      <div class="tw" style="margin-bottom:0"><div class="th"><span>Por Veterinário</span><span id="cl-tcount"></span></div><div class="tscroll" id="cl-table"></div></div>
-    </div>
-  </div>
-
-  <!-- ██ INTER ██ -->
-  <div class="pg" id="pg-inter">
-    <div class="ptitle">Internação <span>— INTER</span></div>
-    <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
-    <div class="frow">
-      <span class="flbl">Mês:</span>
-      <select id="it-mes" onchange="renderInter()"><option value="">Todos os Meses</option></select>
-      <select id="it-vet" onchange="renderInter()"><option value="">Todos os Veterinários</option></select>
-    </div>
-    <div class="kgrid" id="it-kpi"></div>
-    <div class="twocol">
-      <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-it-bar" height="220"></canvas></div>
-      <div class="tw" style="margin-bottom:0"><div class="th"><span>Top Procedimentos</span><span id="it-tcount"></span></div><div class="tscroll" id="it-table"></div></div>
-    </div>
-  </div>
-
-  <!-- ██ BLOCO CIRÚRGICO ██ -->
-  <div class="pg" id="pg-cirurgico">
-    <div class="ptitle">Bloco <span>Cirúrgico</span></div>
-    <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
-    <div class="frow">
-      <span class="flbl">Mês:</span>
-      <select id="ci-mes" onchange="renderCirurgico()"><option value="">Todos os Meses</option></select>
-      <select id="ci-vet" onchange="renderCirurgico()"><option value="">Todos os Veterinários</option></select>
-    </div>
-    <div class="kgrid" id="ci-kpi"></div>
-    <div class="twocol">
-      <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-ci-bar" height="220"></canvas></div>
-      <div class="tw" style="margin-bottom:0"><div class="th"><span>Top Procedimentos</span><span id="ci-tcount"></span></div><div class="tscroll" id="ci-table"></div></div>
-    </div>
-  </div>
-
-  <!-- ██ LABORATÓRIO ██ -->
-  <div class="pg" id="pg-laboratorio">
-    <div class="ptitle">Laboratório <span>— LAB</span></div>
-    <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
-    <div class="frow">
-      <span class="flbl">Mês:</span>
-      <select id="lb-mes" onchange="renderLab()"><option value="">Todos os Meses</option></select>
-      <select id="lb-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
-    </div>
-    <div class="kgrid" id="lb-kpi"></div>
-    <div class="twocol">
-      <div class="cc"><div class="ctitle">Contagem por Procedimento (Top 10)</div><canvas id="ch-lb-bar" height="220"></canvas></div>
-      <div class="tw" style="margin-bottom:0"><div class="th"><span>Procedimentos</span><span id="lb-tcount"></span></div><div class="tscroll" id="lb-table"></div></div>
-    </div>
-  </div>
-
-  <!-- ██ ADMIN ██ -->
-  <div class="pg" id="pg-admin">
-    <div class="ptitle">Painel <span>Admin</span></div>
-    <div class="psub">Controle central de arquivos, acessos e auditoria.</div>
-    
-    <div class="admin-layout">
-      <!-- SIDEBAR -->
-      <div class="admin-sidebar">
-        <button class="as-btn on" onclick="switchAdmin('ab-base', this)">📂 Alterar Base</button>
-        <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Usuários</button>
-        <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Logs de Acesso</button>
+    <div class="hub-container">
+      <div class="hub-card" style="--clr: var(--ac);" onclick="openLabor()">
+        <div class="hub-icon">🏥</div>
+        <div class="hub-title">Labor<span>BI</span></div>
+        <div class="hub-desc">Gestão de Comissões, Produção Veterinária e Análises Clínicas.</div>
       </div>
-
-      <!-- CONTENT -->
-      <div class="admin-content">
-        
-        <!-- SEC: ALTERAR BASE -->
-        <div id="ab-base" class="ab-sec on">
-          <div class="ibox">
-            ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
-            <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados"<br>
-            <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB
-          </div>
-          <div class="ugrid">
-            <div>
-              <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
-                <div class="ui">📋</div>
-                <div class="ut">Base de Dados</div>
-                <div class="uh">Planilha_sem_título.xlsx</div>
-                <div><span class="utag">BASE DE DADOS</span></div>
-                <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
-              </div>
-              <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
-              <div class="fst" id="fst-base"></div>
-            </div>
-            <div>
-              <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
-                <div class="ui">🔬</div>
-                <div class="ut">Análises Balneário</div>
-                <div class="uh">Analises_Balneario.xlsx</div>
-                <div><span class="utag">INTER · CIRÚRGICO · CLÍNICA · LAB</span></div>
-                <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
-              </div>
-              <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
-              <div class="fst" id="fst-anal"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SEC: USUARIOS -->
-        <div id="ab-users" class="ab-sec">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div class="panel">
-              <div class="ptl">Adicionar Usuário</div>
-              <div class="fg"><label class="fgl">Tipo de Acesso</label>
-                <select id="nrole" style="width:100%;margin-bottom:10px">
-                  <option value="viewer">Visualizador (Viewer)</option>
-                  <option value="admin">Administrador (Admin)</option>
-                </select>
-              </div>
-              <div class="fg"><label class="fgl">Nome de Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
-              <div class="fg"><label class="fgl">Senha Inicial</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
-              <button class="abtn" onclick="addUser()">Adicionar</button>
-            </div>
-            <div class="panel">
-              <div class="ptl">Usuários do Sistema</div>
-              <div id="ulist"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SEC: LOGS -->
-        <div id="ab-logs" class="ab-sec">
-          <div class="panel">
-            <div class="ptl">Auditoria de Acessos Recentes</div>
-            <div style="overflow-x:auto">
-              <div id="log-list"><div class="nd">Carregando logs...</div></div>
-            </div>
-          </div>
-        </div>
-
+      <div class="hub-card" style="--clr: var(--ac2);" onclick="openCogs()">
+        <div class="hub-icon">📊</div>
+        <div class="hub-title">Cogs<span>BI</span></div>
+        <div class="hub-desc">Gestão de Custos, Lucro Bruto e Inteligência Financeira.</div>
+      </div>
+      <!-- CARD ADMIN (Aparece apenas para Administradores) -->
+      <div class="hub-card" id="card-admin" style="--clr: var(--wn); display: none;" onclick="openAdmin()">
+        <div class="hub-icon">⚙️</div>
+        <div class="hub-title">Admin<span>Center</span></div>
+        <div class="hub-desc">Central de uploads, controle de usuários e auditoria de acessos.</div>
       </div>
     </div>
   </div>
+
+  <!-- ██ MÓDULO: LABOR BI ██ -->
+  <div id="labor-view" style="display:none;">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Início</button>
+      <div class="tbl">Labor<span>BI</span></div>
+      <div class="tnav" id="tnav-labor"></div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-labor"></span>
+        <button class="lgbtn" onclick="doLogout()">sair</button>
+      </div>
+    </div>
+
+    <!-- PÁGINAS LABORBI -->
+    <div class="pg on" id="pg-petcare">
+      <div class="ptitle">Petcare <span>2026</span></div>
+      <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
+      <div class="frow">
+        <span class="flbl">Filtrar:</span>
+        <select id="f-vet" onchange="renderPetcare()"><option value="">Todos os Veterinários</option></select>
+        <select id="f-mes" onchange="renderPetcare()"><option value="">Todos os Meses</option></select>
+        <select id="f-sem" onchange="renderPetcare()"><option value="">Todas as Semanas</option></select>
+      </div>
+      <div class="kgrid" id="pc-kpi"></div>
+      <div class="cgrid cgrid-2">
+        <div class="cc"><div class="ctitle">Valores Fixos + Variáveis + Horas por Semana</div><canvas id="ch-combo" height="200"></canvas></div>
+        <div class="cc"><div class="ctitle">Fixo vs Variável</div><canvas id="ch-donut" height="200"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
+    </div>
+
+    <div class="pg" id="pg-ranking">
+      <div class="ptitle">Ranking <span>Veterinários</span></div>
+      <div class="psub">Produção total — filtro por mês</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="r-mes" onchange="renderRanking()"><option value="">Todos os Meses</option></select>
+      </div>
+      <div class="cc" style="margin-bottom:16px"><div class="ctitle">Produção por Veterinário</div><canvas id="ch-rank" height="220"></canvas></div>
+      <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
+    </div>
+
+    <div class="pg" id="pg-clinica">
+      <div class="ptitle">Clínica <span>Médica</span></div>
+      <div class="psub">Procedimentos clínicos — aba CLINICA do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="cl-mes" onchange="renderClinica()"><option value="">Todos os Meses</option></select>
+        <select id="cl-vet" onchange="renderClinica()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="cl-kpi"></div>
+      <div class="cgrid cgrid-2">
+        <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-cl-bar" height="220"></canvas></div>
+        <div class="tw" style="margin-bottom:0"><div class="th"><span>Por Veterinário</span><span id="cl-tcount"></span></div><div class="tscroll" id="cl-table"></div></div>
+      </div>
+    </div>
+
+    <div class="pg" id="pg-inter">
+      <div class="ptitle">Internação <span>— INTER</span></div>
+      <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="it-mes" onchange="renderInter()"><option value="">Todos os Meses</option></select>
+        <select id="it-vet" onchange="renderInter()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="it-kpi"></div>
+      <div class="twocol">
+        <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-it-bar" height="220"></canvas></div>
+        <div class="tw" style="margin-bottom:0"><div class="th"><span>Top Procedimentos</span><span id="it-tcount"></span></div><div class="tscroll" id="it-table"></div></div>
+      </div>
+    </div>
+
+    <div class="pg" id="pg-cirurgico">
+      <div class="ptitle">Bloco <span>Cirúrgico</span></div>
+      <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="ci-mes" onchange="renderCirurgico()"><option value="">Todos os Meses</option></select>
+        <select id="ci-vet" onchange="renderCirurgico()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="ci-kpi"></div>
+      <div class="twocol">
+        <div class="cc"><div class="ctitle">Valor Lançado por Veterinário</div><canvas id="ch-ci-bar" height="220"></canvas></div>
+        <div class="tw" style="margin-bottom:0"><div class="th"><span>Top Procedimentos</span><span id="ci-tcount"></span></div><div class="tscroll" id="ci-table"></div></div>
+      </div>
+    </div>
+
+    <div class="pg" id="pg-laboratorio">
+      <div class="ptitle">Laboratório <span>— LAB</span></div>
+      <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="lb-mes" onchange="renderLab()"><option value="">Todos os Meses</option></select>
+        <select id="lb-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="lb-kpi"></div>
+      <div class="twocol">
+        <div class="cc"><div class="ctitle">Contagem por Procedimento (Top 10)</div><canvas id="ch-lb-bar" height="220"></canvas></div>
+        <div class="tw" style="margin-bottom:0"><div class="th"><span>Procedimentos</span><span id="lb-tcount"></span></div><div class="tscroll" id="lb-table"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ MÓDULO: COGS BI ██ -->
+  <div id="cogs-view" style="display:none;">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Início</button>
+      <div class="tbl cogs">Cogs<span>BI</span></div>
+      <div class="tnav" id="tnav-cogs">
+        <button class="nb cogs on">Visão Geral (DRE)</button>
+      </div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-cogs"></span>
+        <button class="lgbtn" onclick="doLogout()">sair</button>
+      </div>
+    </div>
+
+    <div class="pg on">
+      <div class="ptitle cogs" style="color:var(--tx)">Cogs <span style="color:var(--ac2)">BI</span></div>
+      <div class="psub">Análise de Lucratividade, Margem de Contribuição e Custos Operacionais.</div>
+      
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="cg-mes" onchange="renderCogs()"><option value="">Todos os Meses</option></select>
+      </div>
+      
+      <div class="kgrid" id="cg-kpi"></div>
+      
+      <div class="twocol">
+        <div class="cc"><div class="ctitle">Composição de Gastos (Equipe vs Insumos)</div><canvas id="ch-cogs-donut" height="220"></canvas></div>
+        <div class="cc"><div class="ctitle">Maiores Custos Operacionais (por Fornecedor)</div><canvas id="ch-cogs-bar" height="220"></canvas></div>
+      </div>
+      
+      <div class="tw"><div class="th"><span>Detalhamento Operacional (Custos_Balneario.xlsx)</span><span id="cg-tcount"></span></div><div class="tscroll" id="cg-table"></div></div>
+    </div>
+  </div>
+
+  <!-- ██ MÓDULO: ADMIN CENTER ██ -->
+  <div id="admin-view" style="display:none;">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Início</button>
+      <div class="tbl" style="color:var(--wn)">Admin<span>Center</span></div>
+      <div class="tnav"></div>
+      <div class="tbr">
+        <button class="lgbtn" onclick="doLogout()">sair</button>
+      </div>
+    </div>
+
+    <div class="pg on">
+      <div class="ptitle" style="color:var(--tx)">Painel <span style="color:var(--wn)">Administrativo</span></div>
+      <div class="psub">Controle central de arquivos, acessos e auditoria.</div>
+      
+      <div class="admin-layout">
+        <div class="admin-sidebar">
+          <button class="as-btn on" onclick="switchAdmin('ab-base', this)">📂 Alterar Arquivos</button>
+          <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Usuários</button>
+          <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Logs de Acesso</button>
+        </div>
+
+        <div class="admin-content">
+          <div id="ab-base" class="ab-sec on">
+            <div class="ibox" style="border-color:var(--wn); background:rgba(245,158,11,.05); color:var(--wn)">
+              ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
+              <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados"<br>
+              <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB<br>
+              <strong>Custos_Balneario.xlsx</strong> — aba única com as despesas de COGS.
+            </div>
+            <div class="ugrid">
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
+                  <div class="ui">📋</div>
+                  <div class="ut">Base de Dados</div>
+                  <div class="uh">Planilha_sem_título.xlsx</div>
+                  <div><span class="utag">BASE DE DADOS</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
+                <div class="fst" id="fst-base"></div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
+                  <div class="ui">🔬</div>
+                  <div class="ut">Análises Balneário</div>
+                  <div class="uh">Analises_Balneario.xlsx</div>
+                  <div><span class="utag">INTER · CIRÚRGICO · CLÍNICA</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
+                <div class="fst" id="fst-anal"></div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-cogs').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'cogs')">
+                  <div class="ui">📉</div>
+                  <div class="ut">Custos Operacionais</div>
+                  <div class="uh">Custos_Balneario.xlsx</div>
+                  <div><span class="utag" style="background:rgba(239,68,68,.1);color:var(--dn)">TM35 · O2 · LABS</span></div>
+                  <button class="ubtn" style="background:var(--dn)" onclick="event.stopPropagation();document.getElementById('fi-cogs').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-cogs" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'cogs')">
+                <div class="fst" id="fst-cogs"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-users" class="ab-sec">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="panel">
+                <div class="ptl">Adicionar Usuário</div>
+                <div class="fg"><label class="fgl">Tipo de Acesso</label>
+                  <select id="nrole" style="width:100%;margin-bottom:10px">
+                    <option value="viewer">Visualizador (Viewer)</option>
+                    <option value="admin">Administrador (Admin)</option>
+                  </select>
+                </div>
+                <div class="fg"><label class="fgl">Nome de Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
+                <div class="fg"><label class="fgl">Senha Inicial</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
+                <button class="abtn" onclick="addUser()">Adicionar</button>
+              </div>
+              <div class="panel">
+                <div class="ptl">Usuários do Sistema</div>
+                <div id="ulist"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-logs" class="ab-sec">
+            <div class="panel">
+              <div class="ptl">Auditoria de Acessos Recentes</div>
+              <div style="overflow-x:auto">
+                <div id="log-list"><div class="nd">Carregando logs...</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -409,11 +498,10 @@ const CHART_COLORS = ['#00e5ff','#7c3aed','#22c55e','#f59e0b','#fb7185','#818cf8
 const GC = 'rgba(255,255,255,.035)';
 const TC = {color:'#64748b',font:{family:'DM Mono',size:10}};
 
-const S={role:'viewer', user:null, base:null, anal:null, meta:{}, charts:{}};
+const S={role:'viewer', user:null, base:null, anal:null, cogs:null, meta:{}, charts:{}};
 let globalUsers = [];
 let globalLogs = [];
 
-// Checagem de Sessão Ativa
 window.onload = () => {
     const savedUser = sessionStorage.getItem('loggedUser');
     if(savedUser) {
@@ -422,37 +510,125 @@ window.onload = () => {
         S.role = parsed.role;
         document.getElementById('ls').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-        initApp();
+        showHub();
     }
 };
 
-// Sincroniza usuários com Anti-Quebra
 db.ref('laborbi/users').on('value', (snap) => {
     if (snap.exists()) {
         let raw = snap.val();
         if(!Array.isArray(raw)) raw = Object.values(raw);
         globalUsers = raw.filter(x => x && x.user);
     } else {
-        // SEMENTE DE BANCO NOVO
         globalUsers = [{user:'clevis.junior', pass:'admin123', role:'admin'}];
         db.ref('laborbi/users').set(globalUsers);
     }
-    if(S.role === 'admin' && document.getElementById('pg-admin').classList.contains('on')) {
+    if(S.role === 'admin' && document.getElementById('admin-view').style.display === 'block') {
         renderUsers();
     }
 });
 
-// Sincroniza logs com Anti-Quebra
 db.ref('laborbi/logs').orderByChild('timestamp').limitToLast(100).on('value', snap => {
     const logs = [];
-    snap.forEach(c => { 
-        if(c.val()) logs.unshift(c.val()); 
-    }); 
+    snap.forEach(c => { if(c.val()) logs.unshift(c.val()); }); 
     globalLogs = logs;
     if(S.role === 'admin' && document.getElementById('ab-logs').classList.contains('on')) {
         renderLogs();
     }
 });
+
+db.ref('laborbi').on('value', (snap) => {
+  const data = snap.val() || {};
+  
+  let b = data.base || [];
+  if(!Array.isArray(b)) b = Object.values(b);
+  S.base = b.filter(x => x && typeof x === 'object' && x.vet);
+
+  let a = data.anal || {};
+  for(let k in a) {
+      if(a[k]) {
+          let sheetData = Array.isArray(a[k]) ? a[k] : Object.values(a[k]);
+          a[k] = sheetData.filter(x => x && typeof x === 'object');
+      } else {
+          a[k] = [];
+      }
+  }
+  S.anal = a;
+
+  let c = data.cogs || [];
+  if(!Array.isArray(c)) c = Object.values(c);
+  S.cogs = c.filter(x => x && typeof x === 'object' && x.val !== undefined);
+
+  S.meta = data.meta || {};
+
+  if(S.meta.base) setFst('base', S.meta.base, true);
+  if(S.meta.anal) setFst('anal', S.meta.anal, true);
+  if(S.meta.cogs) setFst('cogs', S.meta.cogs, true);
+
+  if(S.meta.lastUpdated) {
+    document.getElementById('last-upd-labor').textContent = 'Atualizado em: ' + S.meta.lastUpdated;
+    document.getElementById('last-upd-labor').style.display = 'inline-block';
+    document.getElementById('last-upd-cogs').textContent = 'Atualizado em: ' + S.meta.lastUpdated;
+    document.getElementById('last-upd-cogs').style.display = 'inline-block';
+  }
+
+  populateAllFilters();
+  
+  if(document.getElementById('labor-view').style.display === 'block') {
+    renderPetcare();
+    renderRanking();
+    renderClinica();
+    renderInter();
+    renderCirurgico();
+    renderLab();
+  }
+  
+  if(document.getElementById('cogs-view').style.display === 'block') {
+    renderCogs();
+  }
+});
+
+// ════════════════════════════════
+//  ROUTING (HUB & MÓDULOS)
+// ════════════════════════════════
+function showHub() {
+  document.getElementById('brl-hub').textContent = S.role.toUpperCase();
+  document.getElementById('brl-hub').className = 'brl' + (S.role === 'admin' ? ' adm' : '');
+  
+  // Mostra o card de admin apenas se for admin
+  document.getElementById('card-admin').style.display = (S.role === 'admin') ? 'block' : 'none';
+
+  document.getElementById('hub-view').style.display = 'block';
+  document.getElementById('labor-view').style.display = 'none';
+  document.getElementById('cogs-view').style.display = 'none';
+  document.getElementById('admin-view').style.display = 'none';
+  killAll();
+}
+
+function goHub() {
+  showHub();
+}
+
+function openLabor() {
+  document.getElementById('hub-view').style.display = 'none';
+  document.getElementById('labor-view').style.display = 'block';
+  initLaborApp();
+}
+
+function openCogs() {
+  document.getElementById('hub-view').style.display = 'none';
+  document.getElementById('cogs-view').style.display = 'block';
+  populateAllFilters();
+  renderCogs();
+}
+
+function openAdmin() {
+  if (S.role !== 'admin') { toast('Acesso negado.', 'err'); return; }
+  document.getElementById('hub-view').style.display = 'none';
+  document.getElementById('admin-view').style.display = 'block';
+  renderUsers();
+  renderLogs();
+}
 
 // ════════════════════════════════
 //  FORMATTERS & MATH
@@ -536,7 +712,7 @@ function doLogin(){
         document.getElementById('app').style.display='block';
         
         logAccess(S.user).catch(()=>console.log('Sem tracking de ip'));
-        initApp();
+        showHub();
       } else {
         const e=document.getElementById('lerr');
         e.style.display='block';
@@ -553,14 +729,13 @@ function doLogout(){
   document.getElementById('ls').style.display = 'flex';
   document.getElementById('lu').value = '';
   document.getElementById('lp').value = '';
-  document.getElementById('last-upd').style.display = 'none';
   killAll();
 }
 
 // ════════════════════════════════
-//  APP INIT
+//  LABOR BI INIT
 // ════════════════════════════════
-const PAGES=[
+const PAGES_LABOR=[
   {id:'petcare',  label:'Petcare-2026'},
   {id:'ranking',  label:'Ranking'},
   {id:'clinica',  label:'Clínica Médica'},
@@ -569,67 +744,21 @@ const PAGES=[
   {id:'laboratorio',label:'Laboratório'},
 ];
 
-function initApp(){
-  const br=document.getElementById('brl');
-  br.textContent=S.role.toUpperCase();
-  br.className='brl'+(S.role==='admin'?' adm':'');
-
-  const pages=[...PAGES];
-  if(S.role==='admin') pages.push({id:'admin',label:'⚙ Admin'});
-
-  document.getElementById('tnav').innerHTML=pages.map((p,i)=>
+function initLaborApp(){
+  document.getElementById('tnav-labor').innerHTML=PAGES_LABOR.map((p,i)=>
     `<button class="nb${i===0?' on':''}" data-pg="${p.id}" onclick="showPg('${p.id}',this)">${p.label}</button>`
   ).join('');
 
-  db.ref('laborbi').on('value', (snap) => {
-    const data = snap.val() || {};
-    
-    let b = data.base || [];
-    if(!Array.isArray(b)) b = Object.values(b);
-    S.base = b.filter(x => x && typeof x === 'object' && x.vet);
-
-    let a = data.anal || {};
-    for(let k in a) {
-       if(a[k]) {
-           let sheetData = Array.isArray(a[k]) ? a[k] : Object.values(a[k]);
-           a[k] = sheetData.filter(x => x && typeof x === 'object');
-       } else {
-           a[k] = [];
-       }
-    }
-    S.anal = a;
-    S.meta = data.meta || {};
-
-    if(S.meta.base) setFst('base', S.meta.base, true);
-    if(S.meta.anal) setFst('anal', S.meta.anal, true);
-
-    if(S.meta.lastUpdated) {
-      const upd = document.getElementById('last-upd');
-      upd.textContent = 'Atualizado em: ' + S.meta.lastUpdated;
-      upd.style.display = 'inline-block';
-    }
-
-    populateAllFilters();
-    renderPetcare();
-    renderRanking();
-    renderClinica();
-    renderInter();
-    renderCirurgico();
-    renderLab();
-    if(S.role==='admin') {
-        renderUsers();
-        renderLogs();
-    }
-  });
+  document.querySelectorAll('#labor-view .pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-petcare').classList.add('on');
+  
+  populateAllFilters();
+  renderPetcare();
 }
 
 function showPg(id,btn){
-  if(id === 'admin' && S.role !== 'admin') {
-    toast('Acesso negado: apenas Administrador.','err');
-    return;
-  }
-  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#labor-view .pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('#labor-view .nb').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+id).classList.add('on');
   if(btn)btn.classList.add('on');
 }
@@ -681,11 +810,12 @@ function mkCombo(id,labels,ds1a,ds1b,ds2){
   }});
 }
 
-function mkDonut(id,labels,data){
+function mkDonut(id,labels,data, customColors){
   killChart(id);
   const ctx=document.getElementById(id)?.getContext('2d');
   if(!ctx)return;
-  S.charts[id]=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:['rgba(124,58,237,.85)','rgba(34,197,94,.85)'],borderColor:'#13131d',borderWidth:3}]},
+  const colors = customColors || ['rgba(124,58,237,.85)','rgba(34,197,94,.85)'];
+  S.charts[id]=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:'#13131d',borderWidth:3}]},
   options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{family:'DM Mono',size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+fR(c.raw)}}}}});
 }
 
@@ -703,15 +833,17 @@ function mkHBar(id,labels,data,color='#00e5ff'){
 //  FILTERS POPULATION
 // ════════════════════════════════
 function populateAllFilters(){
-  if(S.base){
-    const vets=[...new Set(S.base.map(r=>r.vet))].sort();
-    const meses=[...new Set(S.base.map(r=>r.mes).filter(Boolean))];
-    const sems=[...new Set(S.base.map(r=>r.sem).filter(Boolean))].sort();
-    fillSel('f-vet','Todos os Veterinários',vets);
-    fillSel('f-mes','Todos os Meses',meses,true);
-    fillSel('f-sem','Todas as Semanas',sems);
-    fillSel('r-mes','Todos os Meses',meses,true);
-  }
+  const baseMeses = [...new Set((S.base||[]).map(r=>r.mes).filter(Boolean))];
+  const cogsMeses = [...new Set((S.cogs||[]).map(r=>r.mes).filter(Boolean))];
+  const allMeses = [...new Set([...baseMeses, ...cogsMeses])].sort();
+  
+  fillSel('f-vet','Todos os Veterinários', [...new Set((S.base||[]).map(r=>r.vet))].sort());
+  fillSel('f-mes','Todos os Meses', baseMeses, true);
+  fillSel('f-sem','Todas as Semanas', [...new Set((S.base||[]).map(r=>r.sem).filter(Boolean))].sort());
+  fillSel('r-mes','Todos os Meses', baseMeses, true);
+  
+  fillSel('cg-mes', 'Todos os Meses', allMeses, true);
+
   if(S.anal){
     const clM=[...new Set((S.anal.CLINICA||[]).map(r=>r.mes).filter(Boolean))];
     const clV=[...new Set((S.anal.CLINICA||[]).map(r=>r.vet).filter(Boolean))].sort();
@@ -777,7 +909,7 @@ function getAdjustedBase() {
      const valVar = r2(perc * prodReal);
      const valTotal = r2(valVar + x.valFixo);
      
-     return { ...x, rawProd: val, prod: prodReal, perc, valVar, valTotal };
+     return { ...x, prod: prodReal, perc, valVar, valTotal };
   });
 }
 
@@ -808,7 +940,7 @@ function kpiCard(lbl,val,sub,clr='var(--ac)'){
 }
 
 // ════════════════════════════════
-//  PAGE: PETCARE-2026
+//  PAGE: PETCARE-2026 (LABOR)
 // ════════════════════════════════
 function renderPetcare(){
   const rows=fBase();
@@ -836,7 +968,7 @@ function renderPetcare(){
     rows.forEach(r=>{const k=r.sem||r.data;if(!byS[k])byS[k]={fixo:0,var:0,horas:0};byS[k].fixo+=r.valFixo;byS[k].var+=r.valVar;byS[k].horas+=r.horas});
     const lbls=Object.keys(byS).sort();
     mkCombo('ch-combo',lbls,lbls.map(l=>byS[l].fixo),lbls.map(l=>byS[l].var),lbls.map(l=>byS[l].horas));
-    mkDonut('ch-donut',['Fixo','Variável'],[tFixo,tVar]);
+    mkDonut('ch-donut',['Fixo','Variável'],[tFixo,tVar], ['rgba(124,58,237,.85)','rgba(34,197,94,.85)']);
   }else{killChart('ch-combo');killChart('ch-donut')}
 
   const byV={};
@@ -862,54 +994,36 @@ function renderPetcare(){
     :'<div class="nd"><div class="nd-i">📂</div>'+(S.role==='admin'?'Carregue a planilha no painel Admin.':'Dados não disponíveis.')+'</div>';
 }
 
-// ════════════════════════════════
-//  PAGE: RANKING
-// ════════════════════════════════
 function renderRanking(){
   const mes=document.getElementById('r-mes')?.value||'';
   let rows=getAdjustedBase();
   if(mes)rows=rows.filter(r=>r.mes===mes);
 
   const byV={};
-  rows.forEach(r=>{
-    if(!byV[r.vet])byV[r.vet]={prod:0,total:0,horas:0,perc:0};
-    
-    // Para o ranking visual, usa a produção bruta (sem desconto do cirúrgico)
-    const prodBruta = r.rawProd !== undefined ? r.rawProd : r.prod;
-    byV[r.vet].prod+=prodBruta;
-    byV[r.vet].total+=r.valTotal;
-    byV[r.vet].horas+=r.horas;
-    
-    // Registra qual foi a porcentagem final calculada pela dedução
-    if(r.perc > byV[r.vet].perc) byV[r.vet].perc = r.perc;
-  });
-  
-  const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
+  rows.forEach(r=>{if(!byV[r.vet])byV[r.vet]={prod:0,rawProd:0,total:0,horas:0};byV[r.vet].prod+=r.prod;byV[r.vet].rawProd+=(r.rawProd!==undefined?r.rawProd:r.prod);byV[r.vet].total+=r.valTotal;byV[r.vet].horas+=r.horas});
+  const ranked=Object.entries(byV).sort((a,b)=>b[1].rawProd-a[1].rawProd);
   const medals=['🥇','🥈','🥉'];
 
   if(ranked.length){
     const top=ranked.slice(0,12);
-    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção Bruta',data:top.map(([,d])=>d.prod),backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:4}],{yFmt:v=>'R$'+fN(v)});
+    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção Bruta',data:top.map(([,d])=>d.rawProd),backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:4}],{yFmt:v=>'R$'+fN(v)});
   }else killChart('ch-rank');
 
   document.getElementById('r-count').textContent=ranked.length+' profissionais';
-  const maxP=Math.max(...ranked.map(v=>v[1].prod),1);
+  const maxP=Math.max(...ranked.map(v=>v[1].rawProd),1);
   document.getElementById('rank-table').innerHTML=ranked.length
-    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção Bruta R$</th><th>% Comissão (Ajustada)</th><th>Total</th><th>Horas</th></tr></thead><tbody>
+    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção Total R$</th><th>% Comissão</th><th>Total</th><th>Horas</th></tr></thead><tbody>
     ${ranked.map(([n,d],i)=>{
-      const pc=d.perc; // Exibe a % baseada no cálculo com desconto
+      const pc=calcPerc(d.prod);
       return `<tr><td><span style="font-size:16px">${medals[i]||'#'+(i+1)}</span></td>
       <td style="font-weight:600">${n}</td>
-      <td style="color:var(--ac)">${fR(d.prod)}<div class="pbar"><div class="pfill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
+      <td style="color:var(--ac)">${fR(d.rawProd)}<div class="pbar"><div class="pfill" style="width:${(d.rawProd/maxP*100).toFixed(1)}%"></div></div></td>
       <td><span class="bdg ${pc>=.07?'bg':pc>=.03?'by':'br'}">${fP(pc)}</span></td>
       <td style="color:var(--ac3)">${fR(d.total)}</td><td>${fN(d.horas)}h</td></tr>`;
     }).join('')}</tbody></table>`
     :'<div class="nd"><div class="nd-i">🏆</div>'+(S.role==='admin'?'Carregue os dados no painel Admin.':'Dados não disponíveis.')+'</div>';
 }
 
-// ════════════════════════════════
-//  GENERIC ANAL PAGE RENDERER
-// ════════════════════════════════
 function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAccent,mode}){
   const rows=fAnal(sheet,mesId,vetId);
   const tVal=sumC(rows,'valL'),tTab=sumC(rows,'valT');
@@ -966,21 +1080,71 @@ function renderAnalPage({sheet,mesId,vetId,kpiId,barId,tableId,countId,colorAcce
   }
 }
 
-function renderClinica(){
-  renderAnalPage({sheet:'CLINICA',mesId:'cl-mes',vetId:'cl-vet',kpiId:'cl-kpi',barId:'ch-cl-bar',tableId:'cl-table',countId:'cl-tcount',colorAccent:'#00e5ff',mode:'byVet'});
-}
-function renderInter(){
-  renderAnalPage({sheet:'INTER',mesId:'it-mes',vetId:'it-vet',kpiId:'it-kpi',barId:'ch-it-bar',tableId:'it-table',countId:'it-tcount',colorAccent:'#22c55e',mode:'byVet'});
-}
-function renderCirurgico(){
-  renderAnalPage({sheet:'C_CIRURGICO',mesId:'ci-mes',vetId:'ci-vet',kpiId:'ci-kpi',barId:'ch-ci-bar',tableId:'ci-table',countId:'ci-tcount',colorAccent:'#f59e0b',mode:'byVet'});
-}
-function renderLab(){
-  renderAnalPage({sheet:'LAB',mesId:'lb-mes',vetId:'lb-vet',kpiId:'lb-kpi',barId:'ch-lb-bar',tableId:'lb-table',countId:'lb-tcount',colorAccent:'#a78bfa',mode:'byProc'});
+function renderClinica(){ renderAnalPage({sheet:'CLINICA',mesId:'cl-mes',vetId:'cl-vet',kpiId:'cl-kpi',barId:'ch-cl-bar',tableId:'cl-table',countId:'cl-tcount',colorAccent:'#00e5ff',mode:'byVet'}); }
+function renderInter(){ renderAnalPage({sheet:'INTER',mesId:'it-mes',vetId:'it-vet',kpiId:'it-kpi',barId:'ch-it-bar',tableId:'it-table',countId:'it-tcount',colorAccent:'#22c55e',mode:'byVet'}); }
+function renderCirurgico(){ renderAnalPage({sheet:'C_CIRURGICO',mesId:'ci-mes',vetId:'ci-vet',kpiId:'ci-kpi',barId:'ch-ci-bar',tableId:'ci-table',countId:'ci-tcount',colorAccent:'#f59e0b',mode:'byVet'}); }
+function renderLab(){ renderAnalPage({sheet:'LAB',mesId:'lb-mes',vetId:'lb-vet',kpiId:'lb-kpi',barId:'ch-lb-bar',tableId:'lb-table',countId:'lb-tcount',colorAccent:'#a78bfa',mode:'byProc'}); }
+
+// ════════════════════════════════
+//  PAGE: COGS BI
+// ════════════════════════════════
+function renderCogs(){
+  const mes = document.getElementById('cg-mes')?.value || '';
+  let baseRows = getAdjustedBase();
+  let cogsRows = S.cogs || [];
+  
+  if(mes) {
+      baseRows = baseRows.filter(x => x.mes === mes);
+      cogsRows = cogsRows.filter(x => x.mes === mes);
+  }
+
+  const fatBruto = sumC(baseRows, 'rawProd');
+  const custoVet = sumC(baseRows, 'valTotal'); 
+  const custoOp = sumC(cogsRows, 'val');
+
+  const custoTotal = custoVet + custoOp;
+  const lucroBruto = fatBruto - custoTotal;
+  const margem = fatBruto > 0 ? (lucroBruto / fatBruto) : 0;
+
+  document.getElementById('cg-kpi').innerHTML = [
+    kpiCard('Faturamento Total', fR(fatBruto), 'produção bruta global', '#00e5ff'),
+    kpiCard('Custo de Equipe', fR(custoVet), 'repasse veterinários', '#f59e0b'),
+    kpiCard('Custos Operacionais', fR(custoOp), 'labs, insumos, gases', '#ef4444'),
+    kpiCard('Lucro Bruto', fR(lucroBruto), 'fat. menos custos diretos', lucroBruto >= 0 ? '#22c55e' : '#ef4444'),
+    kpiCard('Margem Bruta', fP(margem), 'lucro / faturamento', lucroBruto >= 0 ? '#22c55e' : '#ef4444'),
+  ].join('');
+
+  if(fatBruto > 0 || custoTotal > 0) {
+      mkDonut('ch-cogs-donut', ['Equipe Veterinária', 'Desp. Operacionais'], [custoVet, custoOp], ['rgba(245,158,11,.85)', 'rgba(239,68,68,.85)']);
+  } else { killChart('ch-cogs-donut'); }
+
+  const opByForn = {};
+  cogsRows.forEach(r => {
+      const k = r.forn || r.cat || 'Outros';
+      opByForn[k] = (opByForn[k]||0) + r.val;
+  });
+  const sortedOp = Object.entries(opByForn).sort((a,b)=>b[1]-a[1]);
+  if(sortedOp.length) {
+      mkHBar('ch-cogs-bar', sortedOp.map(x=>x[0]), sortedOp.map(x=>x[1]), '#ef4444');
+  } else { killChart('ch-cogs-bar'); }
+
+  document.getElementById('cg-tcount').textContent = cogsRows.length + ' lançamentos';
+  if(cogsRows.length) {
+      document.getElementById('cg-table').innerHTML = `<table><thead><tr><th>Data</th><th>Mês</th><th>Categoria</th><th>Fornecedor/Item</th><th>Valor R$</th></tr></thead><tbody>
+      ${cogsRows.sort((a,b)=>a.data.localeCompare(b.data)).map(r => `<tr>
+          <td>${r.data.split('-').reverse().join('/')}</td>
+          <td style="text-transform:capitalize">${r.mes}</td>
+          <td><span class="bdg bc">${r.cat}</span></td>
+          <td style="font-weight:600">${r.forn}</td>
+          <td style="color:#ef4444">${fR(r.val)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  } else {
+      document.getElementById('cg-table').innerHTML = '<div class="nd"><div class="nd-i">📊</div>Nenhum custo operacional lançado para este período.</div>';
+  }
 }
 
 // ════════════════════════════════
-//  FILE LOADING (CLOUD UPLOAD)
+//  FILE LOADING & PARSING (EXCEL)
 // ════════════════════════════════
 function dropF(e,type){
   e.preventDefault();
@@ -1003,7 +1167,8 @@ function procXlsx(file,type){
     try{
       const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
       if(type==='base') parseBase(wb,file.name);
-      else parseAnal(wb,file.name);
+      else if(type==='anal') parseAnal(wb,file.name);
+      else if(type==='cogs') parseCogs(wb,file.name);
     }catch(err){setFst(type,'Erro: '+err.message,false);toast('Erro ao ler o arquivo.','err')}
   };
   rd.readAsArrayBuffer(file);
@@ -1015,7 +1180,6 @@ function parseBase(wb,fname){
   if(!ws){setFst('base','Aba "Base de dados" não encontrada.',false);return}
 
   const rawN=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-  
   let hi=-1;
   let col = { vet:1, prod:2, vFixo:4, sem:7, data:8, hN:10, hNt:11 };
 
@@ -1073,22 +1237,20 @@ function parseBase(wb,fname){
 
     const mes=getMes(ds);
 
-    rows.push({
+    tempRows.push({
       vet, prod, rawProd: prod, valVar: 0, valFixo: vFixo, valTotal: 0,
       sem, data: ds, mes, horas: hN + hNt, hNorm: hN, hNot: hNt, perc: 0
     });
   }
   
-  if(!rows.length){setFst('base','Nenhuma linha válida.',false);return}
+  if(!tempRows.length){setFst('base','Nenhuma linha válida.',false);return}
 
   toast('Enviando Base de Dados para a nuvem...', 'inf');
-  db.ref('laborbi/base').set(rows).then(() => {
-    db.ref('laborbi/meta/base').set(fname+' ('+rows.length+' linhas)');
+  db.ref('laborbi/base').set(tempRows).then(() => {
+    db.ref('laborbi/meta/base').set(fname+' ('+tempRows.length+' linhas)');
     db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
     toast('Base de dados sincronizada com sucesso! ✓','ok');
-  }).catch(err => {
-    toast('Erro de sincronização: ' + err.message, 'err');
-  });
+  }).catch(err => toast('Erro: ' + err.message, 'err'));
 }
 
 // ── Parse Analises_Balneario.xlsx ──
@@ -1135,9 +1297,87 @@ function parseAnal(wb,fname){
     db.ref('laborbi/meta/anal').set(fname+' ('+total+' linhas)');
     db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
     toast('Análises sincronizadas com sucesso! ✓','ok');
-  }).catch(err => {
-    toast('Erro de sincronização: ' + err.message, 'err');
-  });
+  }).catch(err => toast('Erro: ' + err.message, 'err'));
+}
+
+// ── Parse Custos_Balneario.xlsx (CogsBI) ──
+function parseCogs(wb,fname){
+  const ws = wb.Sheets[wb.SheetNames[0]]; 
+  if(!ws){setFst('cogs','Aba de Custos não encontrada.',false);return}
+
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+  
+  let hi = -1;
+  let col = { data:-1, cat:-1, forn:-1, val:-1 };
+  
+  for(let i=0; i<raw.length; i++){
+    if(raw[i] && Array.isArray(raw[i])){
+      let achouData = false;
+      for(let j=0; j<raw[i].length; j++) {
+        if(!raw[i][j]) continue;
+        const norm = String(raw[i][j]).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        if(norm.includes('data')) { col.data = j; achouData = true; }
+        else if(norm.includes('categoria')) col.cat = j;
+        else if(norm.includes('fornecedor') || norm.includes('item')) col.forn = j;
+        else if(norm.includes('valor')) col.val = j;
+      }
+      if(achouData && col.val !== -1) { hi = i; break; }
+    }
+  }
+
+  if(hi < 0 || col.val < 0){setFst('cogs','Cabeçalho "Data" ou "Valor" não encontrado.',false);return}
+
+  const rows=[];
+  for(let i=hi+1; i<raw.length; i++){
+    const r=raw[i];
+    if(!r || r[col.val] == null) continue;
+    
+    let ds='';
+    const dc=r[col.data];
+    if(dc instanceof Date){
+      ds=dc.toISOString().slice(0,10);
+    } else if(typeof dc==='number'){
+      const d=XLSX.SSF.parse_date_code(dc);
+      if(d) ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    } else if(dc){
+      ds=String(dc).trim();
+      if(ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+        const p = ds.slice(0,10).split('/');
+        ds = `${p[2]}-${p[1]}-${p[0]}`;
+      } else {
+        ds = ds.slice(0,10);
+      }
+    }
+
+    const mes=getMes(ds);
+    const cat=String(r[col.cat]||'Geral').trim();
+    const forn=String(r[col.forn]||'').trim();
+    
+    let valRaw = r[col.val];
+    let valTotal = 0;
+    if (typeof valRaw === 'number') {
+        valTotal = valRaw;
+    } else if (valRaw) {
+        let valStr = String(valRaw).replace(/R\$/gi, '').trim();
+        if(valStr.includes(',') && valStr.includes('.')) {
+            valStr = valStr.replace(/\./g, '').replace(',', '.');
+        } else if (valStr.includes(',')) {
+            valStr = valStr.replace(',', '.');
+        }
+        valTotal = parseFloat(valStr) || 0;
+    }
+
+    rows.push({ data: ds, mes, cat, forn, val: valTotal });
+  }
+  
+  if(!rows.length){setFst('cogs','Nenhuma linha válida no arquivo de custos.',false);return}
+
+  toast('Enviando Custos Operacionais para a nuvem...', 'inf');
+  db.ref('laborbi/cogs').set(rows).then(() => {
+    db.ref('laborbi/meta/cogs').set(fname+' ('+rows.length+' linhas)');
+    db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
+    toast('Custos sincronizados com sucesso! ✓','ok');
+  }).catch(err => toast('Erro: ' + err.message, 'err'));
 }
 
 function setFst(type,msg,ok){
@@ -1148,7 +1388,7 @@ function setFst(type,msg,ok){
 }
 
 // ════════════════════════════════
-//  USERS UI
+//  ADMIN UI: USUÁRIOS
 // ════════════════════════════════
 function renderUsers(){
   document.getElementById('ulist').innerHTML=globalUsers.map((u,i)=>`
@@ -1190,13 +1430,11 @@ function rmUser(i){
   if(globalUsers[i]?.role==='admin'){toast('Não é possível remover o admin.','err');return}
   
   globalUsers.splice(i,1);
-  db.ref('laborbi/users').set(globalUsers).then(() => {
-      toast('Usuário removido da nuvem.','ok');
-  });
+  db.ref('laborbi/users').set(globalUsers).then(() => toast('Usuário removido da nuvem.','ok'));
 }
 
 // ════════════════════════════════
-//  LOGS UI
+//  ADMIN UI: LOGS
 // ════════════════════════════════
 function renderLogs() {
   if(!globalLogs.length) {
