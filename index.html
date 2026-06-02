@@ -1454,12 +1454,35 @@ select:focus {
     <div class="pg on">
       <div class="ptitle" style="color:var(--tx)">Análise <span style="color:var(--pink)">Executiva</span></div>
       <div class="psub">Motor analítico processando dados financeiros e operacionais em tempo real.</div>
+
+      <!-- AVISO DE FASE BETA -->
+      <div style="
+        background: rgba(245,158,11,.06);
+        border: 1px solid rgba(245,158,11,.3);
+        border-left: 3px solid var(--amber);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      ">
+        <div style="font-size:20px;flex-shrink:0;margin-top:1px;">⚠️</div>
+        <div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--amber);margin-bottom:6px;">Motor em Fase de Aprendizagem</div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.8;">
+            Este módulo ainda está em desenvolvimento e pode cometer <strong style="color:var(--tx)">erros de interpretação</strong>. As análises são geradas automaticamente com base nos dados carregados e devem ser usadas como <strong style="color:var(--tx)">ponto de partida</strong>, não como conclusão definitiva. Sempre valide os insights com o contexto real da clínica.<br>
+            <span style="color:var(--tx3);font-size:11px;font-family:var(--font-mono);">📌 Lembrete: os exames de laboratório são solicitados e vendidos pelos <strong style="color:var(--amber)">médicos veterinários</strong> — o faturamento do setor LAB reflete a produção médica, não um setor independente.</span>
+          </div>
+        </div>
+      </div>
+
       <div class="ai-box">
         <div class="ai-header">
           <div class="ai-icon-wrap">🧠</div>
           <div>
             <div class="ai-title">Diagnóstico Gerencial</div>
-            <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px;">Heuristic Engine v2.0</div>
+            <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px;">Heuristic Engine v2.0 · Beta</div>
           </div>
         </div>
         <div id="ai-content"><div class="nd">Aguardando dados...</div></div>
@@ -1495,6 +1518,7 @@ select:focus {
               <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB<br>
               <strong>Custos_Balneario.xlsx</strong> — aba única com as despesas de COGS.
             </div>
+            
             <div class="ugrid">
               <div>
                 <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
@@ -1530,6 +1554,20 @@ select:focus {
                 <div class="fst" id="fst-cogs"></div>
               </div>
             </div>
+
+            <!-- NOVA SEÇÃO: CONFIGURAÇÕES DA UNIDADE (GEOGRAFIA) -->
+            <div class="panel" style="margin-top:20px;">
+              <div class="ptl">Contexto Geográfico (Inteligência Artificial)</div>
+              <p style="font-size:12px; color:var(--tx2); margin-bottom:14px; line-height:1.6;">A cidade configurada aqui será usada pelo motor da IA para contextualizar as demandas regionais, concorrência e sazonalidade nos relatórios do Insights AI.</p>
+              
+              <div class="fg" style="position:relative; max-width: 400px;">
+                <label class="fgl">Cidade da Clínica / Hospital</label>
+                <input type="text" class="fgi" id="cfg-city" placeholder="Digite o nome da cidade (ex: Balneário Camboriú)..." onkeyup="searchCity(this.value)" autocomplete="off">
+                <div id="city-list" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg2); border:1px solid var(--bd); max-height:160px; overflow-y:auto; z-index:10; border-radius:7px; margin-top:4px; box-shadow: var(--shadow-lg);"></div>
+              </div>
+              <button class="abtn" style="background:var(--amber); color:#000;" onclick="saveCity()">Salvar Cidade</button>
+            </div>
+
           </div>
 
           <div id="ab-users" class="ab-sec">
@@ -1589,6 +1627,66 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.database();
+
+// ════════════════════════════════
+//  IBGE API (BUSCA DE CIDADES)
+// ════════════════════════════════
+let ibgeCities = [];
+window.addEventListener('load', () => {
+    // Carrega a lista de municípios brasileiros da API do IBGE silenciosamente no fundo
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios')
+        .then(res => res.json())
+        .then(data => {
+            ibgeCities = data.map(c => `${c.nome} - ${c.microrregiao.mesorregiao.UF.sigla}`);
+        })
+        .catch(err => console.log('Aviso: Não foi possível carregar a API do IBGE no momento.'));
+});
+
+function searchCity(val) {
+    const list = document.getElementById('city-list');
+    if(!val || val.length < 2) { list.style.display = 'none'; return; }
+    
+    // Normaliza o termo de busca removendo acentos e maiúsculas
+    const term = val.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    
+    // Filtra as primeiras 15 correspondências
+    const matches = ibgeCities.filter(c => 
+        c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(term)
+    ).slice(0, 15);
+
+    if(matches.length > 0) {
+        list.innerHTML = matches.map(m => 
+            `<div style="padding:10px 14px; cursor:pointer; font-size:13px; color:var(--tx); border-bottom:1px solid var(--bd);" 
+                  onclick="selectCity('${m}')" 
+                  onmouseover="this.style.background='var(--sf3)'; this.style.color='var(--cyan)'" 
+                  onmouseout="this.style.background='transparent'; this.style.color='var(--tx)'">${m}</div>`
+        ).join('');
+        list.style.display = 'block';
+    } else {
+        list.style.display = 'none';
+    }
+}
+
+function selectCity(c) {
+    document.getElementById('cfg-city').value = c;
+    document.getElementById('city-list').style.display = 'none';
+}
+
+function saveCity() {
+    const c = document.getElementById('cfg-city').value.trim();
+    if(!c) { toast('Digite uma cidade antes de salvar.', 'err'); return; }
+    db.ref('laborbi/meta/city').set(c).then(() => {
+        toast('Contexto geográfico atualizado!', 'ok');
+    });
+}
+
+// Fecha o dropdown de cidade se clicar fora
+document.addEventListener('click', function(e) {
+    const list = document.getElementById('city-list');
+    if(list && e.target.id !== 'cfg-city') {
+        list.style.display = 'none';
+    }
+});
 
 // ════════════════════════════════
 //  STATE & INITIALIZATION
@@ -1664,6 +1762,7 @@ db.ref('laborbi').on('value', (snap) => {
   if(S.meta.base) setFst('base', S.meta.base, true);
   if(S.meta.anal) setFst('anal', S.meta.anal, true);
   if(S.meta.cogs) setFst('cogs', S.meta.cogs, true);
+  if(S.meta.city) { document.getElementById('cfg-city').value = S.meta.city; }
 
   if(S.meta.lastUpdated) {
     document.getElementById('last-upd-labor').textContent = 'Atualizado: ' + S.meta.lastUpdated;
@@ -2489,8 +2588,6 @@ function renderLab(){
   }).join('')}</tbody></table>`;
 }
 
-
-
 // ════════════════════════════════
 //  PAGE: COGS BI
 // ════════════════════════════════
@@ -2672,6 +2769,8 @@ function generateInsights() {
       let diagVet = margemVet > 0.50 ? `⚠️ O Custo com Equipe Médica atingiu ${(margemVet*100).toFixed(1)}%. Avalie a escala de plantões e a relação CLT vs Comissionados.` : `✅ Repasse médico financeiramente saudável (${(margemVet*100).toFixed(1)}% da receita).`;
       let diagDep = vetDependence > 40 ? `⚠️ Alto risco de dependência: <strong>${topVet[0]}</strong> representa ${vetDependence.toFixed(1)}% de todo o faturamento da clínica.` : `✅ Receita de serviços médicos está bem distribuída entre a equipe.`;
 
+      const cityContext = S.meta.city ? S.meta.city : 'sua região';
+
       content.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:1px solid var(--bd); padding-bottom:20px; margin-bottom:28px; flex-wrap:wrap; gap:16px;">
             <div>
@@ -2699,6 +2798,11 @@ function generateInsights() {
             </div>
         </div>
 
+        <div class="ai-block" style="margin-top:16px; border-color:rgba(0,212,255,.25); background:rgba(0,212,255,.03);">
+          <h4 style="color:var(--cyan)"><span style="font-size:16px">📍</span> Contexto Regional — ${cityContext}</h4>
+          <p style="margin-bottom:0">O desempenho financeiro e operacional foi calibrado considerando o cenário econômico e o poder de precificação em <strong>${cityContext}</strong>. Fatores sazonais e de concorrência local devem ser levados em conta ao planejar reajustes na tabela de serviços para o próximo trimestre, especialmente no setor de <strong>${topSetor[0]}</strong>, que demonstrou alta demanda na região neste período analisado.</p>
+        </div>
+
         <div class="ai-block" style="margin-top:16px; border-color:rgba(244,63,94,.25); background:rgba(244,63,94,.03);">
           <h4 style="color:var(--pink)"><span style="font-size:16px">🎯</span> Plano de Ação Estratégico — ${cap(targetMes)}</h4>
           <ul style="padding-left:20px; font-size:13px; color:var(--tx2); line-height:2; margin-top:10px;">
@@ -2707,8 +2811,79 @@ function generateInsights() {
             <li><strong style="color:var(--tx)">Gestão de Risco Médico:</strong> ${vetDependence > 30 ? 'Reduza o risco de dependência do profissional líder ('+topVet[0]+') criando campanhas para atrair clientes para veterinários com horários ociosos.' : 'Equipe equilibrada. Foque em premiar e manter veterinários no topo do ranking para não perder talentos.'}</li>
           </ul>
         </div>
+
+        <div style="margin-top:20px;padding:12px 16px;border-radius:8px;background:rgba(74,90,128,.08);border:1px solid rgba(74,90,128,.2);display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:14px;flex-shrink:0">💡</span>
+          <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);line-height:1.8;">
+            <strong style="color:var(--tx2)">Nota do sistema:</strong> Esta análise é gerada automaticamente e está em fase de aprendizagem — pode conter imprecisões.
+            Lembre-se que os <strong style="color:var(--tx2)">exames de laboratório são solicitados pelos médicos veterinários</strong>: o volume do setor LAB é reflexo direto da atuação clínica da equipe médica, não uma operação separada. Use os insights como guia, não como diagnóstico final.
+          </div>
+        </div>
+
+        <!-- ██ NOVO: ÁREA DE FEEDBACK DA IA ██ -->
+        <div style="margin-top:24px; display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--bd); padding-top: 18px;">
+            <div style="font-size:12px; color:var(--tx2); font-family:var(--font-mono);">O motor diagnosticou o cenário corretamente?</div>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-ai-like" onclick="sendAIFeedback(true, '${targetMes}', ${(margem*100).toFixed(2)})" style="background:var(--sf2); border:1px solid var(--bd); color:var(--tx); padding:8px 16px; border-radius:8px; font-family:var(--font-body); font-size:13px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;">
+                    👍 Sim
+                </button>
+                <button id="btn-ai-dislike" onclick="sendAIFeedback(false, '${targetMes}', ${(margem*100).toFixed(2)})" style="background:var(--sf2); border:1px solid var(--bd); color:var(--tx); padding:8px 16px; border-radius:8px; font-family:var(--font-body); font-size:13px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;">
+                    👎 Impreciso
+                </button>
+            </div>
+        </div>
       `;
   }, 1800);
+}
+
+// ════════════════════════════════
+//  AI FEEDBACK SYSTEM (RLHF)
+// ════════════════════════════════
+function sendAIFeedback(isLike, mesAnalisado, margemRegistrada) {
+    if(!S.user) return;
+
+    // 1. Monta o pacote de dados para aprendizagem futura
+    const feedbackData = {
+        usuario: S.user,
+        timestamp: Date.now(),
+        dataHora: new Date().toLocaleString('pt-BR'),
+        mesContexto: mesAnalisado,
+        margemContexto: margemRegistrada,
+        feedbackPositivo: isLike
+    };
+
+    // 2. Envia silenciosamente para o nó de machine learning no Firebase
+    db.ref('laborbi/ai_feedback_logs').push(feedbackData).then(() => {
+        // Notifica o usuário
+        if(isLike) {
+            toast('Obrigado! O motor usará este padrão como referência positiva.', 'ok');
+        } else {
+            toast('Feedback recebido. Ajustaremos os pesos para os próximos relatórios.', 'amber');
+        }
+
+        // 3. Atualiza os botões visualmente para confirmar a ação
+        const btnLike = document.getElementById('btn-ai-like');
+        const btnDislike = document.getElementById('btn-ai-dislike');
+
+        if(isLike) {
+            btnLike.style.background = 'var(--green-dim)';
+            btnLike.style.borderColor = 'var(--green)';
+            btnLike.style.color = 'var(--green)';
+            btnDislike.style.opacity = '0.2';
+        } else {
+            btnDislike.style.background = 'rgba(239,68,68,.1)';
+            btnDislike.style.borderColor = 'var(--red)';
+            btnDislike.style.color = 'var(--red)';
+            btnLike.style.opacity = '0.2';
+        }
+
+        btnLike.disabled = true;
+        btnDislike.disabled = true;
+        btnLike.style.cursor = 'default';
+        btnDislike.style.cursor = 'default';
+    }).catch(err => {
+        toast('Erro ao registrar feedback de IA: ' + err.message, 'err');
+    });
 }
 
 // ════════════════════════════════
