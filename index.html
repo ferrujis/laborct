@@ -2062,10 +2062,20 @@ const FIXO_MENSAL = {
   // 'talita.xxx': 8000.00,  // adicionar quando o login for cadastrado
 };
 
+// Vets com taxa fixa por hora (sobrepõe a tabela de remuneração) — chave = login
+const HORA_FIXA = {
+  'larissa.iozzi': 37.74,
+};
+
 function calcFixo(vetLogin, hNorm, hNot){
   // 1. Se tem fixo mensal definido → retorna o mensal ÷ 4 semanas
   if(FIXO_MENSAL[vetLogin] !== undefined){
     return r2(FIXO_MENSAL[vetLogin] / 4);
+  }
+  // 1b. Taxa fixa por hora (aplica a todas as horas, normais e noturnas)
+  if(HORA_FIXA[vetLogin] !== undefined){
+    if(!hNorm && !hNot) return 0;
+    return r2((hNorm + hNot) * HORA_FIXA[vetLogin]);
   }
   // 2. Sem horas registradas → retorna 0 (será pego da planilha base)
   if(!hNorm && !hNot) return 0;
@@ -2477,7 +2487,9 @@ function renderPetcare(){
           ${d.horas>0
             ? (FIXO_MENSAL[n]!==undefined
                 ? 'fixo mensal ÷4'
-                : (d.hN*4<=180?'R$26,22':'R$23,60')+'/h norm + R$37,79/h not')
+                : (HORA_FIXA[n]!==undefined
+                    ? 'R$'+HORA_FIXA[n].toFixed(2).replace('.',',')+'/h'
+                    : (d.hN*4<=180?'R$26,22':'R$23,60')+'/h norm + R$37,79/h not'))
             : 'da planilha'}
         </div>
       </td>
