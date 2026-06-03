@@ -1,0 +1,58 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../Dockerfile.backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - CORS_ORIGINS=http://localhost:8080,http://localhost:3000
+      - ADMIN_EMAIL=admin@fj-analytics.com
+      - ADMIN_PASSWORD=Admin123!
+      - DB_PATH=/app/data/fj-analytics.db
+    volumes:
+      - backend-data:/app/data
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - fj-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - fj-network
+
+  # Optional: Redis for production session storage
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - fj-network
+    profiles:
+      - production
+
+networks:
+  fj-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+  redis-data:

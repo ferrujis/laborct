@@ -1,0 +1,15 @@
+{
+  "name": "fj-analytics-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for FJ Analytics SaaS",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.10.0"
+  }
+}

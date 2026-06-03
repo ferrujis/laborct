@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FJ Analytics — Business Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --bg: #080b12; --bg2: #0d1117; --sf: #111622; --sf2: #161d2e; --sf3: #1c2538;
+  --bd: #222d45; --bd2: #2a3650;
+  --cyan: #00d4ff; --cyan-dim: rgba(0,212,255,.12); --cyan-glow: rgba(0,212,255,.35);
+  --violet: #8b5cf6; --violet-dim: rgba(139,92,246,.12);
+  --pink: #f43f5e; --pink-dim: rgba(244,63,94,.10);
+  --green: #10b981; --green-dim: rgba(16,185,129,.12);
+  --amber: #f59e0b; --amber-dim: rgba(245,158,11,.12); --red: #ef4444;
+  --tx: #e2e8f8; --tx2: #8899bb; --tx3: #4a5a80;
+  --font-display: 'Plus Jakarta Sans', sans-serif; --font-body: 'Space Grotesk', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+  --radius: 14px; --radius-sm: 8px; --shadow: 0 4px 24px rgba(0,0,0,.5); --shadow-lg: 0 12px 48px rgba(0,0,0,.7);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--tx); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 600px 400px at 15% 20%, rgba(0,212,255,.04) 0%, transparent 70%), radial-gradient(ellipse 500px 500px at 85% 80%, rgba(139,92,246,.04) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+
+#ls { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+.login-wrap { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%; max-width: 420px; padding: 24px; }
+.login-brand { text-align: center; }
+.login-logo { font-family: var(--font-display); font-size: 36px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+.login-logo .accent { color: var(--cyan); }
+.login-logo .tag { display: inline-block; font-size: 10px; font-family: var(--font-mono); background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,212,255,.25); padding: 3px 8px; border-radius: 4px; letter-spacing: 2px; margin-left: 8px; vertical-align: middle; position: relative; top: -4px; }
+.login-sub { font-size: 13px; color: var(--tx3); margin-top: 6px; letter-spacing: 0.3px; }
+.login-card { width: 100%; background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 36px 32px; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+.login-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity: .6; }
+.login-field-label { font-size: 11px; font-family: var(--font-mono); color: var(--tx3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.login-field-label::before { content: ''; width: 3px; height: 3px; background: var(--cyan); border-radius: 50%; }
+.login-input { width: 100%; background: var(--bg); border: 1px solid var(--bd); border-radius: var(--radius-sm); padding: 13px 16px; color: var(--tx); font-family: var(--font-mono); font-size: 14px; outline: none; transition: all .2s; margin-bottom: 20px; }
+.login-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,.08); }
+.login-btn { width: 100%; background: var(--cyan); color: #030810; border: none; border-radius: var(--radius-sm); padding: 14px; font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.5px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; }
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,.3); }
+.login-btn:active { transform: none; }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.login-err { margin-top: 14px; padding: 10px 14px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: var(--radius-sm); font-size: 12px; color: var(--red); display: none; }
+
+#hub-view, #labor-view, #cogs-view, #insights-view, #admin-view { display: none; }
+#hub-view { min-height: 100vh; background: var(--bg); position: relative; z-index: 1; }
+#hub-view.active, #labor-view.active, #cogs-view.active, #insights-view.active, #admin-view.active { display: block; }
+
+.hub-topbar { height: 60px; background: rgba(17,22,34,.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--bd); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+.hub-topbar-logo { font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: var(--tx); flex: 1; }
+.hub-topbar-logo .ac { color: var(--cyan); }
+.hub-body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 48px 24px; gap: 40px; }
+.hub-headline { text-align: center; }
+.hub-headline h1 { font-family: var(--font-display); font-size: 42px; font-weight: 800; letter-spacing: -2px; line-height: 1.1; }
+.hub-headline h1 span { color: var(--cyan); }
+.hub-headline p { font-size: 15px; color: var(--tx2); margin-top: 10px; }
+.hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; width: 100%; max-width: 1100px; }
+.hub-module { background: var(--sf); border: 1px solid var(--bd); border-radius: 20px; padding: 32px; cursor: pointer; transition: all .3s cubic-bezier(.22,.68,0,1.2); position: relative; overflow: hidden; }
+.hub-module:hover { border-color: var(--clr, var(--cyan)); transform: translateY(-5px) scale(1.01); box-shadow: 0 20px 48px rgba(0,0,0,.5), 0 0 0 1px var(--clr, var(--cyan)); }
+.hub-mod-stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--clr, var(--cyan)); opacity: 0; transition: opacity .3s; }
+.hub-module:hover .hub-mod-stripe { opacity: 1; }
+.hub-mod-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--clr-dim, var(--cyan-dim)); border: 1px solid var(--clr-border, rgba(0,212,255,.2)); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
+.hub-mod-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+.hub-mod-name strong { color: var(--clr, var(--cyan)); }
+.hub-mod-desc { font-size: 13px; color: var(--tx2); line-height: 1.6; }
+.hub-mod-arrow { position: absolute; bottom: 28px; right: 28px; font-size: 18px; color: var(--tx3); transition: all .3s; }
+.hub-module:hover .hub-mod-arrow { color: var(--clr, var(--cyan)); transform: translate(3px, -3px); }
+#card-admin { display: none; }
+
+.tb { height: 58px; background: rgba(17,22,34,.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--bd); display: flex; align-items: center; padding: 0 20px; gap: 12px; position: sticky; top: 0; z-index: 100; }
+.tbl { font-family: var(--font-display); font-size: 16px; font-weight: 800; letter-spacing: -0.5px; color: var(--cyan); flex-shrink: 0; }
+.tbl span { color: var(--tx2); font-weight: 400; }
+.tbl.cogs { color: var(--violet); }
+.tnav { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.tnav::-webkit-scrollbar { display: none; }
+.nb { padding: 6px 14px; border-radius: 6px; border: none; background: transparent; color: var(--tx3); font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.nb:hover { color: var(--tx); background: var(--sf3); }
+.nb.active { color: var(--cyan); background: var(--cyan-dim); }
+.nb.cogs.active { color: var(--violet); background: var(--violet-dim); }
+.tbr { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
+.brl { padding: 4px 12px; border-radius: 100px; font-size: 11px; font-family: var(--font-mono); background: var(--violet-dim); color: #a78bfa; border: 1px solid rgba(139,92,246,.25); }
+.brl.admin { background: var(--cyan-dim); color: var(--cyan); border-color: rgba(0,212,255,.25); }
+.last-upd { font-size: 10px; font-family: var(--font-mono); color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(0,212,255,.2); padding: 4px 10px; border-radius: 6px; display: none; }
+.lgbtn { padding: 6px 12px; border-radius: 7px; border: 1px solid var(--bd); background: transparent; color: var(--tx3); font-family: var(--font-mono); font-size: 11px; cursor: pointer; transition: all .2s; }
+.lgbtn:hover { border-color: var(--red); color: var(--red); }
+.btn-back { border-color: var(--bd2) !important; color: var(--tx2) !important; }
+.btn-back:hover { border-color: var(--tx2) !important; color: var(--tx) !important; }
+
+.pg { display: none; padding: 24px; animation: fadeUp .3s ease; }
+.pg.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.ptitle { font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 4px; }
+.ptitle span { color: var(--cyan); }
+.ptitle.cogs span { color: var(--violet); }
+.psub { color: var(--tx3); font-size: 12px; margin-bottom: 24px; font-family: var(--font-mono); }
+
+.kgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kc { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); padding: 18px; position: relative; overflow: hidden; transition: border-color .2s, transform .2s; cursor: default; }
+.kc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--clr, var(--cyan)); opacity: .7; }
+.kc:hover { border-color: var(--clr, var(--cyan)); transform: translateY(-2px); }
+.klbl { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--tx3); margin-bottom: 10px; }
+.kval { font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; color: var(--clr, var(--cyan)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ksub { font-size: 10px; color: var(--tx3); margin-top: 6px; font-family: var(--font-mono); }
+
+.cgrid { display: grid; gap: 14px; margin-bottom: 20px; }
+.cgrid-2 { grid-template-columns: 2fr 1fr; }
+.cgrid-1 { grid-template-columns: 1fr; }
+.cc { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); padding: 20px; overflow: hidden; }
+.cc canvas { max-height: 260px; width: 100% !important; }
+.ctitle { font-family: var(--font-display); font-size: 13px; font-weight: 600; margin-bottom: 16px; color: var(--tx); display: flex; align-items: center; gap: 8px; }
+.ctitle::before { content: ''; width: 3px; height: 14px; background: var(--cyan); border-radius: 2px; flex-shrink: 0; }
+
+.tw { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+.th { padding: 16px 20px; border-bottom: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between; background: var(--sf2); }
+.th span:first-child { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--tx); display: flex; align-items: center; gap: 8px; }
+.th span:first-child::before { content: ''; width: 3px; height: 13px; background: var(--cyan); border-radius: 2px; }
+.th span:last-child { font-size: 11px; font-family: var(--font-mono); color: var(--tx3); }
+.tscroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--sf2); padding: 10px 16px; text-align: left; font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--tx3); border-bottom: 1px solid var(--bd); white-space: nowrap; }
+td { padding: 11px 16px; font-size: 12px; border-bottom: 1px solid rgba(34,45,69,.5); color: var(--tx); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.pbar { height: 3px; background: var(--sf3); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.pfill { height: 100%; background: linear-gradient(90deg, var(--violet), var(--cyan)); border-radius: 2px; }
+
+.frow { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; padding: 14px 16px; background: var(--sf2); border: 1px solid var(--bd); border-radius: 10px; }
+.flbl { font-size: 11px; font-family: var(--font-mono); color: var(--tx3); text-transform: uppercase; letter-spacing: 1px; }
+select { background: var(--bg2); border: 1px solid var(--bd); border-radius: 7px; padding: 7px 32px 7px 12px; color: var(--tx); font-family: var(--font-mono); font-size: 12px; cursor: pointer; outline: none; transition: all .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6L10 0z' fill='%234a5a80'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+select:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,.1); }
+
+.bdg { padding: 3px 9px; border-radius: 100px; font-size: 10px; font-family: var(--font-mono); letter-spacing: 0.5px; white-space: nowrap; display: inline-block; }
+.bg { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,.2); }
+.by { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,.2); }
+.br { background: rgba(239,68,68,.1); color: var(--red); border: 1px solid rgba(239,68,68,.2); }
+.bc { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,212,255,.2); }
+
+.ai-box { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); padding: 28px; position: relative; overflow: hidden; margin-bottom: 20px; }
+.ai-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--pink), var(--violet), var(--cyan)); }
+.ai-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--bd); }
+.ai-icon-wrap { width: 44px; height: 44px; background: var(--pink-dim); border: 1px solid rgba(244,63,94,.25); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.ai-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+.ai-block { margin-bottom: 20px; background: var(--bg2); padding: 20px; border-radius: 10px; border: 1px solid var(--bd); }
+.ai-block h4 { font-family: var(--font-display); font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.ai-block p { font-size: 13px; color: var(--tx2); line-height: 1.7; margin-bottom: 8px; }
+.ai-block strong { color: var(--tx); font-weight: 600; }
+
+.admin-layout { display: flex; gap: 20px; align-items: flex-start; }
+.admin-sidebar { width: 210px; background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); padding: 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.as-btn { padding: 12px 14px; text-align: left; background: transparent; border: none; color: var(--tx2); border-radius: 8px; font-family: var(--font-body); font-weight: 500; font-size: 13px; cursor: pointer; transition: all .2s; }
+.as-btn:hover { background: var(--sf3); color: var(--tx); }
+.as-btn.active { background: var(--cyan-dim); color: var(--cyan); }
+.admin-content { flex: 1; min-width: 0; }
+.ab-sec { display: none; animation: fadeUp .25s ease; }
+.ab-sec.active { display: block; }
+.ibox { background: rgba(245,158,11,.05); border: 1px solid rgba(245,158,11,.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 12px; font-family: var(--font-mono); color: var(--amber); line-height: 1.8; }
+
+.ugrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.uzn { border: 2px dashed var(--bd2); border-radius: var(--radius); padding: 28px 18px; text-align: center; cursor: pointer; transition: all .25s; background: var(--sf); }
+.uzn:hover, .uzn.drag { border-color: var(--cyan); background: var(--cyan-dim); transform: translateY(-2px); }
+.ui { font-size: 30px; margin-bottom: 8px; }
+.ut { font-family: var(--font-display); font-size: 14px; font-weight: 600; margin-bottom: 4px; color: var(--tx); }
+.uh { color: var(--tx3); font-size: 11px; font-family: var(--font-mono); margin-bottom: 10px; }
+.utag { display: inline-block; padding: 2px 8px; background: var(--cyan-dim); color: var(--cyan); border-radius: 4px; font-size: 9px; font-family: var(--font-mono); letter-spacing: 1px; border: 1px solid rgba(0,212,255,.15); }
+.ubtn { display: inline-block; margin-top: 12px; padding: 8px 20px; background: var(--cyan); color: #030810; border-radius: 7px; font-family: var(--font-display); font-weight: 700; font-size: 12px; cursor: pointer; border: none; transition: all .2s; }
+.ubtn:hover { opacity: .85; transform: translateY(-1px); }
+.fi { display: none; }
+.fst { margin-top: 8px; padding: 8px 12px; border-radius: 7px; font-size: 11px; font-family: var(--font-mono); display: none; }
+.fst.ok { background: var(--green-dim); color: var(--green); display: block; border: 1px solid rgba(16,185,129,.2); }
+.fst.er { background: rgba(239,68,68,.1); color: var(--red); display: block; border: 1px solid rgba(239,68,68,.2); }
+
+.panel { background: var(--sf); border: 1px solid var(--bd); border-radius: var(--radius); padding: 20px; }
+.ptl { font-family: var(--font-display); font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+.fg { margin-bottom: 14px; }
+.fgl { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1.5px; color: var(--tx3); margin-bottom: 6px; display: block; }
+.fgi { width: 100%; background: var(--bg); border: 1px solid var(--bd); border-radius: 7px; padding: 9px 12px; color: var(--tx); font-family: var(--font-mono); font-size: 12px; outline: none; transition: all .2s; }
+.fgi:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,.08); }
+.abtn { padding: 9px 18px; border-radius: 7px; border: none; font-family: var(--font-display); font-weight: 700; font-size: 12px; cursor: pointer; background: var(--cyan); color: #030810; transition: all .2s; }
+.abtn:hover { opacity: .85; }
+
+.ui-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(34,45,69,.5); gap: 10px; }
+.ui-item:last-child { border-bottom: none; }
+.uav { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.ua { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(0,212,255,.25); }
+.uv { background: var(--violet-dim); color: var(--violet); border: 1px solid rgba(139,92,246,.25); }
+.uin { flex: 1; }
+.unm { font-size: 13px; font-weight: 500; }
+.url { font-size: 10px; color: var(--tx3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+.dbtn, .ebtn { padding: 4px 9px; background: transparent; border: 1px solid transparent; border-radius: 5px; font-size: 10px; font-family: var(--font-mono); cursor: pointer; transition: all .2s; }
+.dbtn { color: var(--tx3); }
+.dbtn:hover { border-color: var(--red); color: var(--red); }
+.ebtn { color: var(--cyan); }
+.ebtn:hover { border-color: var(--cyan); background: var(--cyan-dim); }
+
+.log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.log-table th { background: var(--sf2); padding: 10px 14px; text-align: left; color: var(--tx3); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid var(--bd); }
+.log-table td { padding: 10px 14px; border-bottom: 1px solid rgba(34,45,69,.5); }
+.log-table tr:hover td { background: rgba(255,255,255,.015); }
+
+.nd { padding: 48px 20px; text-align: center; color: var(--tx3); font-size: 13px; }
+.nd-i { font-size: 32px; margin-bottom: 10px; opacity: .6; }
+
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--sf2); border: 1px solid var(--bd); border-radius: 12px; padding: 12px 18px; font-size: 13px; font-family: var(--font-body); box-shadow: var(--shadow-lg); transform: translateY(80px); opacity: 0; transition: all .35s cubic-bezier(.22,.68,0,1.2); z-index: 9999; max-width: 320px; }
+.toast.show { transform: none; opacity: 1; }
+.toast.ok { border-color: var(--green); color: var(--green); }
+.toast.err { border-color: var(--red); color: var(--red); }
+.toast.inf { border-color: var(--cyan); color: var(--cyan); }
+
+.twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+@media (max-width: 900px) {
+  .cgrid-2 { grid-template-columns: 1fr; }
+  .ugrid { grid-template-columns: 1fr; }
+  .twocol { grid-template-columns: 1fr; }
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+}
+@media (max-width: 600px) {
+  .kgrid { grid-template-columns: repeat(2, 1fr); }
+  .pg { padding: 16px; }
+  .tb { padding: 0 14px; }
+  .hub-headline h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<div id="ls">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="login-logo">FJ<span class="accent"> Analytics</span><span class="tag">v3</span></div>
+      <div class="login-sub">Business Intelligence Platform</div>
+    </div>
+    <div class="login-card">
+      <div class="login-field-label">Corporate Username</div>
+      <input type="text" class="login-input" id="lu" placeholder="name.surname" autocomplete="off">
+      <div class="login-field-label">Access Password</div>
+      <input type="password" class="login-input" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">Access System →</button>
+      <div class="login-err" id="lerr">Invalid credentials. Try again.</div>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div id="hub-view">
+    <div class="hub-topbar">
+      <div class="hub-topbar-logo">FJ<span class="ac"> Analytics</span></div>
+      <span class="brl" id="brl-hub"></span>
+      <button class="lgbtn" onclick="doLogout()">Exit</button>
+    </div>
+    <div class="hub-body">
+      <div class="hub-headline">
+        <h1>Welcome to <span>FJ Analytics</span></h1>
+        <p>Select a module to begin your analysis</p>
+      </div>
+      <div class="hub-grid">
+        <div class="hub-module" style="--clr:var(--cyan);--clr-dim:var(--cyan-dim);--clr-border:rgba(0,212,255,.2);" onclick="openLabor()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">🏥</div>
+          <div class="hub-mod-name">Labor<strong>BI</strong></div>
+          <div class="hub-mod-desc">Commission Management, Veterinary Production and Complete Clinical Analysis.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+        <div class="hub-module" style="--clr:var(--violet);--clr-dim:var(--violet-dim);--clr-border:rgba(139,92,246,.2);" onclick="openCogs()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">📊</div>
+          <div class="hub-mod-name">Cogs<strong style="color:var(--violet)">BI</strong></div>
+          <div class="hub-mod-desc">Cost Management, Gross Profit and Financial Intelligence by DRE.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+        <div class="hub-module" style="--clr:var(--pink);--clr-dim:var(--pink-dim);--clr-border:rgba(244,63,94,.2);" onclick="openInsights()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">🧠</div>
+          <div class="hub-mod-name">Insights<strong style="color:var(--pink)">AI</strong></div>
+          <div class="hub-mod-desc">Deep analysis focused on the current month with strategic action plans.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+        <div class="hub-module" id="card-admin" style="--clr:var(--amber);--clr-dim:var(--amber-dim);--clr-border:rgba(245,158,11,.2);" onclick="openAdmin()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">⚙️</div>
+          <div class="hub-mod-name">Admin<strong style="color:var(--amber)">Center</strong></div>
+          <div class="hub-mod-desc">Data uploads, user control and access audit.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="labor-view">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
+      <div class="tbl">Labor<span>BI</span></div>
+      <div class="tnav" id="tnav-labor"></div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-labor"></span>
+        <span class="brl" id="brl-labor"></span>
+        <button class="lgbtn" onclick="doLogout()">Exit</button>
+      </div>
+    </div>
+    <div class="pg active" id="pg-petcare">
+      <div class="ptitle">FJ <span>Analytics 2026</span></div>
+      <div class="psub" id="petcare-sub">Loading from server...</div>
+      <div class="frow">
+        <span class="flbl">Filter:</span>
+        <select id="f-vet" onchange="renderPetcare()"><option value="">All Veterinarians</option></select>
+        <select id="f-mes" onchange="renderPetcare()"><option value="">All Months</option>
+</select>
+        <select id="f-sem" onchange="renderPetcare()"><option value="">All Weeks</option></select>
+      </div>
+      <div class="kgrid" id="pc-kpi"></div>
+      <div class="cgrid cgrid-2">
+        <div class="cc"><div class="ctitle">Fixed + Variable + Hours per Week</div><canvas id="ch-combo" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Fixed vs Variable</div><canvas id="ch-donut" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>By Veterinarian</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
+    </div>
+    <div class="pg" id="pg-ranking">
+      <div class="ptitle">Vet <span>Ranking</span></div>
+      <div class="psub">Total production — filter by month</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="r-mes" onchange="renderRanking()"><option value="">All Months</option></select>
+      </div>
+      <div class="cc" style="margin-bottom:16px"><div class="ctitle">Production by Veterinarian</div><canvas id="ch-rank" height="130"></canvas></div>
+      <div class="tw"><div class="th"><span>Ranking Table</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
+    </div>
+    <div class="pg" id="pg-clinica">
+      <div class="ptitle">Medical <span>Clinic</span></div>
+      <div class="psub">Consultations and clinical care — CLINICA tab from Análises file</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="cl-mes" onchange="renderClinica()"><option value="">All Months</option></select>
+        <select id="cl-vet" onchange="renderClinica()"><option value="">All Veterinarians</option></select>
+      </div>
+      <div class="kgrid" id="cl-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Revenue by Vet (R$)</div><canvas id="ch-cl-vet" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Efficiency — Posted vs Table per Vet</div><canvas id="ch-cl-efic" height="130"></canvas></div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Top 10 Procedures — Total Value (R$)</div><canvas id="ch-cl-proc" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Top 10 Procedures — Volume</div><canvas id="ch-cl-vol" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Details by Veterinarian</span><span id="cl-tcount"></span></div><div class="tscroll" id="cl-table"></div></div>
+    </div>
+    <div class="pg" id="pg-inter">
+      <div class="ptitle">Hospitalization <span>— INTER</span></div>
+      <div class="psub">Hospitalization procedures — INTER tab from Análises file</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="it-mes" onchange="renderInter()"><option value="">All Months</option></select>
+        <select id="it-vet" onchange="renderInter()"><option value="">All Veterinarians</option></select>
+      </div>
+      <div class="kgrid" id="it-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Revenue by Vet (R$)</div><canvas id="ch-it-vet" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Posted vs Table — Efficiency by Vet</div><canvas id="ch-it-efic" height="130"></canvas></div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Top 10 Procedures — Total Value (R$)</div><canvas id="ch-it-proc" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Top 10 Procedures — Volume</div><canvas id="ch-it-vol" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Details by Procedure</span><span id="it-tcount"></span></div><div class="tscroll" id="it-table"></div></div>
+    </div>
+    <div class="pg" id="pg-cirurgico">
+      <div class="ptitle">Surgical <span>Unit</span></div>
+      <div class="psub">Surgical procedures — C. CIRURGICO tab from Análises file</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="ci-mes" onchange="renderCirurgico()"><option value="">All Months</option></select>
+        <select id="ci-vet" onchange="renderCirurgico()"><option value="">All Veterinarians</option></select>
+      </div>
+      <div class="kgrid" id="ci-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Revenue by Vet (R$)</div><canvas id="ch-ci-vet" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Posted vs Table — Efficiency by Vet</div><canvas id="ch-ci-efic" height="130"></canvas></div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Top 10 Surgeries — Total Value (R$)</div><canvas id="ch-ci-proc" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Top 10 Surgeries — Volume</div><canvas id="ch-ci-vol" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Details by Surgical Procedure</span><span id="ci-tcount"></span></div><div class="tscroll" id="ci-table"></div></div>
+    </div>
+    <div class="pg" id="pg-laboratorio">
+      <div class="ptitle">Laboratory <span>— LAB</span></div>
+      <div class="psub">Exams and lab procedures — LAB tab from Análises file</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="lb-mes" onchange="renderLab()"><option value="">All Months</option></select>
+        <select id="lb-vet" onchange="renderLab()"><option value="">All Veterinarians</option></select>
+      </div>
+      <div class="kgrid" id="lb-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Top 10 Exams — Volume of Requests</div><canvas id="ch-lb-vol" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Top 10 Exams — Total Revenue (R$)</div><canvas id="ch-lb-fat" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Exam Catalog</span><span id="lb-tcount"></span></div><div class="tscroll" id="lb-table"></div></div>
+    </div>
+  </div>
+
+  <div id="cogs-view">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
+      <div class="tbl cogs">Cogs<span>BI</span></div>
+      <div class="tnav" id="tnav-cogs"><button class="nb cogs active">DRE Overview</button></div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-cogs"></span>
+        <span class="brl" id="brl-cogs"></span>
+        <button class="lgbtn" onclick="doLogout()">Exit</button>
+      </div>
+    </div>
+    <div class="pg active">
+      <div class="ptitle" style="color:var(--tx)">Cogs <span style="color:var(--violet)">BI</span></div>
+      <div class="psub">Profitability Analysis, Contribution Margin and Operational Costs.</div>
+      <div class="frow">
+        <span class="flbl">Month:</span>
+        <select id="cg-mes" onchange="renderCogs()"><option value="">All Months</option></select>
+      </div>
+      <div class="kgrid" id="cg-kpi"></div>
+      <div class="twocol">
+        <div class="cc"><div class="ctitle">Expenses Composition (Team vs Supplies)</div><canvas id="ch-cogs-donut" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Major Operational Costs (by Supplier)</div><canvas id="ch-cogs-bar" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Operational Details</span><span id="cg-tcount"></span></div><div class="tscroll" id="cg-table"></div></div>
+    </div>
+  </div>
+
+  <div id="insights-view">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
+      <div class="tbl" style="color:var(--pink)">Insights<span style="color:var(--tx2)">AI</span></div>
+      <div class="tnav"></div>
+      <div class="tbr">
+        <span class="brl" id="brl-insights"></span>
+        <button class="lgbtn" onclick="doLogout()">Exit</button>
+      </div>
+    </div>
+    <div class="pg active">
+      <div class="ptitle" style="color:var(--tx)">Executive <span style="color:var(--pink)">Analysis</span></div>
+      <div class="psub">Analytics engine processing financial and operational data in real time.</div>
+      <div id="ai-content"><div class="nd">Loading...</div></div>
+    </div>
+  </div>
+
+  <div id="admin-view">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
+      <div class="tbl" style="color:var(--amber)">Admin<span style="color:var(--tx2)">Center</span></div>
+      <div class="tnav"></div>
+      <div class="tbr">
+        <span class="brl" id="brl-admin"></span>
+        <button class="lgbtn" onclick="doLogout()">Exit</button>
+      </div>
+    </div>
+    <div class="pg active">
+      <div class="ptitle" style="color:var(--tx)">Admin <span style="color:var(--amber)">Panel</span></div>
+      <div class="psub">Central control of files, access and system audit.</div>
+      <div class="admin-layout">
+        <div class="admin-sidebar">
+          <button class="as-btn active" onclick="switchAdmin('ab-base', this)">📂 Upload Data</button>
+          <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Users</button>
+          <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Access Logs</button>
+        </div>
+        <div class="admin-content">
+          <div id="ab-base" class="ab-sec active">
+            <div class="ibox">
+              ℹ️ Upload Excel files. Data <strong>replaces</strong> previous data on each upload. Only admins can upload.<br>
+              <strong>Planilha_sem_titulo.xlsx</strong> — "Base de dados" tab<br>
+              <strong>Analises_Balneario.xlsx</strong> — tabs: INTER, C. CIRURGICO, CLINICA, LAB<br>
+              <strong>Custos_Balneario.xlsx</strong> — single tab with COGS expenses.
+            </div>
+            <div class="ugrid">
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
+                  <div class="ui">📋</div>
+                  <div class="ut">Base Data</div>
+                  <div class="uh">Planilha_sem_titulo.xlsx</div>
+                  <div><span class="utag">BASE DATA</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Select</button>
+                </div>
+                <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
+                <div class="fst" id="fst-base"></div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
+                  <div class="ui">🔬</div>
+                  <div class="ut">Analysis File</div>
+                  <div class="uh">Analises_Balneario.xlsx</div>
+                  <div><span class="utag">INTER · SURGICAL · CLINIC</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Select</button>
+                </div>
+                <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
+                <div class="fst" id="fst-anal"></div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-cogs').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'cogs')">
+                  <div class="ui">📉</div>
+                  <div class="ut">Operational Costs</div>
+                  <div class="uh">Custos_Balneario.xlsx</div>
+                  <div><span class="utag" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2)">TM35 · O2 · LABS</span></div>
+                  <button class="ubtn" style="background:var(--red)" onclick="event.stopPropagation();document.getElementById('fi-cogs').click()">Select</button>
+                </div>
+                <input type="file" id="fi-cogs" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'cogs')">
+                <div class="fst" id="fst-cogs"></div>
+              </div>
+            </div>
+          </div>
+          <div id="ab-users" class="ab-sec">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="panel">
+                <div class="ptl">Add User</div>
+                <div class="fg"><label class="fgl">Access Type</label>
+                  <select id="nrole" style="width:100%;margin-bottom:10px">
+                    <option value="viewer">Viewer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="fg"><label class="fgl">Username</label><input type="text" class="fgi" id="nu" placeholder="name.surname"></div>
+                <div class="fg"><label class="fgl">Initial Password</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
+                <button class="abtn" onclick="addUser()">Add User</button>
+              </div>
+              <div class="panel">
+                <div class="ptl">System Users</div>
+                <div id="ulist"></div>
+              </div>
+            </div>
+          </div>
+          <div id="ab-logs" class="ab-sec">
+            <div class="panel">
+              <div class="ptl">Recent Access Audit</div>
+              <div style="overflow-x:auto">
+                <div id="log-list"><div class="nd">Loading logs...</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIGURATION - Backend API
+// ═════════════════════════========================
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : '/api';
+
+let API_TOKEN = localStorage.getItem('fj_analytics_token');
+
+function getAuthHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${API_TOKEN}`
+  };
+}
+
+async function apiCall(endpoint, options = {}) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    pretty: options.method === 'POST' )
+    ? { body: options.body, ...getAuthHeaders() }
+    : getAuthHeaders(),
+    ...options
+  });
+
+  if (res.status === 401) {
+    doLogout();
+    throw new Error('Session expired');
+  }
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || 'API request failed');
+  }
+
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+const S = { role: 'viewer', user: null, base: null, anal: null, cogs, meta: {}, charts: {} };
+let globalUsers = [];
+let globalLogs = [];
+
+// ══════════════════════════════════════════════════
+//  INITIALIZATION
+// ══════════════════════════════════════════════════
+window.onload = async () => {
+  const savedUser = localStorage.getItem('loggedUser');
+  const savedToken = localStorage.getItem('fj_analytics_token');
+
+  if (savedToken) {
+    API_TOKEN = savedToken;
+    try {
+      const res = await apiCall('/auth/verify');
+      S.user = res.user.username;
+      S.role = res.user.role;
+      document.getElementById('ls').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      updateTopBar();
+      showHub();
+      loadData();
+    } catch (e) {
+      localStorage.removeItem('fj_analytics_token');
+      localStorage.removeItem('loggedUser');
+      API_TOKEN = null;
+    }
+  }
+};
+
+async function loadData() {
+  try {
+    const data = await apiCall('/data/');
+    S.base = data.base || [];
+    S.anal = data.anal || {};
+    S.cogs = data.cogs || [];
+    S.meta = data.meta || {};
+
+    if (S.meta.base) setFst('base', S.meta.base, true);
+    if (S.meta.anal) setFst('anal', S.meta.anal, true);
+    if (S.meta.cogs) setFst('cogs', S.meta.cogs, true);
+    if (S.meta.lastUpdated) {
+      document.getElementById('last-upd-labor').textContent = 'Updated: ' + S.meta.lastUpdated;
+      document.getElementById('last-upd-labor').style.display = 'inline-block';
+      document.getElementById('last-upd-cogs').textContent = 'Updated: ' + S.meta.lastUpdated;
+      document.getElementById('last-upd-cogs').style.display = 'inline-block';
+    }
+
+    populateAllFilters();
+    if (S.role === 'admin') {
+      loadAdminData();
+    }
+  } catch (e) {
+    console.error('Failed to load data:', e);
+  }
+}
+
+async function loadAdminData() {
+  try {
+    globalUsers = await apiCall('/users/');
+    globalLogs = (await apiCall('/logs/')).logs || [];
+    if (document.getElementById('admin-view').style.display === 'block') {
+      renderUsers();
+      renderLogs();
+    }
+  } catch (e) {
+    console.error('Failed to load admin data:', e);
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  LOGIN/LOGOUT
+// ══════════════════════════════════════════════════
+async function doLogin() {
+  const u = document.getElementById('lu').value.trim().toLowerCase();
+  const p = document.getElementById('lp').value;
+  const btn = document.getElementById('loginBtn');
+
+  if (!u || !p) {
+    showError('Enter username and password');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Authenticating...';
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || 'Login failed');
+      return;
+    }
+
+    API_TOKEN = data.token;
+    S.user = data.user.username;
+    S.role = data.user.role;
+
+    localStorage.setItem('fj_analytics_token', data.token);
+    localStorage.setItem('loggedUser', JSON.stringify({ user: data.user.username, role: data.user.role }));
+
+    document.getElementById('ls').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    updateTopBar();
+    showHub();
+    loadData();
+  } catch (e) {
+    showError('Connection error. Is the server running?');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Access System →';
+  }
+}
+
+function showError(msg) {
+  const e = document.getElementById('lerr');
+  e.textContent = msg;
+  e.style.display = 'block';
+  setTimeout(() => e.style.display = 'none', 3000);
+}
+
+function doLogout() {
+  localStorage.removeItem('fj_analytics_token');
+  localStorage.removeItem('loggedUser');
+  API_TOKEN = null;
+  S.user = null;
+  S.role = null;
+  S.base = null;
+  S.anal = null;
+  S.cogs = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('ls').style.display = 'flex';
+  document.getElementById('lu').value = '';
+  document.getElementById('lp').value = '';
+  document.getElementById('last-upd-labor').style.display = 'none';
+  document.getElementById('last-upd-cogs').style.display = 'none';
+  killAll();
+  location.reload();
+}

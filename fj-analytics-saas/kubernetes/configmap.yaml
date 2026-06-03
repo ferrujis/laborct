@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fj-analytics-config
+  namespace: fj-analytics
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  DB_PATH: "/app/data/fj-analytics.db"
+  CORS_ORIGINS: "https://analytics.yourdomain.com,https://yourdomain.com"
+  RATE_LIMIT_WINDOW_MS: "900000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  MAX_FILE_SIZE_MB: "50"
+  LOG_LEVEL: "warn"
