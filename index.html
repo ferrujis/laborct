@@ -1597,7 +1597,7 @@ select:focus {
           <div id="ab-base" class="ab-sec on">
             <div class="ibox">
               ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
-              <strong>Lançamentos.xlsx</strong> — exportação direta do sistema (colunas: Ficha, Nome, Data, Hora, Procedimento, VET, Vlr. Lançado, Vlr. Tabela)<br>
+              <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados"<br>
               <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB<br>
               <strong>Custos_Balneario.xlsx</strong> — aba única com as despesas de COGS.
             </div>
@@ -1607,9 +1607,9 @@ select:focus {
               <div>
                 <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
                   <div class="ui">📋</div>
-                  <div class="ut">Lançamentos</div>
-                  <div class="uh">Lançamentos.xlsx</div>
-                  <div><span class="utag">BASE DE PRODUÇÃO</span></div>
+                  <div class="ut">Base de Dados</div>
+                  <div class="uh">Planilha_sem_título.xlsx</div>
+                  <div><span class="utag">BASE DE DADOS</span></div>
                   <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
                 </div>
                 <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
@@ -1646,25 +1646,6 @@ select:focus {
                   Linhas: <span id="fi-cogs-count" style="color:var(--amber)">—</span>
                 </div>
               </div>
-            </div>
-
-            <!-- ── TESTE SEGURO: Lançamentos sem salvar ── -->
-            <div style="margin-top:20px;padding:16px 18px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-left:3px solid var(--amber);border-radius:12px">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-                <span style="font-size:18px">🧪</span>
-                <div>
-                  <div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--amber)">Testar Lançamentos.xlsx — sem alterar a base</div>
-                  <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:2px">Processa o arquivo localmente e mostra o resultado. Nada é enviado ao Firebase.</div>
-                </div>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                <button class="abtn" style="background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.35)" onclick="document.getElementById('fi-lanc-test').click()">
-                  📂 Selecionar arquivo para testar
-                </button>
-                <input type="file" id="fi-lanc-test" class="fi" accept=".xlsx,.xls" onchange="testLancamentos(event)">
-                <span id="lanc-test-status" style="font-size:11px;color:var(--tx3);font-family:var(--font-mono)"></span>
-              </div>
-              <div id="lanc-test-result" style="display:none;margin-top:14px"></div>
             </div>
 
             <!-- Quick Data Preview -->
@@ -4030,341 +4011,79 @@ function procXlsx(file,type){
   rd.readAsArrayBuffer(file);
 }
 
-function parseBase(wb, fname) {
-  // ── Detecta formato: Lançamentos (VET col) ou Base de dados legada ──
-  const sheetLanc = wb.Sheets['Planilha1'] || wb.Sheets[wb.SheetNames[0]];
-  const rawCheck = XLSX.utils.sheet_to_json(sheetLanc, {header:1, defval:null, raw:false, range:0});
-  const headerRow = (rawCheck[0] || []).map(c => String(c||'').trim().toLowerCase());
-  const isLancamentos = headerRow.includes('vet') && headerRow.includes('vlr. lançado') || headerRow.includes('vlr. lancado') || headerRow.some(h => h.includes('lançado'));
+function parseBase(wb,fname){
+  const ws=wb.Sheets['Base de dados'];
+  if(!ws){setFst('base','Aba "Base de dados" não encontrada.',false);return}
 
-  if (isLancamentos) {
-    parseLancamentos(wb, fname);
-  } else {
-    parseLancamentosLegado(wb, fname);
-  }
-}
-
-// ── TESTE SEGURO: processa Lançamentos.xlsx sem salvar no Firebase ──
-function testLancamentos(e) {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (!file) return;
-
-  const statusEl = document.getElementById('lanc-test-status');
-  const resultEl = document.getElementById('lanc-test-result');
-  statusEl.textContent = '⏳ Lendo arquivo...';
-  resultEl.style.display = 'none';
-
-  const rd = new FileReader();
-  rd.onload = ev => {
-    try {
-      const wb = XLSX.read(ev.target.result, {type:'array', cellDates:false});
-      const ws = wb.Sheets['Planilha1'] || wb.Sheets[wb.SheetNames[0]];
-      if (!ws) { statusEl.textContent = '❌ Aba não encontrada.'; return; }
-
-      // raw:true — números chegam como number JS, sem formatação problemática
-      const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
-      const hdr = (raw[0]||[]).map(c => String(c||'').trim());
-
-      // Detecta colunas pelo nome (busca ampla) com fallback posicional do Lançamentos padrão
-      function findCol(terms, fallback) {
-        const i = hdr.findIndex(h => terms.some(t => h.toLowerCase().replace(/[^a-z0-9]/g,'').includes(t)));
-        return i >= 0 ? i : fallback;
-      }
-      const ci = {
-        data: findCol(['data'], 2),
-        vet:  findCol(['vet'], 5),
-        vlr:  findCol(['vlrlancado','lancado','vlrlanc'], 6),
-      };
-
-      // Parse data: string dd/mm/yyyy ou número serial Excel
-      function parseData(v) {
-        if (!v && v !== 0) return '';
-        if (typeof v === 'number') {
-          const d = XLSX.SSF.parse_date_code(v);
-          if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-        }
-        const s = String(v).trim();
-        if (s.match(/^\d{2}\/\d{2}\/\d{4}/)) { const p=s.slice(0,10).split('/'); return `${p[2]}-${p[1]}-${p[0]}`; }
-        return s.slice(0,10);
-      }
-      // Parse valor: number direto ou string com vírgula decimal
-      function parseVlr(v) {
-        if (typeof v === 'number') return v;
-        if (!v) return 0;
-        return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0;
-      }
-      function getSemana(ds) {
-        if (!ds) return '';
-        return `Semana ${Math.ceil(parseInt(ds.split('-')[2])/7)}`;
-      }
-
-      // Agrupa por vet+data
-      const byVetData = {};
-      let totalLinhas = 0;
-      for (let i = 1; i < raw.length; i++) {
-        const r = raw[i];
-        if (!r) continue;
-        const vet = String(r[ci.vet]||'').trim();
-        const ds  = parseData(r[ci.data]);
-        const vlr = parseVlr(r[ci.vlr]);
-        if (!vet || !ds) continue;
-        totalLinhas++;
-        const key = vet + '|' + ds;
-        if (!byVetData[key]) byVetData[key] = {vet, data:ds, mes:getMes(ds), sem:getSemana(ds), prod:0};
-        byVetData[key].prod += vlr;
-      }
-
-      const rows = Object.values(byVetData);
-
-      // Agrega por vet para comparação
-      const novoByVet = {};
-      rows.forEach(r => {
-        if (!novoByVet[r.vet]) novoByVet[r.vet] = {prod:0, dias:new Set(), meses:new Set()};
-        novoByVet[r.vet].prod += r.prod;
-        novoByVet[r.vet].dias.add(r.data);
-        novoByVet[r.vet].meses.add(r.mes);
-      });
-
-      // Compara com base atual (S.base)
-      const atualByVet = {};
-      (S.base||[]).forEach(r => {
-        if (!atualByVet[r.vet]) atualByVet[r.vet] = {prod:0, dias:new Set(), meses:new Set()};
-        atualByVet[r.vet].prod += r.prod || 0;
-        atualByVet[r.vet].dias.add(r.data);
-        atualByVet[r.vet].meses.add(r.mes);
-      });
-
-      const allVets = [...new Set([...Object.keys(novoByVet), ...Object.keys(atualByVet)])].sort();
-      const mesesNovos = [...new Set(rows.map(r=>r.mes).filter(Boolean))].sort((a,b)=>MESES.indexOf(a)-MESES.indexOf(b));
-      const totalNovo  = rows.reduce((s,r)=>s+r.prod, 0);
-      const totalAtual = (S.base||[]).reduce((s,r)=>s+(r.prod||0), 0);
-
-      const fmtR = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-      const diffCell = v => {
-        if (Math.abs(v) < 1) return `<span style="color:var(--tx3)">—</span>`;
-        const c = v > 0 ? 'var(--green)' : 'var(--red)';
-        return `<span style="color:${c}">${v>0?'+':''}${fmtR(v)}</span>`;
-      };
-
-      const vetRows = allVets.map(v => {
-        const n = novoByVet[v]  || {prod:0, dias:new Set()};
-        const a = atualByVet[v] || {prod:0, dias:new Set()};
-        const delta = n.prod - a.prod;
-        const match = Math.abs(delta) < 1;
-        return `<tr style="background:${match?'transparent':'rgba(245,158,11,.04)'}">
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;color:var(--tx)">${v}</td>
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;color:var(--cyan);text-align:right">${fmtR(n.prod)}</td>
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;color:var(--tx2);text-align:right">${fmtR(a.prod)}</td>
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;text-align:right">${diffCell(delta)}</td>
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;color:var(--tx3);text-align:center">${n.dias.size}</td>
-          <td style="font-family:var(--font-mono);font-size:11px;padding:5px 8px;text-align:center">${match?'<span style="color:var(--green)">✓</span>':'<span style="color:var(--amber)">△</span>'}</td>
-        </tr>`;
-      }).join('');
-
-      resultEl.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Lançamentos lidos</div>
-            <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--cyan)">${totalLinhas.toLocaleString('pt-BR')}</div>
-          </div>
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Registros gerados</div>
-            <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--cyan)">${rows.length} <span style="font-size:11px;color:var(--tx3)">vet·dia</span></div>
-          </div>
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Produção total nova</div>
-            <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--green)">${fmtR(totalNovo)}</div>
-          </div>
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Produção atual (base)</div>
-            <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--tx2)">${fmtR(totalAtual)}</div>
-          </div>
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Meses no arquivo</div>
-            <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--amber)">${mesesNovos.map(m=>m[0].toUpperCase()+m.slice(1)).join(', ')||'—'}</div>
-          </div>
-          <div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
-            <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Colunas detectadas</div>
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--tx2)">VET:col${ci.vet} · Data:col${ci.data} · Vlr:col${ci.vlr}</div>
-          </div>
-        </div>
-        <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Comparativo por veterinário (novo vs. base atual)</div>
-        <div style="overflow:auto;max-height:320px;border:1px solid var(--bd);border-radius:8px">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr style="background:var(--sf2);position:sticky;top:0">
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:left">Veterinário</th>
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:right">Novo</th>
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:right">Atual</th>
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:right">Δ</th>
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:center">Dias</th>
-              <th style="font-family:var(--font-mono);font-size:10px;color:var(--tx3);padding:6px 8px;text-align:center">OK</th>
-            </tr></thead>
-            <tbody>${vetRows}</tbody>
-          </table>
-        </div>
-        <div style="margin-top:10px;font-size:10px;color:var(--tx3);font-family:var(--font-mono)">
-          ✅ Verde = valores iguais · △ Âmbar = diferença esperada se o arquivo cobre meses diferentes da base atual · <strong style="color:var(--amber)">Nada foi salvo.</strong>
-        </div>`;
-      resultEl.style.display = 'block';
-      statusEl.textContent = `✓ ${file.name} — ${totalLinhas.toLocaleString('pt-BR')} lançamentos · ${rows.length} registros vet·dia`;
-    } catch(err) {
-      statusEl.textContent = '❌ Erro: ' + err.message;
-      console.error(err);
-    }
-  };
-  rd.readAsArrayBuffer(file);
-}
-
-
-function parseLancamentos(wb, fname) {
-  const ws = wb.Sheets['Planilha1'] || wb.Sheets[wb.SheetNames[0]];
-  if (!ws) { setFst('base', 'Aba de dados não encontrada.', false); return; }
-
-  // raw:true — números chegam como number JS, sem formatação problemática com acentos
-  const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
-  if (!raw.length) { setFst('base', 'Planilha vazia.', false); return; }
-
-  // ── Detecta colunas (busca ampla no nome + fallback posicional) ──
-  const hdr = (raw[0] || []).map(c => String(c||'').trim());
-  function findCol(terms, fallback) {
-    const i = hdr.findIndex(h => terms.some(t => h.toLowerCase().replace(/[^a-z0-9]/g,'').includes(t)));
-    return i >= 0 ? i : fallback;
-  }
-  const ci = {
-    data: findCol(['data'], 2),
-    vet:  findCol(['vet'], 5),
-    vlr:  findCol(['vlrlancado','lancado','vlrlanc'], 6),
-  };
-  if (ci.vlr < 0) {
-    setFst('base', `Coluna "Vlr. Lançado" não encontrada. Colunas: ${hdr.join(' | ')}`, false);
-    return;
-  }
-
-  // ── Helpers ──
-  function parseData(v) {
-    if (!v && v !== 0) return '';
-    if (typeof v === 'number') {
-      const d = XLSX.SSF.parse_date_code(v);
-      if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-    }
-    const s = String(v).trim();
-    if (s.match(/^\d{2}\/\d{2}\/\d{4}/)) { const p=s.slice(0,10).split('/'); return `${p[2]}-${p[1]}-${p[0]}`; }
-    return s.slice(0,10);
-  }
-  function parseVlr(v) {
-    if (typeof v === 'number') return v;
-    if (!v) return 0;
-    return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0;
-  }
-  function getSemana(ds) {
-    if (!ds) return '';
-    return `Semana ${Math.ceil(parseInt(ds.split('-')[2])/7)}`;
-  }
-
-  // ── Agrupa por VET + Data ──
-  const byVetData = {};
-  for (let i = 1; i < raw.length; i++) {
-    const r = raw[i];
-    if (!r) continue;
-    const vet = String(r[ci.vet] || '').trim();
-    const ds  = parseData(r[ci.data]);
-    const vlr = parseVlr(r[ci.vlr]);
-    if (!vet || !ds) continue;
-    const key = vet + '|' + ds;
-    if (!byVetData[key]) byVetData[key] = {vet, data:ds, mes:getMes(ds), sem:getSemana(ds), prod:0};
-    byVetData[key].prod += vlr;
-  }
-
-  const tempRows = Object.values(byVetData).map(x => ({
-    vet:      x.vet,
-    prod:     Math.round(x.prod * 100) / 100,
-    rawProd:  Math.round(x.prod * 100) / 100,
-    valVar:   0,
-    valFixo:  0,   // preenchido pela escala
-    valTotal: 0,
-    sem:      x.sem,
-    data:     x.data,
-    mes:      x.mes,
-    horas:    0,   // preenchido pela escala
-    hNorm:    0,
-    hNot:     0,
-    perc:     0
-  }));
-
-  if (!tempRows.length) { setFst('base', 'Nenhuma linha válida encontrada.', false); return; }
-
-  toast('Enviando Lançamentos para a nuvem...', 'inf');
-  db.ref('laborbi/base').set(tempRows).then(() => {
-    db.ref('laborbi/meta/base').set(fname + ' (' + tempRows.length + ' dias·vet)');
-    db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
-    toast('Lançamentos sincronizados com sucesso! ✓', 'ok');
-  }).catch(err => toast('Erro: ' + err.message, 'err'));
-}
-
-// ── Parser legado: aba "Base de dados" com colunas Veterinarios/Producao/etc ──
-function parseLancamentosLegado(wb, fname) {
-  const ws = wb.Sheets['Base de dados'];
-  if (!ws) { setFst('base', 'Aba "Base de dados" não encontrada. Carregue o arquivo Lançamentos.xlsx (novo formato).', false); return; }
-
-  const rawN = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
-  let hi = -1;
+  const rawN=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+  let hi=-1;
   let col = { vet:1, prod:2, vFixo:4, sem:7, data:8, hN:10, hNt:11 };
 
-  for (let i = 0; i < rawN.length; i++) {
-    if (rawN[i]) {
+  for(let i=0;i<rawN.length;i++){
+    if(rawN[i]){
       let achouVet = false;
-      for (let j = 0; j < rawN[i].length; j++) {
+      for(let j=0; j<rawN[i].length; j++) {
         const cellRaw = String(rawN[i][j]||'').trim();
         const val = cellRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        if (cellRaw === 'Veterinarios') { hi = i; col.vet = j; achouVet = true; }
-        else if (val === 'producao') col.prod = j;
-        else if (val === 'valores fixos') col.vFixo = j;
-        else if (val === 'semana') col.sem = j;
-        else if (val === 'data') col.data = j;
-        else if (val === 'horas normais') col.hN = j;
-        else if (val === 'horas noturnas') col.hNt = j;
+
+        if(cellRaw === 'Veterinarios') { hi=i; col.vet=j; achouVet = true; }
+        else if(val === 'producao') col.prod=j;
+        else if(val === 'valores fixos') col.vFixo=j;
+        else if(val === 'semana') col.sem=j;
+        else if(val === 'data') col.data=j;
+        else if(val === 'horas normais') col.hN=j;
+        else if(val === 'horas noturnas') col.hNt=j;
       }
-      if (achouVet) break;
+      if(achouVet) break;
     }
   }
-  if (hi < 0) { setFst('base', 'Cabeçalho "Veterinarios" não encontrado.', false); return; }
 
-  const tempRows = [];
-  for (let i = hi + 1; i < rawN.length; i++) {
-    const r = rawN[i];
-    if (!r || !r[col.vet]) continue;
-    const vet = String(r[col.vet]).trim();
-    const prod = parseFloat(r[col.prod]) || 0;
-    const vFixo = parseFloat(r[col.vFixo]) || 0;
-    const hN = parseFloat(r[col.hN]) || 0;
-    const hNt = parseFloat(r[col.hNt]) || 0;
-    const sem = String(r[col.sem]||'').trim();
-    let ds = '';
-    const dc = r[col.data];
-    if (dc instanceof Date) {
-      ds = dc.toISOString().slice(0,10);
-    } else if (typeof dc === 'number') {
-      const d = XLSX.SSF.parse_date_code(dc);
-      if (d) ds = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-    } else if (dc) {
-      ds = String(dc).trim();
-      if (ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+  if(hi<0){setFst('base','Cabeçalho "Veterinarios" não encontrado.',false);return}
+
+  const tempRows=[];
+  for(let i=hi+1;i<rawN.length;i++){
+    const r=rawN[i];
+    if(!r||!r[col.vet])continue;
+
+    const vet=String(r[col.vet]).trim();
+    const prod=parseFloat(r[col.prod])||0;
+    const vFixo=parseFloat(r[col.vFixo])||0;
+    const hN=parseFloat(r[col.hN])||0;
+    const hNt=parseFloat(r[col.hNt])||0;
+    const sem=String(r[col.sem]||'').trim();
+
+    let ds='';
+    const dc=r[col.data];
+    if(dc instanceof Date){
+      ds=dc.toISOString().slice(0,10);
+    } else if(typeof dc==='number'){
+      const d=XLSX.SSF.parse_date_code(dc);
+      if(d) ds=`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    } else if(dc){
+      ds=String(dc).trim();
+      if(ds.match(/^\d{2}\/\d{2}\/\d{4}/)) {
         const p = ds.slice(0,10).split('/');
         ds = `${p[2]}-${p[1]}-${p[0]}`;
-      } else { ds = ds.slice(0,10); }
+      } else {
+        ds = ds.slice(0,10);
+      }
     }
-    const mes = getMes(ds);
-    tempRows.push({ vet, prod, rawProd: prod, valVar: 0, valFixo: vFixo, valTotal: 0, sem, data: ds, mes, horas: hN + hNt, hNorm: hN, hNot: hNt, perc: 0 });
+
+    const mes=getMes(ds);
+
+    tempRows.push({
+      vet, prod, rawProd: prod, valVar: 0, valFixo: vFixo, valTotal: 0,
+      sem, data: ds, mes, horas: hN + hNt, hNorm: hN, hNot: hNt, perc: 0
+    });
   }
 
-  if (!tempRows.length) { setFst('base', 'Nenhuma linha válida.', false); return; }
+  if(!tempRows.length){setFst('base','Nenhuma linha válida.',false);return}
 
   toast('Enviando Base de Dados para a nuvem...', 'inf');
   db.ref('laborbi/base').set(tempRows).then(() => {
-    db.ref('laborbi/meta/base').set(fname + ' (' + tempRows.length + ' linhas)');
+    db.ref('laborbi/meta/base').set(fname+' ('+tempRows.length+' linhas)');
     db.ref('laborbi/meta/lastUpdated').set(new Date().toLocaleString('pt-BR'));
-    toast('Base de dados sincronizada com sucesso! ✓', 'ok');
+    toast('Base de dados sincronizada com sucesso! ✓','ok');
   }).catch(err => toast('Erro: ' + err.message, 'err'));
 }
 
