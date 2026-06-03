@@ -1497,28 +1497,6 @@ select:focus {
       <div class="ptitle" style="color:var(--tx)">Análise <span style="color:var(--pink)">Executiva</span></div>
       <div class="psub">Motor analítico processando dados financeiros e operacionais em tempo real.</div>
 
-      <!-- AVISO DE FASE BETA -->
-      <div style="
-        background: rgba(245,158,11,.06);
-        border: 1px solid rgba(245,158,11,.3);
-        border-left: 3px solid var(--amber);
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 16px;
-        display: flex;
-        gap: 14px;
-        align-items: flex-start;
-      ">
-        <div style="font-size:20px;flex-shrink:0;margin-top:1px;">⚠️</div>
-        <div>
-          <div style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--amber);margin-bottom:6px;">Motor em Fase de Aprendizagem</div>
-          <div style="font-size:12px;color:var(--tx2);line-height:1.8;">
-            Este módulo ainda está em desenvolvimento e pode cometer <strong style="color:var(--tx)">erros de interpretação</strong>. As análises são geradas automaticamente com base nos dados carregados e devem ser usadas como <strong style="color:var(--tx)">ponto de partida</strong>, não como conclusão definitiva. Sempre valide os insights com o contexto real da clínica.<br>
-            <span style="color:var(--tx3);font-size:11px;font-family:var(--font-mono);">📌 Lembrete: os exames de laboratório são solicitados e vendidos pelos <strong style="color:var(--amber)">médicos veterinários</strong> — o faturamento do setor LAB reflete a produção médica, não um setor independente.</span>
-          </div>
-        </div>
-      </div>
-
       <div class="ai-box">
         <div class="ai-header">
           <div class="ai-icon-wrap">🧠</div>
@@ -3501,14 +3479,34 @@ function generateInsights() {
     const avgProd = topVets.length ? topVets.reduce((s,[,d]) => s + d.prod, 0) / topVets.length : 0;
     const bottomVets = topVets.filter(([,d]) => d.prod < avgProd * 0.5 && d.horas > 10);
 
-    // Anomalias: produção 1.8x ou mais acima da média, OU 0.3x ou menos (com horas)
+    // ── Produção por vet no mês ANTERIOR (referência para anomalias) ──
+    const prevVetMap = {};
+    basePrevious.forEach(r => {
+      if (!r.vet) return;
+      if (!prevVetMap[r.vet]) prevVetMap[r.vet] = {prod: 0};
+      prevVetMap[r.vet].prod += r.prod || 0;
+    });
+    const prevVetAvg = previousRevenue > 0 && basePrevious.length
+      ? Object.values(prevVetMap).reduce((s, v) => s + v.prod, 0) / Math.max(1, Object.keys(prevVetMap).length)
+      : 0;
+
+    // Anomalias: variação vs mês anterior por vet (>+50% = alta positiva, <-30% = baixa)
+    // Se vet não existia no mês anterior, usa a média do mês anterior como referência.
     const anomalies = [];
     topVets.forEach(([n, d]) => {
-      if (avgProd > 0 && d.prod > avgProd * 1.8 && d.prod > 30000) {
-        anomalies.push({type:'high', vet:n, prod:d.prod, deviation:((d.prod/avgProd - 1) * 100).toFixed(0)});
-      } else if (avgProd > 0 && d.prod < avgProd * 0.3 && d.horas > 20) {
-        anomalies.push({type:'low', vet:n, prod:d.prod, deviation:((1 - d.prod/avgProd) * 100).toFixed(0), horas:d.horas});
+      const prevProd = prevVetMap[n] ? prevVetMap[n].prod : prevVetAvg;
+      if (prevProd <= 0) return; // sem referência
+      const pctChange = ((d.prod / prevProd) - 1) * 100;
+      if (pctChange >= 50 && d.prod > 20000) {
+        anomalies.push({type:'high', vet:n, prod:d.prod, prevProd, deviation: pctChange.toFixed(0)});
+      } else if (pctChange <= -30 && d.horas > 10) {
+        anomalies.push({type:'low', vet:n, prod:d.prod, prevProd, deviation: Math.abs(pctChange).toFixed(0), horas: d.horas});
       }
+    });
+    // Ordena: maiores variações positivas primeiro, depois negativas
+    anomalies.sort((a, b) => {
+      if (a.type === b.type) return b.prod - a.prod;
+      return a.type === 'high' ? -1 : 1;
     });
 
     const team = {
@@ -3555,8 +3553,10 @@ function generateInsights() {
       } else {
         m.varRev = 0; m.varProfit = 0;
       }
-      // Marca qual é o mês atual (em andamento)
-      m.isCurrent = (m.mes === targetMes);
+      // Marca "Em andamento" apenas se for o mês corrente do calendário.
+      // Meses passados (mesmo que sejam o targetMes) aparecem como "Fechado".
+      const _calMesNome = MESES[hoje.getMonth() + 1] || '';
+      m.isCurrent = (m.mes === _calMesNome);
     });
 
     // ===== 8. Plano de ação =====
@@ -3631,7 +3631,9 @@ function generateInsights() {
       const bg = a.type === 'high' ? 'rgba(52,211,153,.05)' : 'rgba(248,113,113,.05)';
       const border = a.type === 'high' ? 'rgba(52,211,153,.25)' : 'rgba(248,113,113,.25)';
       const icon = a.type === 'high' ? '🚀' : '⚠️';
-      const txt = a.type === 'high' ? `acima da média` : `abaixo da média${a.horas ? ` (mesmo com ${fN(a.horas)}h trabalhadas)` : ''}`;
+      const txt = a.type === 'high'
+        ? `acima de ${previousMes ? cap(previousMes) : 'mês anterior'}`
+        : `abaixo de ${previousMes ? cap(previousMes) : 'mês anterior'}${a.horas ? ` (${fN(a.horas)}h trabalhadas)` : ''}`;
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${bg};border:1px solid ${border};border-radius:8px;margin-bottom:6px;font-size:12px">
           <span style="font-size:16px">${icon}</span>
@@ -3912,7 +3914,7 @@ function generateInsights() {
           </div>
         </div>
         <div class="panel" style="margin:0">
-          <div class="ptl">🔍 Anomalias Detectadas</div>
+          <div class="ptl">🔍 Anomalias Detectadas <span style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);font-weight:400">vs ${previousMes ? cap(previousMes) : 'mês anterior'}</span></div>
           ${anomaliesHTML}
           ${team.bottomPerformers.length > 0 ? `
             <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
