@@ -2067,10 +2067,11 @@ const HORA_FIXA = {
   'larissa.iozzi': 37.74,
 };
 
-function calcFixo(vetLogin, hNorm, hNot){
-  // 1. Se tem fixo mensal definido → retorna o mensal ÷ 4 semanas
+function calcFixo(vetLogin, hNorm, hNot, mes){
+  const nSem = getNumSemanas(mes) || 4;
+  // 1. Se tem fixo mensal definido → retorna o mensal ÷ nº de semanas
   if(FIXO_MENSAL[vetLogin] !== undefined){
-    return r2(FIXO_MENSAL[vetLogin] / 4);
+    return r2(FIXO_MENSAL[vetLogin] / nSem);
   }
   // 1b. Taxa fixa por hora (aplica a todas as horas, normais e noturnas)
   if(HORA_FIXA[vetLogin] !== undefined){
@@ -2080,10 +2081,9 @@ function calcFixo(vetLogin, hNorm, hNot){
   // 2. Sem horas registradas → retorna 0 (será pego da planilha base)
   if(!hNorm && !hNot) return 0;
   // 3. Calcula por hora conforme tabela
-  // hNorm e hNot aqui são horas DA SEMANA (já divididos por 4 no saveEscalaHours)
+  // hNorm e hNot aqui são horas DA SEMANA (já divididos por nº de semanas)
   // Para saber a faixa (≤180 ou >180) precisamos do total mensal
-  // Como temos só o valor semanal, estimamos o mensal multiplicando por 4
-  const hNormMes = hNorm * 4;
+  const hNormMes = hNorm * nSem;
   const rateNorm = hNormMes <= 180 ? HORA_NORMAL_180 : HORA_NORMAL_200;
   const fixoNorm = r2(hNorm * rateNorm);
   const fixoNot  = r2(hNot  * HORA_NOTURNA);
@@ -2098,6 +2098,90 @@ function getMes(ds){
   return '';
 }
 function r2(v){return Math.round(v*100)/100}
+
+// ── Detecção automática de semanas ──
+const MES_IDX = {};
+MESES.forEach((m,i)=>{ if(m) MES_IDX[m]=i; });
+
+// Quantas semanas (seg→dom) um mês de calendário possui
+function semanasNoCalendario(ano, mesIdx){
+  const primeiro = new Date(ano, mesIdx-1, 1);
+  const ultimo   = new Date(ano, mesIdx, 0).getDate();
+  const dow = (primeiro.getDay() + 6) % 7; // seg=0
+  return Math.ceil((ultimo + dow) / 7);
+}
+
+// Número de semanas detectado para um mês.
+// 1º conta semanas distintas presentes na base (campo r.sem);
+// senão calcula pelo calendário; fallback = 4.
+function getNumSemanas(mes){
+  try {
+    if(typeof S !== 'undefined' && S.base && S.base.length){
+      const sems = new Set(
+        S.base.filter(r => (!mes || r.mes===mes) && r.sem).map(r => String(r.sem).trim())
+      );
+      if(sems.size > 0) return sems.size;
+    }
+  } catch(e){}
+  const idx = MES_IDX[mes];
+  if(idx) return semanasNoCalendario(new Date().getFullYear(), idx);
+  return 4;
+}
+
+// Em qual semana do mês estamos hoje (1-based).
+// Se o mês alvo não for o mês corrente, retorna o total (mês fechado).
+function getSemanaAtual(mes){
+  const hoje = new Date();
+  const idx = MES_IDX[mes];
+  const total = getNumSemanas(mes);
+  if(idx && (idx !== hoje.getMonth()+1)) return total;
+  const ano = hoje.getFullYear();
+  const m = idx || (hoje.getMonth()+1);
+  const primeiro = new Date(ano, m-1, 1);
+  const dow = (primeiro.getDay() + 6) % 7; // seg=0
+  const semana = Math.ceil((hoje.getDate() + dow) / 7);
+  return Math.min(semana, total);
+}
+
+// ── Dias considerados de um mês ──
+// Mês corrente → dias decorridos até hoje; mês fechado/passado → dias totais do mês.
+// Se limitDia for informado, limita ao mesmo dia (para comparação "mesmo período").
+function getDiasPeriodo(mes, limitDia){
+  const hoje = new Date();
+  const idx = MES_IDX[mes];
+  const ano = hoje.getFullYear();
+  const m = idx || (hoje.getMonth()+1);
+  const diasNoMes = new Date(ano, m, 0).getDate();
+  let dias;
+  if(idx && idx === hoje.getMonth()+1){
+    dias = hoje.getDate(); // mês corrente → até hoje
+  } else {
+    dias = diasNoMes;      // mês fechado → mês inteiro
+  }
+  if(limitDia) dias = Math.min(dias, limitDia, diasNoMes);
+  return { dias, diasNoMes };
+}
+
+// Produção total real (base + cirúrgico) de um mês, respeitando o vet filtrado.
+function getProducaoMes(mes, vet){
+  let base = getAdjustedBase();
+  if(vet) base = base.filter(x => x.vet === vet);
+  if(mes) base = base.filter(x => x.mes === mes);
+  const tProd = sumC(base, 'prod');
+  let cir = (S.anal && S.anal['C_CIRURGICO']) || [];
+  if(!Array.isArray(cir)) cir = Object.values(cir);
+  if(mes) cir = cir.filter(x => x && x.mes === mes);
+  if(vet) cir = cir.filter(x => x && x.vet === vet);
+  const tCir = sumC(cir, 'valL');
+  return tProd + tCir;
+}
+
+// Mês anterior (texto) a partir do mês informado.
+function getMesAnterior(mes){
+  const idx = MES_IDX[mes];
+  if(idx && idx > 1) return MESES[idx-1];
+  return null;
+}
 
 // ════════════════════════════════
 //  LOGIN / LOGOUT & AUDITORIA
@@ -2363,7 +2447,7 @@ function getAdjustedBase() {
      // ── Valor Fixo: calculado pela tabela de horas se disponíveis,
      //    senão usa o valor fixo lido da planilha base ──────────────
      const fixoFinal = (x.hNorm || x.hNot)
-       ? calcFixo(x.vet, x.hNorm || 0, x.hNot || 0)
+       ? calcFixo(x.vet, x.hNorm || 0, x.hNot || 0, x.mes)
        : x.valFixo;
 
      const valTotal = r2(valVar + fixoFinal);
@@ -2426,13 +2510,56 @@ function renderPetcare(){
 
   // ── produção real total = base + cirúrgico (que foi deduzido da base) ──
   const tProdTotal = tProd + tCir;
-  const avgProd = rows.length ? tProdTotal / 4 : 0;
+  // nº de semanas real do mês (ou 1 se uma semana específica está filtrada)
+  const nSemanas = sem ? 1 : getNumSemanas(mes);
+  const avgProd = rows.length ? tProdTotal / nSemanas : 0;
+  const avgSub = sem ? 'semana selecionada' : `total ÷ ${nSemanas} semana${nSemanas>1?'s':''}`;
+
+  // ── Média Diária (respeita vet/mês selecionados) ──
+  // Requer um mês definido; com "Todos os Meses" a média diária não faz sentido.
+  const temMes = !!mes;
+  const { dias: diasPeriodo } = getDiasPeriodo(mes);
+  const avgDia = (has && temMes && diasPeriodo) ? tProdTotal / diasPeriodo : 0;
+  const ehMesCorrente = MES_IDX[mes] === (new Date().getMonth()+1);
+  const avgDiaSub = !temMes
+    ? 'selecione um mês'
+    : (sem
+        ? 'semana selecionada'
+        : (ehMesCorrente ? `total ÷ ${diasPeriodo} dias decorridos` : `total ÷ ${diasPeriodo} dias`));
+
+  // ── Comparativo: média diária do mês anterior ──
+  // A base é semanal (sem datas diárias), então não é possível isolar os
+  // primeiros N dias do mês anterior. Usamos a média diária real do mês
+  // anterior completo (produção total ÷ dias do mês) como base de comparação.
+  const mesAnt = getMesAnterior(mes);
+  let cmpVal = '—', cmpSub = 'sem mês anterior', cmpClr = 'var(--tx3)';
+  if(has && temMes && !sem && mesAnt){
+    const { diasNoMes: diasAnt } = getDiasPeriodo(mesAnt);
+    const prodAnt = getProducaoMes(mesAnt, vet);
+    const avgDiaAnt = diasAnt ? prodAnt / diasAnt : 0;
+    if(avgDiaAnt > 0){
+      const varPct = ((avgDia - avgDiaAnt) / avgDiaAnt) * 100;
+      const up = varPct >= 0;
+      cmpVal = fR(avgDiaAnt);
+      cmpClr = up ? 'var(--green)' : 'var(--red)';
+      cmpSub = `${up?'▲':'▼'} ${Math.abs(varPct).toFixed(1)}% vs atual · ${cap(mesAnt)} (mês cheio)`;
+    } else {
+      cmpVal = '—';
+      cmpSub = `sem dados em ${cap(mesAnt)}`;
+    }
+  } else if(sem){
+    cmpSub = 'indisponível por semana';
+  } else if(!temMes){
+    cmpSub = 'selecione um mês';
+  }
 
   document.getElementById('pc-kpi').innerHTML=[
     kpiCard('Produção Total',has?fR(tProdTotal):'—','base + bloco cirúrgico','var(--cyan)'),
     kpiCard('Produção Base',has?fR(tProd):'—','excluindo cirúrgico','#60a5fa'),
     kpiCard('Bloco Cirúrgico',tCir>0?fR(tCir):'—','incluído na produção total','var(--amber)'),
-    kpiCard('Média Semanal',has?fR(avgProd):'—','total ÷ 4 semanas','var(--green)'),
+    kpiCard('Média Semanal',has?fR(avgProd):'—',avgSub,'var(--green)'),
+    kpiCard('Média Diária',(has&&temMes)?fR(avgDia):'—',avgDiaSub,'#34d399'),
+    kpiCard('Média Diária — Mês Anterior',cmpVal,cmpSub,cmpClr),
     kpiCard('Valor Total',has?fR(tTotal):'—','fixo + variável','#a78bfa'),
     kpiCard('Horas no Mês',has?fN(tHoras)+'h':'—','normais + noturnas','var(--cyan)'),
   ].join('');
@@ -3426,6 +3553,22 @@ function generateInsights() {
     const basePrevious = previousMes ? filterByMes(baseRowsAll, previousMes) : [];
     const cogsPrevious = previousMes ? filterByMes(cogsRowsAll, previousMes) : [];
 
+    // ── Reconhecimento automático da semana em análise ──
+    const totalSemanas   = getNumSemanas(targetMes);
+    const semanaAtual    = getSemanaAtual(targetMes);
+    const mesEhCorrente  = (MES_IDX[targetMes] === (new Date().getMonth()+1));
+    const periodoParcial = mesEhCorrente && (semanaAtual < totalSemanas);
+    const semanaInfo = {
+      total: totalSemanas,
+      atual: semanaAtual,
+      parcial: periodoParcial,
+      // fração do mês já decorrida (para projeções proporcionais)
+      fracaoDecorrida: totalSemanas ? Math.min(1, semanaAtual / totalSemanas) : 1,
+      label: periodoParcial
+        ? `Semana ${semanaAtual} de ${totalSemanas} (mês em andamento)`
+        : `Mês completo · ${totalSemanas} semanas`
+    };
+
     // ── cirúrgico por mês (mesmo filtro do Labor BI) ──
     function getCirurgicoByMes(mes) {
       if (!mes) return 0;
@@ -3874,6 +4017,7 @@ function generateInsights() {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px">Diagnóstico Consolidado</div>
             <span style="font-size:9.5px;color:var(--tx3);font-family:var(--font-mono);padding:2px 7px;background:var(--sf2);border:1px solid var(--bd);border-radius:4px">📅 ${cap(targetMes)}</span>
+            <span style="font-size:9.5px;font-family:var(--font-mono);padding:2px 7px;border-radius:4px;${semanaInfo.parcial ? 'color:var(--amber);background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3)' : 'color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25)'}">📆 ${semanaInfo.label}</span>
           </div>
           <div style="font-family:var(--font-display);font-size:26px;font-weight:800;color:${health.color};letter-spacing:-0.7px;margin-bottom:8px">${health.status}</div>
           <div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">${health.label}</div>
@@ -4510,15 +4654,16 @@ function saveEscalaHours(){
   }
 
   // Update horas on base rows for this month
-  // Distribute hours proportionally across weeks (4 weeks)
+  // Distribute hours proportionally across the detected number of weeks
+  const nSemEscala = getNumSemanas(ES.mes) || 4;
   let updated = 0;
   const updatedBase = baseRows.map(row => {
     if(row.mes !== ES.mes) return row;
     const vh = vetHoursMap[row.vet];
     if(!vh) return row;
-    // Each week gets 1/4 of the month total (rounded to 1 decimal)
-    const weekNorm = Math.round((vh.normal / 4) * 10) / 10;
-    const weekNot  = Math.round((vh.noturna / 4) * 10) / 10;
+    // Each week gets 1/nSem of the month total (rounded to 1 decimal)
+    const weekNorm = Math.round((vh.normal / nSemEscala) * 10) / 10;
+    const weekNot  = Math.round((vh.noturna / nSemEscala) * 10) / 10;
     updated++;
     return {
       ...row,
