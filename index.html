@@ -2162,18 +2162,12 @@ function getDiasPeriodo(mes, limitDia){
   return { dias, diasNoMes };
 }
 
-// Produção total real (base + cirúrgico) de um mês, respeitando o vet filtrado.
+// Produção total da Base de Dados de um mês, respeitando o vet filtrado.
 function getProducaoMes(mes, vet){
-  let base = getAdjustedBase();
+  let base = getRawBase();
   if(vet) base = base.filter(x => x.vet === vet);
   if(mes) base = base.filter(x => x.mes === mes);
-  const tProd = sumC(base, 'prod');
-  let cir = (S.anal && S.anal['C_CIRURGICO']) || [];
-  if(!Array.isArray(cir)) cir = Object.values(cir);
-  if(mes) cir = cir.filter(x => x && x.mes === mes);
-  if(vet) cir = cir.filter(x => x && x.vet === vet);
-  const tCir = sumC(cir, 'valL');
-  return tProd + tCir;
+  return sumC(base, 'prod');
 }
 
 // Mês anterior (texto) a partir do mês informado.
@@ -2408,6 +2402,32 @@ function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
 // ════════════════════════════════
 //  DEDUÇÃO DINÂMICA
 // ════════════════════════════════
+// ── Base de Dados PURA (planilha sem nome), sem qualquer dedução/soma
+//    das planilhas de análise. Usada pela visão principal do LaborBI. ──
+function getRawBase() {
+  let r = S.base || [];
+  // total mensal por vet (para a faixa de comissão ≤180/>180)
+  const mProd = {};
+  r.forEach(x => {
+    const val = x.rawProd !== undefined ? x.rawProd : x.prod;
+    const key = x.vet + '|' + x.mes;
+    mProd[key] = (mProd[key] || 0) + val;
+  });
+  return r.map(x => {
+    const val = x.rawProd !== undefined ? x.rawProd : x.prod;
+    const key = x.vet + '|' + x.mes;
+    const totalMes = mProd[key];           // produção mensal só da base
+    const perc = calcPerc(totalMes);       // comissão pela produção da base
+    const prodReal = val;                  // produção = exatamente a da base
+    const valVar = r2(perc * prodReal);
+    const fixoFinal = (x.hNorm || x.hNot)
+      ? calcFixo(x.vet, x.hNorm || 0, x.hNot || 0, x.mes)
+      : x.valFixo;
+    const valTotal = r2(valVar + fixoFinal);
+    return { ...x, prod: prodReal, perc, valVar, valFixo: fixoFinal, valTotal };
+  });
+}
+
 function getAdjustedBase() {
   let r = S.base || [];
   const mProd = {};
@@ -2457,7 +2477,7 @@ function getAdjustedBase() {
 }
 
 function fBase(){
-  let r = getAdjustedBase();
+  let r = getRawBase();
   const vet=document.getElementById('f-vet')?.value;
   const mes=document.getElementById('f-mes')?.value;
   const sem=document.getElementById('f-sem')?.value;
@@ -2491,25 +2511,20 @@ function renderPetcare(){
   const has=rows.length>0;
 
   document.getElementById('petcare-sub').textContent=S.meta.base
-    ?'Base: '+S.meta.base+(S.meta.anal?' · Análises: '+S.meta.anal:'')
+    ?'Base de Dados: '+S.meta.base
     :(S.role==='admin'?'Carregue os arquivos no painel Admin.':'Aguardando atualização dos dados da nuvem.');
 
-  // ── produção base (já com dedução cirúrgica aplicada pelo getAdjustedBase) ──
+  // ── produção (somente Base de Dados — planilha sem nome) ──
   const tProd=sumC(rows,'prod');
   const tVar=sumC(rows,'valVar'),tFixo=sumC(rows,'valFixo');
   const tTotal=sumC(rows,'valTotal'),tHoras=sumC(rows,'horas');
 
-  // ── bloco cirúrgico: soma dos vets com dedução, filtrado pelo mesmo mês/vet/sem ──
   const mes=document.getElementById('f-mes')?.value||'';
   const vet=document.getElementById('f-vet')?.value||'';
   const sem=document.getElementById('f-sem')?.value||'';
-  let cirRows=(S.anal&&S.anal['C_CIRURGICO'])||[];
-  if(mes) cirRows=cirRows.filter(x=>x.mes===mes);
-  if(vet) cirRows=cirRows.filter(x=>x.vet===vet);
-  const tCir=sumC(cirRows,'valL');
 
-  // ── produção real total = base + cirúrgico (que foi deduzido da base) ──
-  const tProdTotal = tProd + tCir;
+  // ── produção total = somente a base ──
+  const tProdTotal = tProd;
   // nº de semanas real do mês (ou 1 se uma semana específica está filtrada)
   const nSemanas = sem ? 1 : getNumSemanas(mes);
   const avgProd = rows.length ? tProdTotal / nSemanas : 0;
@@ -2554,12 +2569,12 @@ function renderPetcare(){
   }
 
   document.getElementById('pc-kpi').innerHTML=[
-    kpiCard('Produção Total',has?fR(tProdTotal):'—','base + bloco cirúrgico','var(--cyan)'),
-    kpiCard('Produção Base',has?fR(tProd):'—','excluindo cirúrgico','#60a5fa'),
-    kpiCard('Bloco Cirúrgico',tCir>0?fR(tCir):'—','incluído na produção total','var(--amber)'),
+    kpiCard('Produção Total',has?fR(tProdTotal):'—','base de dados','var(--cyan)'),
     kpiCard('Média Semanal',has?fR(avgProd):'—',avgSub,'var(--green)'),
     kpiCard('Média Diária',(has&&temMes)?fR(avgDia):'—',avgDiaSub,'#34d399'),
     kpiCard('Média Diária — Mês Anterior',cmpVal,cmpSub,cmpClr),
+    kpiCard('Valor Variável',has?fR(tVar):'—','comissão sobre produção','#60a5fa'),
+    kpiCard('Valor Fixo',has?fR(tFixo):'—','salário + horas','#a78bfa'),
     kpiCard('Valor Total',has?fR(tTotal):'—','fixo + variável','#a78bfa'),
     kpiCard('Horas no Mês',has?fN(tHoras)+'h':'—','normais + noturnas','var(--cyan)'),
   ].join('');
@@ -2570,42 +2585,30 @@ function renderPetcare(){
     const lbls=Object.keys(byS).sort();
     mkCombo('ch-combo',lbls,lbls.map(l=>byS[l].fixo),lbls.map(l=>byS[l].var),lbls.map(l=>byS[l].horas));
     mkDonut('ch-donut',
-      ['Prod. Base','Bloco Cirúrgico'],
-      [tProd, tCir],
-      ['rgba(0,212,255,.85)','rgba(245,158,11,.85)']
+      ['Valor Fixo','Valor Variável'],
+      [tFixo, tVar],
+      ['rgba(139,92,246,.85)','rgba(16,185,129,.85)']
     );
   }else{killChart('ch-combo');killChart('ch-donut')}
 
-  // ── tabela por veterinário com coluna cirúrgico ──
-  // mapa cirúrgico por vet (filtrado)
-  const cirByVet={};
-  cirRows.forEach(r=>{cirByVet[r.vet]=(cirByVet[r.vet]||0)+r.valL;});
-
+  // ── tabela por veterinário (somente Base de Dados) ──
   const byV={};
   rows.forEach(r=>{
     if(!byV[r.vet])byV[r.vet]={prod:0,fixo:0,var:0,total:0,horas:0,hN:0,hNt:0};
     const v=byV[r.vet];v.prod+=r.prod;v.fixo+=r.valFixo;v.var+=r.valVar;v.total+=r.valTotal;v.horas+=r.horas;v.hN+=r.hNorm;v.hNt+=r.hNot;
   });
 
-  // adiciona cirúrgico a cada vet e recalcula produção total do vet
-  Object.keys(byV).forEach(n=>{
-    byV[n].cir = cirByVet[n]||0;
-    byV[n].prodTotal = byV[n].prod + byV[n].cir;
-  });
-
-  const vets=Object.entries(byV).sort((a,b)=>b[1].prodTotal-a[1].prodTotal);
+  const vets=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
   document.getElementById('pc-tcount').textContent=vets.length+' profissionais';
-  const maxP=Math.max(...vets.map(v=>v[1].prodTotal),1);
+  const maxP=Math.max(...vets.map(v=>v[1].prod),1);
 
   document.getElementById('pc-table').innerHTML=vets.length
-    ?`<table><thead><tr><th>Veterinário</th><th>Prod. Total R$</th><th>Prod. Base</th><th>Cirúrgico</th><th>% Comissão</th><th>Variável</th><th>Fixo Calculado</th><th>H. Normal</th><th>H. Noturna</th><th>Total Pagar</th></tr></thead><tbody>
+    ?`<table><thead><tr><th>Veterinário</th><th>Produção R$</th><th>% Comissão</th><th>Variável</th><th>Fixo Calculado</th><th>H. Normal</th><th>H. Noturna</th><th>Total Pagar</th></tr></thead><tbody>
     ${vets.map(([n,d])=>{
       const pc=calcPerc(d.prod);
       return `<tr>
       <td style="font-weight:600">${n}</td>
-      <td style="color:var(--cyan);font-weight:700">${fR(d.prodTotal)}<div class="pbar"><div class="pfill" style="width:${(d.prodTotal/maxP*100).toFixed(1)}%"></div></div></td>
-      <td style="color:var(--tx2);font-family:var(--font-mono);font-size:11px">${fR(d.prod)}</td>
-      <td style="color:var(--amber);font-family:var(--font-mono);font-size:11px">${d.cir>0?fR(d.cir):'—'}</td>
+      <td style="color:var(--cyan);font-weight:700">${fR(d.prod)}<div class="pbar"><div class="pfill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
       <td><span class="bdg ${pc>=.07?'bg':pc>=.03?'by':'br'}">${fP(pc)}</span></td>
       <td style="color:var(--green)">${fR(d.var)}</td>
       <td style="color:#a78bfa">
@@ -2613,10 +2616,10 @@ function renderPetcare(){
         <div style="font-size:9px;color:var(--tx3);font-family:var(--font-mono);margin-top:2px">
           ${d.horas>0
             ? (FIXO_MENSAL[n]!==undefined
-                ? 'fixo mensal ÷4'
+                ? 'fixo mensal ÷'+getNumSemanas(mes)
                 : (HORA_FIXA[n]!==undefined
                     ? 'R$'+HORA_FIXA[n].toFixed(2).replace('.',',')+'/h'
-                    : (d.hN*4<=180?'R$26,22':'R$23,60')+'/h norm + R$37,79/h not'))
+                    : (d.hN*getNumSemanas(mes)<=180?'R$26,22':'R$23,60')+'/h norm + R$37,79/h not'))
             : 'da planilha'}
         </div>
       </td>
@@ -2630,7 +2633,7 @@ function renderPetcare(){
 
 function renderRanking(){
   const mes=document.getElementById('r-mes')?.value||'';
-  let rows=getAdjustedBase();
+  let rows=getRawBase();
   if(mes)rows=rows.filter(r=>r.mes===mes);
 
   const byV={};
