@@ -1307,6 +1307,22 @@ select:focus {
       <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
     </div>
 
+    <!-- ═══ ESPECIALISTAS ═══ -->
+    <div class="pg" id="pg-faturamento">
+      <div class="ptitle">Especialistas <span>Individual</span></div>
+      <div class="psub">Análise por especialista, mês a mês — principais lançamentos e comparativo</div>
+      <div class="frow">
+        <span class="flbl">Especialista:</span>
+        <select id="fat-vet" onchange="renderFaturamento()"><option value="">Selecione o Especialista</option></select>
+        <span class="flbl">Mês:</span>
+        <select id="fat-mes" onchange="renderFaturamento()"><option value="">Todos os Meses</option></select>
+      </div>
+      <div class="kgrid" id="fat-kpi"></div>
+      <div id="fat-alert"></div>
+      <div class="cc" style="margin-bottom:16px"><div class="ctitle">Top 20 Lançamentos — Quantidade</div><canvas id="ch-fat" height="150"></canvas></div>
+      <div class="tw"><div class="th"><span>Top 20 Lançamentos (por quantidade)</span><span id="fat-tcount"></span></div><div class="tscroll" id="fat-table"></div></div>
+    </div>
+
     <!-- ═══ CLÍNICA MÉDICA ═══ -->
     <div class="pg" id="pg-clinica">
       <div class="ptitle">Clínica <span>Médica</span></div>
@@ -2055,6 +2071,14 @@ const HORA_NORMAL_180 = 26.22;  // até 180h/mês
 const HORA_NORMAL_200 = 23.60;  // de 181h até 200h/mês
 const HORA_NOTURNA    = 37.79;  // adicional noturno
 
+// Especialistas que podem ser filtrados na aba Especialistas (match por primeiro nome)
+const ESPECIALISTAS = ['nelson','natasha','charles','suzana','susana'];
+function isEspecialista(vet){
+  if(!vet) return false;
+  const first = String(vet).toLowerCase().split('.')[0].trim();
+  return ESPECIALISTAS.includes(first);
+}
+
 // Vets que recebem fixo mensal (não calculado por hora) — chave = login
 // Configurar conforme contratos individuais
 const FIXO_MENSAL = {
@@ -2248,6 +2272,7 @@ function doLogout(){
 const PAGES_LABOR=[
   {id:'petcare',    label:'FJ Analytics 2026'},
   {id:'ranking',    label:'Ranking'},
+  {id:'faturamento',label:'Especialistas'},
   {id:'clinica',    label:'Clínica Médica'},
   {id:'inter',      label:'Internação'},
   {id:'cirurgico',  label:'Bloco Cirúrgico'},
@@ -2268,6 +2293,7 @@ function initLaborApp(){
 const PAGE_RENDER_MAP = {
   'petcare':     renderPetcare,
   'ranking':     renderRanking,
+  'faturamento': renderFaturamento,
   'clinica':     renderClinica,
   'inter':       renderInter,
   'cirurgico':   renderCirurgico,
@@ -2350,14 +2376,14 @@ function mkDonut(id,labels,data,customColors){
   options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#8899bb',font:{family:'JetBrains Mono',size:11},padding:16}},tooltip:{callbacks:{label:c=>' '+fR(c.raw)}}}}});
 }
 
-function mkHBar(id,labels,data,color='#22d3ee'){
+function mkHBar(id,labels,data,color='#22d3ee',xFmt=v=>'R$'+fN(v)){
   killChart(id);
   const ctx=document.getElementById(id)?.getContext('2d');
   if(!ctx)return;
   S.charts[id]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:color+'cc',borderRadius:4,borderSkipped:false}]},
   options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
   plugins:{legend:{display:false}},
-  scales:{x:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}},y:{ticks:{...TC,font:{size:9}},grid:{color:GC}}}}});
+  scales:{x:{ticks:{...TC,callback:xFmt},grid:{color:GC}},y:{ticks:{...TC,font:{size:9}},grid:{color:GC}}}}});
 }
 
 // ════════════════════════════════
@@ -2388,7 +2414,30 @@ function populateAllFilters(){
     const lbM=[...new Set((S.anal.LAB||[]).map(r=>r.mes).filter(Boolean))];
     const lbV=[...new Set((S.anal.LAB||[]).map(r=>r.vet).filter(Boolean))].sort();
     fillSel('lb-mes','Todos os Meses',lbM,true);fillSel('lb-vet','Todos os Veterinários',lbV);
+
+    // ── Especialistas: apenas nelson, natasha, charles, suzana ──
+    const allLanc = getLancamentos();
+    const fatV=[...new Set(allLanc.map(r=>r.vet).filter(Boolean))].filter(isEspecialista).sort();
+    const fatM=[...new Set(allLanc.map(r=>r.mes).filter(Boolean))]
+      .sort((a,b)=>(MES_IDX[a]||0)-(MES_IDX[b]||0));
+    fillSel('fat-vet','Selecione o Especialista',fatV);
+    fillSel('fat-mes','Todos os Meses',fatM,true);
   }
+}
+
+// Junta os lançamentos de todos os setores de análise num array só,
+// marcando o setor de origem. Cada linha = 1 lançamento (quantidade contável).
+function getLancamentos(){
+  if(!S.anal) return [];
+  const setores = {CLINICA:'Clínica', INTER:'Internação', C_CIRURGICO:'Cirúrgico', LAB:'Laboratório'};
+  const out=[];
+  Object.keys(setores).forEach(k=>{
+    let arr = S.anal[k];
+    if(!arr) return;
+    if(!Array.isArray(arr)) arr = Object.values(arr);
+    arr.forEach(r=>{ if(r && r.vet) out.push({...r, setor:setores[k]}); });
+  });
+  return out;
 }
 
 function fillSel(id,placeholder,opts,capFirst=false){
@@ -2641,24 +2690,143 @@ function renderRanking(){
   const ranked=Object.entries(byV).sort((a,b)=>b[1].prod-a[1].prod);
   const medals=['🥇','🥈','🥉'];
 
+  // ── nº de semanas do período (mês selecionado ou soma de todos os meses) ──
+  const ALERTA_SEMANAL = 10000;
+  let nSemRank;
+  if(mes){
+    nSemRank = getNumSemanas(mes);
+  } else {
+    const mesesBase=[...new Set(getRawBase().map(r=>r.mes).filter(Boolean))];
+    nSemRank = mesesBase.reduce((s,m)=>s+getNumSemanas(m),0) || getNumSemanas('');
+  }
+  // média semanal por vet
+  ranked.forEach(([,d])=>{ d.semanal = nSemRank ? d.prod/nSemRank : d.prod; d.abaixo = d.semanal < ALERTA_SEMANAL; });
+
   if(ranked.length){
     const top=ranked.slice(0,12);
-    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção Total',data:top.map(([,d])=>d.prod),backgroundColor:CHART_COLORS.map(c=>c+'bb'),borderRadius:5}],{yFmt:v=>'R$'+fN(v)});
+    mkBar('ch-rank',top.map(([n])=>n.split('.')[0]),[{label:'Produção Total',data:top.map(([,d])=>d.prod),backgroundColor:top.map(([,d])=>d.abaixo?'rgba(239,68,68,.85)':'rgba(0,212,255,.73)'),borderRadius:5}],{yFmt:v=>'R$'+fN(v)});
   }else killChart('ch-rank');
 
-  document.getElementById('r-count').textContent=ranked.length+' profissionais';
+  const nAbaixo = ranked.filter(([,d])=>d.abaixo).length;
+  document.getElementById('r-count').textContent=ranked.length+' profissionais'+(nAbaixo?` · ${nAbaixo} abaixo de R$10 mil/sem`:'');
   const maxP=Math.max(...ranked.map(v=>v[1].prod),1);
   document.getElementById('rank-table').innerHTML=ranked.length
-    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção Total R$</th><th>% Comissão</th><th>Total</th><th>Horas</th></tr></thead><tbody>
+    ?`<table><thead><tr><th>#</th><th>Veterinário</th><th>Produção Total R$</th><th>Média Semanal</th><th>% Comissão</th><th>Total</th><th>Horas</th></tr></thead><tbody>
     ${ranked.map(([n,d],i)=>{
       const pc=calcPerc(d.prod);
-      return `<tr><td><span style="font-size:15px">${medals[i]||'#'+(i+1)}</span></td>
-      <td style="font-weight:600">${n}</td>
-      <td style="color:var(--cyan)">${fR(d.prod)}<div class="pbar"><div class="pfill" style="width:${(d.prod/maxP*100).toFixed(1)}%"></div></div></td>
+      const cor = d.abaixo ? 'var(--red)' : 'var(--cyan)';
+      const rowStyle = d.abaixo ? 'background:rgba(239,68,68,.07)' : '';
+      return `<tr style="${rowStyle}"><td><span style="font-size:15px">${medals[i]||'#'+(i+1)}</span></td>
+      <td style="font-weight:600;color:${d.abaixo?'var(--red)':'var(--tx)'}">${n}${d.abaixo?' <span style="font-size:10px;font-family:var(--font-mono);color:var(--red)">⚠ &lt;10k/sem</span>':''}</td>
+      <td style="color:${cor}">${fR(d.prod)}<div class="pbar"><div class="pfill" style="width:${(d.prod/maxP*100).toFixed(1)}%;${d.abaixo?'background:var(--red)':''}"></div></div></td>
+      <td style="color:${d.abaixo?'var(--red)':'var(--green)'};font-family:var(--font-mono);font-size:12px;font-weight:600">${fR(d.semanal)}</td>
       <td><span class="bdg ${pc>=.07?'bg':pc>=.03?'by':'br'}">${fP(pc)}</span></td>
       <td style="color:var(--green)">${fR(d.total)}</td><td style="font-family:var(--font-mono)">${fN(d.horas)}h</td></tr>`;
     }).join('')}</tbody></table>`
     :'<div class="nd"><div class="nd-i">🏆</div>'+(S.role==='admin'?'Carregue os dados no painel Admin.':'Dados não disponíveis.')+'</div>';
+}
+
+// ════════════════════════════════
+//  FATURAMENTO INDIVIDUAL
+// ════════════════════════════════
+function renderFaturamento(){
+  const ALERTA_SEMANAL = 10000;
+  const vet = document.getElementById('fat-vet')?.value || '';
+  const mes = document.getElementById('fat-mes')?.value || '';
+  const kpiEl = document.getElementById('fat-kpi');
+  const alertEl = document.getElementById('fat-alert');
+  const tblEl = document.getElementById('fat-table');
+
+  if(!vet || !isEspecialista(vet)){
+    kpiEl.innerHTML = '';
+    alertEl.innerHTML = '';
+    tblEl.innerHTML = '<div class="nd"><div class="nd-i">👤</div>Selecione um especialista para ver a análise individual.</div>';
+    document.getElementById('fat-tcount').textContent='';
+    killChart('ch-fat');
+    return;
+  }
+
+  const lanc = getLancamentos().filter(r => r.vet === vet);
+  let rows = mes ? lanc.filter(r => r.mes === mes) : lanc;
+
+  const tVal = sumC(rows,'valL');
+  const nLanc = rows.length;
+  const nSem = mes ? getNumSemanas(mes) : (() => {
+    const ms=[...new Set(rows.map(r=>r.mes).filter(Boolean))];
+    return ms.reduce((s,m)=>s+getNumSemanas(m),0) || 1;
+  })();
+  const mediaSemanal = nSem ? tVal/nSem : 0;
+  const abaixo = mediaSemanal < ALERTA_SEMANAL;
+
+  // ── comparativo com mês anterior ──
+  const mesAnt = mes ? getMesAnterior(mes) : null;
+  let cmpVal='—', cmpSub='sem mês anterior', cmpClr='var(--tx3)';
+  let semAnt=0;
+  if(mes && mesAnt){
+    const rowsAnt = lanc.filter(r=>r.mes===mesAnt);
+    const valAnt = sumC(rowsAnt,'valL');
+    semAnt = getNumSemanas(mesAnt) ? valAnt/getNumSemanas(mesAnt) : 0;
+    if(valAnt>0){
+      const varPct = ((tVal - valAnt)/valAnt)*100;
+      const up = varPct>=0;
+      cmpVal = fR(valAnt);
+      cmpClr = up ? 'var(--green)' : 'var(--red)';
+      cmpSub = `${up?'▲':'▼'} ${Math.abs(varPct).toFixed(1)}% vs atual · ${cap(mesAnt)}`;
+    } else {
+      cmpSub = `sem dados em ${cap(mesAnt)}`;
+    }
+  }
+
+  kpiEl.innerHTML = [
+    kpiCard('Faturamento', nLanc?fR(tVal):'—', mes?cap(mes):'todos os meses', 'var(--cyan)'),
+    kpiCard('Média Semanal', nLanc?fR(mediaSemanal):'—', `÷ ${nSem} semana${nSem>1?'s':''}`, abaixo?'var(--red)':'var(--green)'),
+    kpiCard('Faturamento — Mês Anterior', cmpVal, cmpSub, cmpClr),
+    kpiCard('Nº de Lançamentos', nLanc?nLanc:'—', 'procedimentos lançados', 'var(--amber)'),
+  ].join('');
+
+  // ── alerta de meta semanal ──
+  if(nLanc && abaixo){
+    alertEl.innerHTML = `<div style="margin:4px 0 16px;padding:14px 18px;border-radius:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);display:flex;gap:12px;align-items:center">
+      <span style="font-size:22px">⚠️</span>
+      <div style="font-size:13px;color:var(--tx);line-height:1.5">
+        <strong style="color:var(--red)">Abaixo da meta semanal.</strong>
+        A média semanal de <strong>${fR(mediaSemanal)}</strong> está abaixo de <strong>${fR(ALERTA_SEMANAL)}</strong>${mesAnt&&semAnt?` (mês anterior: ${fR(semAnt)}/sem)`:''}.
+      </div>
+    </div>`;
+  } else if(nLanc){
+    alertEl.innerHTML = `<div style="margin:4px 0 16px;padding:12px 18px;border-radius:12px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);display:flex;gap:12px;align-items:center">
+      <span style="font-size:18px">✓</span>
+      <div style="font-size:12.5px;color:var(--tx2)">Média semanal de <strong style="color:var(--green)">${fR(mediaSemanal)}</strong> — dentro da meta de ${fR(ALERTA_SEMANAL)}/semana.</div>
+    </div>`;
+  } else {
+    alertEl.innerHTML = '';
+  }
+
+  // ── top 20 lançamentos por QUANTIDADE (qtd + valor) ──
+  const byP = {};
+  rows.forEach(r=>{
+    if(!r.proc) return;
+    if(!byP[r.proc]) byP[r.proc]={val:0, n:0, setor:r.setor};
+    byP[r.proc].val += (r.valL||0); byP[r.proc].n++;
+  });
+  const top = Object.entries(byP).sort((a,b)=> b[1].n - a[1].n || b[1].val - a[1].val).slice(0,20);
+
+  if(top.length){
+    mkHBar('ch-fat', top.slice(0,15).map(([p])=>shortProc(p)), top.slice(0,15).map(([,d])=>d.n), '#f59e0b', v=>fN(v));
+  } else killChart('ch-fat');
+
+  document.getElementById('fat-tcount').textContent = top.length ? `top ${top.length} de ${Object.keys(byP).length}` : '';
+  tblEl.innerHTML = top.length
+    ? `<table><thead><tr><th>#</th><th>Procedimento</th><th>Setor</th><th>Qtd</th><th>Valor Lançado</th><th>Ticket Médio</th></tr></thead><tbody>
+    ${top.map(([p,d],i)=>`<tr>
+      <td style="font-family:var(--font-mono);color:var(--tx3)">${i+1}</td>
+      <td style="font-weight:600">${p}</td>
+      <td style="font-size:11px;color:var(--tx3);font-family:var(--font-mono)">${d.setor||'—'}</td>
+      <td style="font-family:var(--font-mono);color:var(--amber);font-weight:700">${d.n}</td>
+      <td style="color:var(--cyan);font-weight:700">${fR(d.val)}</td>
+      <td style="font-family:var(--font-mono);font-size:12px;color:var(--tx2)">${fR(d.n?d.val/d.n:0)}</td>
+    </tr>`).join('')}</tbody></table>`
+    : '<div class="nd"><div class="nd-i">📂</div>Sem lançamentos para este veterinário'+(mes?' em '+cap(mes):'')+'.</div>';
 }
 
 // ════════════════════════════════
