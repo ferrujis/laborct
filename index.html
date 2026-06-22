@@ -1474,7 +1474,13 @@ select:focus {
       <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
       <div class="tbl cogs">Cogs<span>BI</span></div>
       <div class="tnav" id="tnav-cogs">
-        <button class="nb cogs on">Visão Geral (DRE)</button>
+        <button class="nb cogs on" onclick="switchCogsTab('dre',this)">📊 DRE</button>
+        <button class="nb cogs" onclick="switchCogsTab('lab',this)">🧪 Laboratório</button>
+        <button class="nb cogs" onclick="switchCogsTab('insumos',this)">💊 Insumos e Med.</button>
+        <button class="nb cogs" onclick="switchCogsTab('facilities',this)">🏗️ Facilities</button>
+        <button class="nb cogs" onclick="switchCogsTab('admin',this)">📋 Administrativo</button>
+        <button class="nb cogs" onclick="switchCogsTab('equipe',this)">👥 Equipe</button>
+        <button class="nb cogs" onclick="switchCogsTab('historico',this)">📅 Histórico</button>
       </div>
       <div class="tbr">
         <span class="last-upd" id="last-upd-cogs"></span>
@@ -1482,23 +1488,124 @@ select:focus {
         <button class="lgbtn" onclick="doLogout()">Sair</button>
       </div>
     </div>
-    <div class="pg on">
-      <div class="ptitle" style="color:var(--tx)">Cogs <span style="color:var(--violet)">BI</span></div>
-      <div class="psub">Análise de Lucratividade, Margem de Contribuição e Custos Operacionais.</div>
-      <div class="frow">
+
+    <!-- Filtro global -->
+    <div style="padding:14px 28px 0;background:var(--bg)">
+      <div class="frow" style="margin-bottom:0">
         <span class="flbl">Mês:</span>
         <select id="cg-mes" onchange="renderCogs()"><option value="">Todos os Meses</option></select>
+        <span class="flbl" style="margin-left:8px">Categoria:</span>
+        <select id="cg-cat" onchange="renderCogs()"><option value="">Todas as Categorias</option></select>
       </div>
+    </div>
+
+    <!-- ── ABA: DRE ── -->
+    <div class="pg on cogs-tab" id="cogs-tab-dre" style="display:block">
+      <div class="ptitle" style="color:var(--tx)">DRE <span style="color:var(--violet)">— Resultado</span></div>
+      <div class="psub">Faturamento, custos por categoria, lucro bruto e margem consolidados.</div>
       <div class="kgrid" id="cg-kpi"></div>
-      <div class="twocol">
-        <div class="cc"><div class="ctitle">Composição de Gastos (Equipe vs Insumos)</div><canvas id="ch-cogs-donut" height="130"></canvas></div>
-        <div class="cc"><div class="ctitle">Maiores Custos Operacionais (por Fornecedor)</div><canvas id="ch-cogs-bar" height="130"></canvas></div>
+      <div id="cg-dre-visual" style="margin-bottom:22px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle" style="--cyan:var(--violet)">Composição por Categoria</div><canvas id="ch-cogs-donut" height="160"></canvas></div>
+        <div class="cc"><div class="ctitle" style="--cyan:var(--violet)">Receita vs Custos por Categoria</div><canvas id="ch-cogs-gauge" height="160"></canvas></div>
       </div>
-      <div class="tw"><div class="th"><span>Detalhamento Operacional</span><span id="cg-tcount"></span></div><div class="tscroll" id="cg-table"></div></div>
+      <div class="tw">
+        <div class="th"><span style="--cyan:var(--violet)">Demonstrativo de Resultado (DRE)</span><span id="cg-dre-mes-label"></span></div>
+        <div id="cg-dre-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: LABORATÓRIO ── -->
+    <div class="pg cogs-tab" id="cogs-tab-lab" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Custos de <span style="color:var(--cyan)">Laboratório</span></div>
+      <div class="psub">Exames externos, gases medicinais, diagnósticos laboratoriais.</div>
+      <div class="kgrid" id="cg-lab-kpi"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle">Top Fornecedores — Laboratório (R$)</div><canvas id="ch-cogs-lab-bar" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle">Distribuição por Mês</div><canvas id="ch-cogs-lab-mes" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Lançamentos — Laboratório</span><span id="cg-lab-count"></span></div>
+        <div class="tscroll" id="cg-lab-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: INSUMOS E MEDICAMENTOS ── -->
+    <div class="pg cogs-tab" id="cogs-tab-insumos" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Insumos e <span style="color:var(--green)">Medicamentos</span></div>
+      <div class="psub">Materiais cirúrgicos, medicamentos, materiais de uso veterinário.</div>
+      <div class="kgrid" id="cg-insumos-kpi"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle">Top Fornecedores — Insumos (R$)</div><canvas id="ch-cogs-insumos-bar" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle">Distribuição por Mês</div><canvas id="ch-cogs-insumos-mes" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Lançamentos — Insumos e Medicamentos</span><span id="cg-insumos-count"></span></div>
+        <div class="tscroll" id="cg-insumos-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: FACILITIES ── -->
+    <div class="pg cogs-tab" id="cogs-tab-facilities" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Custos de <span style="color:var(--amber)">Facilities</span></div>
+      <div class="psub">Manutenção, limpeza, serviços gerais e infraestrutura predial.</div>
+      <div class="kgrid" id="cg-facilities-kpi"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle">Top Fornecedores — Facilities (R$)</div><canvas id="ch-cogs-facilities-bar" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle">Distribuição por Mês</div><canvas id="ch-cogs-facilities-mes" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Lançamentos — Facilities</span><span id="cg-facilities-count"></span></div>
+        <div class="tscroll" id="cg-facilities-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: ADMINISTRATIVO ── -->
+    <div class="pg cogs-tab" id="cogs-tab-admin" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Custos <span style="color:var(--pink)">Administrativos</span></div>
+      <div class="psub">Impostos, taxas, ICMS, DIFAL e despesas administrativas gerais.</div>
+      <div class="kgrid" id="cg-admin-kpi"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle">Itens Administrativos por Valor (R$)</div><canvas id="ch-cogs-admin-bar" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle">Distribuição por Mês</div><canvas id="ch-cogs-admin-mes" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Lançamentos — Administrativo</span><span id="cg-admin-count"></span></div>
+        <div class="tscroll" id="cg-admin-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: EQUIPE ── -->
+    <div class="pg cogs-tab" id="cogs-tab-equipe" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Custos de <span style="color:var(--violet)">Equipe</span></div>
+      <div class="psub">Comissões, CLT, horistas e custos por veterinário/colaborador.</div>
+      <div class="kgrid" id="cg-equipe-kpi"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle" style="--cyan:var(--amber)">Custo por Colaborador (R$)</div><canvas id="ch-cogs-equipe-bar" height="180"></canvas></div>
+        <div class="cc"><div class="ctitle" style="--cyan:var(--amber)">Distribuição por Tipo</div><canvas id="ch-cogs-equipe-donut" height="180"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span style="--cyan:var(--amber)">Lançamentos de Equipe</span><span id="cg-equipe-count"></span></div>
+        <div class="tscroll" id="cg-equipe-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: HISTÓRICO ── -->
+    <div class="pg cogs-tab" id="cogs-tab-historico" style="display:none">
+      <div class="ptitle" style="color:var(--tx)">Histórico <span style="color:var(--violet)">Mensal</span></div>
+      <div class="psub">Evolução de receita, custos por categoria e margem mês a mês.</div>
+      <div class="kgrid" id="cg-hist-kpi"></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Evolução — Receita, Custo Total e Lucro (R$)</div><canvas id="ch-cogs-hist-line" height="140"></canvas></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Custos por Categoria — Empilhado Mensal (R$)</div><canvas id="ch-cogs-hist-stack" height="120"></canvas></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Margem Bruta % — Evolução Mensal</div><canvas id="ch-cogs-hist-margin" height="100"></canvas></div>
+      <div class="tw">
+        <div class="th"><span style="--cyan:var(--violet)">Resumo Mês a Mês por Categoria</span><span id="cg-hist-count"></span></div>
+        <div class="tscroll" id="cg-hist-table"></div>
+      </div>
     </div>
   </div>
 
-  <!-- ██ MÓDULO: INSIGHTS AI ██ -->
+    <!-- ██ MÓDULO: INSIGHTS AI ██ -->
   <div id="insights-view" style="display:none;">
     <div class="tb">
       <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
@@ -2025,8 +2132,13 @@ function openLabor() {
 }
 
 function openCogs() {
-  document.getElementById('hub-view').style.display = 'none';
-  document.getElementById('cogs-view').style.display = 'block';
+  document.getElementById("hub-view").style.display = "none";
+  document.getElementById("cogs-view").style.display = "block";
+  _cogsActiveTab = "dre";
+  document.querySelectorAll(".cogs-tab").forEach(el => el.style.display = "none");
+  const dreTab = document.getElementById("cogs-tab-dre");
+  if (dreTab) dreTab.style.display = "block";
+  document.querySelectorAll("#tnav-cogs .nb").forEach((b,i) => { b.classList.toggle("on", i===0); });
   populateAllFilters();
   requestAnimationFrame(() => requestAnimationFrame(() => { renderCogs(); }));
 }
@@ -2400,6 +2512,8 @@ function populateAllFilters(){
   fillSel('r-mes','Todos os Meses', baseMeses, true);
 
   fillSel('cg-mes', 'Todos os Meses', allMeses, true);
+  const cogsCats = [...new Set((S.cogs||[]).map(r=>r.cat).filter(Boolean))].sort();
+  fillSel('cg-cat', 'Todas as Categorias', cogsCats);
 
   if(S.anal){
     const clM=[...new Set((S.anal.CLINICA||[]).map(r=>r.mes).filter(Boolean))];
@@ -3179,76 +3293,510 @@ function renderLab(){
 
 
 // ════════════════════════════════
-//  PAGE: COGS BI
+//  PAGE: COGS BI — MULTI-ABA (Categorias reais do xlsx)
 // ════════════════════════════════
-function renderCogs(){
-  const mes = document.getElementById('cg-mes')?.value || '';
-  let cogsRows = S.cogs || [];
 
-  if(mes) cogsRows = cogsRows.filter(x => x.mes === mes);
+// Categorias reais do xlsx — mapeamento de label → chave interna
+const COGS_CATS = {
+  'Laboratorio':            { key:'lab',       color:'#22d3ee', label:'Laboratório',          bdg:'bc' },
+  'Insumos e Medicamentos': { key:'insumos',   color:'#34d399', label:'Insumos e Med.',       bdg:'bg' },
+  'Facilities':             { key:'facilities',color:'#fbbf24', label:'Facilities',            bdg:'by' },
+  'Administrativo':         { key:'admin',     color:'#fb7185', label:'Administrativo',        bdg:'br' },
+  'Equipe':                 { key:'equipe',    color:'#a78bfa', label:'Equipe',                bdg:'bv' },
+};
 
-  let fatBruto = 0, custoVet = 0, custoOp = 0;
+// Categorias consideradas "equipe" (CLT, comissão, horistas)
+function isEquipeCat(cat) {
+  const cn = (cat||'').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  return cn.includes('vet') || cn.includes('clt') || cn.includes('equipe') ||
+         cn.includes('medico') || cn.includes('comissao') || cn.includes('horista') ||
+         cn.includes('salario');
+}
 
-  cogsRows.forEach(r => {
-    const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    if(catNorm.includes('faturamento')||catNorm.includes('receita'))        fatBruto += r.val;
-    else if(catNorm.includes('vet')||catNorm.includes('clt')||catNorm.includes('equipe')||catNorm.includes('medico')||catNorm.includes('comissao')) custoVet += r.val;
-    else custoOp += r.val;
-  });
+// Categorias que representam receita
+function isReceitaCat(cat) {
+  const cn = (cat||'').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  return cn.includes('faturamento') || cn.includes('receita');
+}
 
-  if(fatBruto === 0){
-    let baseRows = getAdjustedBase();
-    if(mes) baseRows = baseRows.filter(x => x.mes === mes);
-    fatBruto = sumC(baseRows,'prod');
+// Retorna a chave interna de uma categoria
+function getCatKey(cat) {
+  if (!cat) return 'outros';
+  if (isReceitaCat(cat)) return 'receita';
+  if (isEquipeCat(cat)) return 'equipe';
+  // Match exacto primeiro
+  if (COGS_CATS[cat]) return COGS_CATS[cat].key;
+  // Match parcial normalizado
+  const cn = cat.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if (cn.includes('laboratorio') || cn.includes('lab')) return 'lab';
+  if (cn.includes('insumo') || cn.includes('medicamento')) return 'insumos';
+  if (cn.includes('facilit') || cn.includes('manut')) return 'facilities';
+  if (cn.includes('admin') || cn.includes('imposto') || cn.includes('difal') || cn.includes('icms')) return 'admin';
+  return 'outros';
+}
+
+// Cor por chave
+function getCatColor(key) {
+  const map = {lab:'#22d3ee',insumos:'#34d399',facilities:'#fbbf24',admin:'#fb7185',equipe:'#a78bfa',outros:'#818cf8',receita:'#22d3ee'};
+  return map[key] || '#818cf8';
+}
+function getCatLabel(key) {
+  const map = {lab:'Laboratório',insumos:'Insumos e Med.',facilities:'Facilities',admin:'Administrativo',equipe:'Equipe',outros:'Outros',receita:'Receita'};
+  return map[key] || key;
+}
+
+let _cogsActiveTab = 'dre';
+
+function switchCogsTab(tab, btn) {
+  _cogsActiveTab = tab;
+  document.querySelectorAll('.cogs-tab').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#tnav-cogs .nb').forEach(b => b.classList.remove('on'));
+  const tabEl = document.getElementById('cogs-tab-' + tab);
+  if (tabEl) tabEl.style.display = 'block';
+  if (btn) btn.classList.add('on');
+  renderCogsTab(tab);
+}
+
+function renderCogs() {
+  const catSel = document.getElementById('cg-cat');
+  if (catSel && S.cogs) {
+    const cats = [...new Set((S.cogs||[]).map(r => r.cat).filter(Boolean))].sort();
+    const cur = catSel.value;
+    catSel.innerHTML = '<option value="">Todas as Categorias</option>' +
+      cats.map(c => `<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
   }
+  renderCogsTab(_cogsActiveTab);
+}
 
-  const custoTotal = custoVet + custoOp;
-  const lucroBruto = fatBruto - custoTotal;
-  const margem = fatBruto > 0 ? lucroBruto / fatBruto : 0;
+function getCogsFiltered() {
+  const mes = document.getElementById('cg-mes')?.value || '';
+  const cat = document.getElementById('cg-cat')?.value || '';
+  let rows = S.cogs || [];
+  if (mes) rows = rows.filter(r => r.mes === mes);
+  if (cat) rows = rows.filter(r => r.cat === cat);
+  return rows;
+}
+
+function renderCogsTab(tab) {
+  if      (tab === 'dre')        renderCogsDRE();
+  else if (tab === 'lab')        renderCogsCatTab('lab', 'Laboratório', '#22d3ee');
+  else if (tab === 'insumos')    renderCogsCatTab('insumos', 'Insumos e Medicamentos', '#34d399');
+  else if (tab === 'facilities') renderCogsCatTab('facilities', 'Facilities', '#fbbf24');
+  else if (tab === 'admin')      renderCogsCatTab('admin', 'Administrativo', '#fb7185');
+  else if (tab === 'equipe')     renderCogsEquipe();
+  else if (tab === 'historico')  renderCogsHistorico();
+}
+
+// ── TOTAIS ──
+function getCogsTotals(rows) {
+  const byCat = {};
+  rows.forEach(r => {
+    const k = getCatKey(r.cat);
+    byCat[k] = (byCat[k]||0) + r.val;
+  });
+  let fatBruto = byCat['receita'] || 0;
+  if (!fatBruto) {
+    const mes = document.getElementById('cg-mes')?.value || '';
+    let base = getAdjustedBase();
+    if (mes) base = base.filter(x => x.mes === mes);
+    fatBruto = sumC(base, 'prod');
+  }
+  const custoEquipe = byCat['equipe'] || 0;
+  const custoLab    = byCat['lab'] || 0;
+  const custoIns    = byCat['insumos'] || 0;
+  const custoFac    = byCat['facilities'] || 0;
+  const custoAdm    = byCat['admin'] || 0;
+  const custoOutros = byCat['outros'] || 0;
+  const custoTotal  = custoEquipe + custoLab + custoIns + custoFac + custoAdm + custoOutros;
+  const lucroBruto  = fatBruto - custoTotal;
+  const margem      = fatBruto > 0 ? lucroBruto / fatBruto : 0;
+  return { fatBruto, custoEquipe, custoLab, custoIns, custoFac, custoAdm, custoOutros, custoTotal, lucroBruto, margem, byCat };
+}
+
+// ── ABA 1: DRE ──
+function renderCogsDRE() {
+  const rows = getCogsFiltered();
+  const mes  = document.getElementById('cg-mes')?.value || '';
+  const t    = getCogsTotals(rows);
+  const mesLabel = mes ? mes.charAt(0).toUpperCase()+mes.slice(1) : 'Todos os Meses';
 
   document.getElementById('cg-kpi').innerHTML = [
-    kpiCard('Faturamento Total', fR(fatBruto), 'produção bruta global', 'var(--cyan)'),
-    kpiCard('Custo de Equipe',   fR(custoVet),  'comissões + clt + externos', 'var(--amber)'),
-    kpiCard('Custos Operacionais', fR(custoOp), 'labs, insumos, gases', 'var(--red)'),
-    kpiCard('Lucro Bruto',  fR(lucroBruto), 'fat. menos custos diretos', lucroBruto>=0?'var(--green)':'var(--red)'),
-    kpiCard('Margem Bruta', fP(margem),     'lucro / faturamento',       lucroBruto>=0?'var(--green)':'var(--red)'),
+    kpiCard('Faturamento Total',   fR(t.fatBruto),   'produção bruta', 'var(--cyan)'),
+    kpiCard('Laboratório',         fR(t.custoLab),   'exames e gases', '#22d3ee'),
+    kpiCard('Insumos e Med.',      fR(t.custoIns),   'materiais e medicamentos', '#34d399'),
+    kpiCard('Facilities',          fR(t.custoFac),   'manutenção e limpeza', '#fbbf24'),
+    kpiCard('Administrativo',      fR(t.custoAdm),   'impostos e taxas', '#fb7185'),
+    kpiCard('Equipe',              fR(t.custoEquipe),'comissões e CLT', 'var(--amber)'),
+    kpiCard('Custo Total',         fR(t.custoTotal), 'soma de todos os custos', 'var(--pink)'),
+    kpiCard('Lucro Bruto',         fR(t.lucroBruto), `margem ${fP(t.margem)}`, t.lucroBruto>=0?'var(--green)':'var(--red)'),
   ].join('');
 
-  if(fatBruto > 0 || custoTotal > 0){
+  document.getElementById('cg-dre-mes-label').textContent = mesLabel;
+
+  // Cascata DRE com todas as categorias
+  const linhas = [
+    {label:'(+) Receita Bruta',       val:t.fatBruto,   color:'#22d3ee', neg:false},
+    {label:'(−) Laboratório',          val:t.custoLab,   color:'#22d3ee', neg:true,  cat:true},
+    {label:'(−) Insumos e Med.',       val:t.custoIns,   color:'#34d399', neg:true,  cat:true},
+    {label:'(−) Facilities',           val:t.custoFac,   color:'#fbbf24', neg:true,  cat:true},
+    {label:'(−) Administrativo',       val:t.custoAdm,   color:'#fb7185', neg:true,  cat:true},
+    {label:'(−) Equipe',               val:t.custoEquipe,color:'#a78bfa', neg:true,  cat:true},
+    ...(t.custoOutros>0?[{label:'(−) Outros',val:t.custoOutros,color:'#818cf8',neg:true,cat:true}]:[]),
+    {label: t.lucroBruto>=0?'(=) Lucro Bruto':'(=) Prejuízo', val:Math.abs(t.lucroBruto), color:t.lucroBruto>=0?'#34d399':'#f87171', neg:false, isResult:true},
+  ].filter(l => l.val > 0 || l.isResult);
+
+  document.getElementById('cg-dre-visual').innerHTML = `
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--violet),var(--cyan))"></div>
+      <div style="font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--tx);margin-bottom:20px;display:flex;align-items:center;gap:10px">
+        <span style="width:3px;height:16px;background:var(--violet);border-radius:2px;display:inline-block"></span>
+        Cascata de Resultado — ${mesLabel}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${linhas.map(item => {
+          const pct = t.fatBruto > 0 ? Math.abs(item.val/t.fatBruto*100) : 0;
+          const barW = Math.min(pct, 100).toFixed(1);
+          return `<div style="display:grid;grid-template-columns:220px 1fr 130px;align-items:center;gap:12px${item.isResult?';padding-top:10px;border-top:1px dashed var(--bd)':''}">
+            <div style="font-size:12.5px;font-family:var(--font-mono);color:${item.isResult?item.color:'var(--tx2)'};font-weight:${item.isResult?700:400}">${item.label}</div>
+            <div style="height:18px;background:var(--sf3);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${barW}%;background:${item.color};border-radius:3px;transition:width .6s ease;opacity:${item.cat?'.7':'1'}"></div>
+            </div>
+            <div style="text-align:right;font-family:var(--font-mono);font-size:12.5px;color:${item.color};font-weight:${item.isResult?700:500}">${item.neg?'−':''}${fR(item.val)} <span style="font-size:9.5px;color:var(--tx3)">(${pct.toFixed(1)}%)</span></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  // Donut por categoria
+  const catEntries = Object.entries(t.byCat).filter(([k])=>k!=='receita'&&k!=='outros'||t.byCat[k]>0);
+  if (catEntries.length) {
     mkDonut('ch-cogs-donut',
-      ['Equipe Veterinária','Desp. Operacionais'],
-      [custoVet, custoOp],
-      ['rgba(245,158,11,.85)','rgba(239,68,68,.85)']
+      catEntries.map(([k])=>getCatLabel(k)),
+      catEntries.map(([,v])=>v),
+      catEntries.map(([k])=>getCatColor(k)+'cc')
     );
-  } else { killChart('ch-cogs-donut'); }
+  } else killChart('ch-cogs-donut');
 
-  const opByForn = {};
-  cogsRows.forEach(r => {
-    const catNorm = r.cat.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    if(catNorm.includes('faturamento')||catNorm.includes('receita')) return;
-    const k = r.forn || r.cat || 'Outros';
-    opByForn[k] = (opByForn[k]||0) + r.val;
-  });
-  const sortedOp = Object.entries(opByForn).sort((a,b)=>b[1]-a[1]);
-  if(sortedOp.length){
-    mkHBar('ch-cogs-bar', sortedOp.map(x=>x[0]), sortedOp.map(x=>x[1]), '#ef4444');
-  } else { killChart('ch-cogs-bar'); }
-
-  document.getElementById('cg-tcount').textContent = cogsRows.length + ' lançamentos';
-  if(cogsRows.length){
-    document.getElementById('cg-table').innerHTML = `<table><thead>
-      <tr><th>Data</th><th>Mês</th><th>Categoria</th><th>Fornecedor/Item</th><th>Valor R$</th></tr>
-    </thead><tbody>
-    ${cogsRows.sort((a,b)=>a.data.localeCompare(b.data)).map(r=>`<tr>
-      <td style="font-family:var(--font-mono);font-size:11px">${r.data.split('-').reverse().join('/')}</td>
-      <td style="text-transform:capitalize;font-family:var(--font-mono);font-size:11px">${r.mes}</td>
-      <td><span class="bdg bc">${r.cat}</span></td>
-      <td style="font-weight:500">${r.forn}</td>
-      <td style="color:var(--red);font-family:var(--font-mono);font-weight:500">${fR(r.val)}</td>
-    </tr>`).join('')}</tbody></table>`;
-  } else {
-    document.getElementById('cg-table').innerHTML = '<div class="nd"><div class="nd-i">📊</div>Nenhum custo operacional lançado para este período.</div>';
+  // Barras categoria
+  killChart('ch-cogs-gauge');
+  const ctx = document.getElementById('ch-cogs-gauge')?.getContext('2d');
+  const barsData = [
+    {l:'Laboratório', v:t.custoLab, c:'rgba(34,211,238,.8)'},
+    {l:'Insumos e Med.', v:t.custoIns, c:'rgba(52,211,153,.8)'},
+    {l:'Facilities', v:t.custoFac, c:'rgba(251,191,36,.8)'},
+    {l:'Administrativo', v:t.custoAdm, c:'rgba(251,113,133,.8)'},
+    {l:'Equipe', v:t.custoEquipe, c:'rgba(167,139,250,.8)'},
+  ].filter(x=>x.v>0);
+  if (ctx && barsData.length) {
+    S.charts['ch-cogs-gauge'] = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: barsData.map(x=>x.l),
+        datasets:[{data:barsData.map(x=>x.v), backgroundColor:barsData.map(x=>x.c), borderRadius:6}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{...TC},grid:{color:GC}},y:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}}}}
+    });
   }
+
+  // Tabela DRE
+  const dreLinhas = [
+    {label:'(+) Receita Bruta',      val:t.fatBruto,    color:'var(--cyan)',  bold:false},
+    {label:'(−) Laboratório',         val:t.custoLab,    color:'#22d3ee',     bold:false},
+    {label:'(−) Insumos e Med.',      val:t.custoIns,    color:'#34d399',     bold:false},
+    {label:'(−) Facilities',          val:t.custoFac,    color:'#fbbf24',     bold:false},
+    {label:'(−) Administrativo',      val:t.custoAdm,    color:'#fb7185',     bold:false},
+    {label:'(−) Equipe',              val:t.custoEquipe, color:'#a78bfa',     bold:false},
+    ...(t.custoOutros>0?[{label:'(−) Outros',val:t.custoOutros,color:'#818cf8',bold:false}]:[]),
+    {label:'(−) Custo Total',         val:t.custoTotal,  color:'var(--pink)', bold:false, sep:true},
+    {label:t.lucroBruto>=0?'(=) Lucro Bruto':'(=) Prejuízo', val:t.lucroBruto, color:t.lucroBruto>=0?'var(--green)':'var(--red)', bold:true},
+  ];
+  document.getElementById('cg-dre-table').innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="padding:12px 20px;text-align:left;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);background:var(--sf2);border-bottom:1px solid var(--bd)">Linha DRE</th>
+        <th style="padding:12px 20px;text-align:right;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);background:var(--sf2);border-bottom:1px solid var(--bd)">Valor (R$)</th>
+        <th style="padding:12px 20px;text-align:right;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);background:var(--sf2);border-bottom:1px solid var(--bd)">% Receita</th>
+        <th style="padding:12px 20px;text-align:left;font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);background:var(--sf2);border-bottom:1px solid var(--bd)">Composição</th>
+      </tr></thead>
+      <tbody>
+        ${dreLinhas.map(row => {
+          const p = t.fatBruto > 0 ? (row.val/t.fatBruto*100) : 0;
+          const barW = Math.min(Math.abs(p),100).toFixed(1);
+          return `<tr style="${row.sep?'border-top:2px solid var(--bd)':''}">
+            <td style="padding:14px 20px;font-size:13px;color:${row.bold?row.color:'var(--tx2)'};font-weight:${row.bold?700:400};border-bottom:1px solid rgba(30,45,71,.4)">${row.label}</td>
+            <td style="padding:14px 20px;text-align:right;font-family:var(--font-mono);color:${row.color};font-weight:${row.bold?700:500};font-size:13px;border-bottom:1px solid rgba(30,45,71,.4)">${fR(row.val)}</td>
+            <td style="padding:14px 20px;text-align:right;font-family:var(--font-mono);font-size:12px;color:var(--tx3);border-bottom:1px solid rgba(30,45,71,.4)">${Math.abs(p).toFixed(1)}%</td>
+            <td style="padding:14px 20px;border-bottom:1px solid rgba(30,45,71,.4)">
+              <div style="height:6px;background:var(--sf3);border-radius:3px;overflow:hidden;width:120px">
+                <div style="height:100%;width:${barW}%;background:${row.color};border-radius:3px"></div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── FUNÇÃO GENÉRICA PARA CADA CATEGORIA ──
+function renderCogsCatTab(catKey, catLabel, catColor) {
+  const allRows   = getCogsFiltered();
+  const rows      = allRows.filter(r => getCatKey(r.cat) === catKey);
+  const totalGeral = allRows.filter(r => getCatKey(r.cat) !== 'receita').reduce((s,r)=>s+r.val,0);
+  const total     = rows.reduce((s,r)=>s+r.val,0);
+  const pctTotal  = totalGeral > 0 ? (total/totalGeral*100) : 0;
+
+  const kpiId     = 'cg-' + catKey + '-kpi';
+  const barId     = 'ch-cogs-' + catKey + '-bar';
+  const mesId     = 'ch-cogs-' + catKey + '-mes';
+  const countId   = 'cg-' + catKey + '-count';
+  const tableId   = 'cg-' + catKey + '-table';
+
+  // KPIs
+  const byForn = {};
+  rows.forEach(r=>{ const k=r.forn||r.cat||'?'; byForn[k]=(byForn[k]||0)+r.val; });
+  const sorted = Object.entries(byForn).sort((a,b)=>b[1]-a[1]);
+  const byMes  = {};
+  rows.forEach(r=>{ if(r.mes) byMes[r.mes]=(byMes[r.mes]||0)+r.val; });
+
+  document.getElementById(kpiId).innerHTML = [
+    kpiCard('Total ' + catLabel, fR(total), rows.length + ' lançamentos', catColor),
+    kpiCard('% dos Custos Totais', pctTotal.toFixed(1)+'%', 'participação no total', catColor),
+    kpiCard('Maior Fornecedor', sorted.length ? fR(sorted[0][1]) : '—', sorted.length ? sorted[0][0].substring(0,22) : '—', catColor),
+    kpiCard('Ticket Médio', rows.length ? fR(total/rows.length) : '—', 'por lançamento', catColor),
+  ].join('');
+
+  // Gráfico top fornecedores
+  killChart(barId);
+  const ctx1 = document.getElementById(barId)?.getContext('2d');
+  if (ctx1 && sorted.length) {
+    S.charts[barId] = new Chart(ctx1, {
+      type:'bar',
+      data:{
+        labels: sorted.slice(0,12).map(([k])=>k),
+        datasets:[{label:'Valor (R$)', data:sorted.slice(0,12).map(([,v])=>v),
+          backgroundColor: catColor + 'bb', borderRadius:5}]
+      },
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}},y:{ticks:{...TC,font:{size:10}},grid:{color:GC}}}}
+    });
+  }
+
+  // Gráfico por mês
+  killChart(mesId);
+  const ctx2 = document.getElementById(mesId)?.getContext('2d');
+  const mesEntries = Object.entries(byMes).sort((a,b)=>MESES.indexOf(a[0])-MESES.indexOf(b[0]));
+  if (ctx2 && mesEntries.length) {
+    S.charts[mesId] = new Chart(ctx2, {
+      type:'doughnut',
+      data:{
+        labels: mesEntries.map(([m])=>m.charAt(0).toUpperCase()+m.slice(1)),
+        datasets:[{data:mesEntries.map(([,v])=>v),
+          backgroundColor: CHART_COLORS.slice(0,mesEntries.length).map(c=>c+'bb')}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#8faac8',font:{size:11}}}}}
+    });
+  }
+
+  // Tabela
+  document.getElementById(countId).textContent = rows.length + ' lançamentos';
+  document.getElementById(tableId).innerHTML = rows.length ? `
+    <table><thead><tr>
+      <th>Data</th><th>Mês</th><th>Categoria</th><th>Fornecedor / Item</th>
+      <th style="text-align:right">Valor R$</th><th style="text-align:right">% do Total</th>
+    </tr></thead><tbody>
+    ${rows.sort((a,b)=>b.val-a.val).map(r=>{
+      const pct = total>0?(r.val/total*100).toFixed(1):0;
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px">${(r.data||'').split('-').reverse().join('/')}</td>
+        <td style="text-transform:capitalize;font-family:var(--font-mono);font-size:11px">${r.mes||'—'}</td>
+        <td><span class="bdg bc" style="background:${catColor}18;color:${catColor};border-color:${catColor}44">${r.cat||'?'}</span></td>
+        <td style="font-weight:500;font-size:12px">${r.forn||'—'}</td>
+        <td style="color:${catColor};font-family:var(--font-mono);font-weight:600;text-align:right">${fR(r.val)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--tx3)">
+          ${pct}%
+          <div class="pbar" style="width:60px;display:inline-block;vertical-align:middle;margin-left:6px">
+            <div class="pfill" style="width:${pct}%;background:${catColor}"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>` :
+    `<div class="nd"><div class="nd-i">📂</div>Sem lançamentos de "${catLabel}" neste período.</div>`;
+}
+
+// ── ABA: EQUIPE ──
+function renderCogsEquipe() {
+  const rows  = getCogsFiltered().filter(r => getCatKey(r.cat) === 'equipe');
+  const total = rows.reduce((s,r)=>s+r.val,0);
+  const byForn = {};
+  rows.forEach(r=>{ const k=r.forn||r.cat||'?'; byForn[k]=(byForn[k]||0)+r.val; });
+  const sorted = Object.entries(byForn).sort((a,b)=>b[1]-a[1]);
+  const byTipo = {};
+  rows.forEach(r=>{
+    const cn=(r.cat||'').normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    let t='Outros';
+    if(cn.includes('clt'))t='CLT';
+    else if(cn.includes('comissao')||cn.includes('comissão'))t='Comissão';
+    else if(cn.includes('horista')||cn.includes('hora'))t='Horista';
+    byTipo[t]=(byTipo[t]||0)+r.val;
+  });
+
+  document.getElementById('cg-equipe-kpi').innerHTML = [
+    kpiCard('Total Equipe', fR(total), 'todos os custos de pessoas', 'var(--amber)'),
+    kpiCard('Colaboradores', sorted.length, 'profissionais/itens únicos', 'var(--cyan)'),
+    kpiCard('Maior Custo', sorted.length?fR(sorted[0][1]):'—', sorted.length?sorted[0][0].substring(0,20):'—', 'var(--red)'),
+    kpiCard('Ticket Médio', sorted.length?fR(total/sorted.length):'—', 'por colaborador', 'var(--violet)'),
+  ].join('');
+
+  killChart('ch-cogs-equipe-bar');
+  const ctx1 = document.getElementById('ch-cogs-equipe-bar')?.getContext('2d');
+  if(ctx1&&sorted.length){
+    S.charts['ch-cogs-equipe-bar'] = new Chart(ctx1,{type:'bar',data:{
+      labels:sorted.slice(0,15).map(([k])=>k),
+      datasets:[{label:'Custo (R$)',data:sorted.slice(0,15).map(([,v])=>v),
+        backgroundColor:sorted.slice(0,15).map((_,i)=>CHART_COLORS[i%CHART_COLORS.length]+'bb'),borderRadius:5}]
+    },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}},y:{ticks:{...TC,font:{size:10}},grid:{color:GC}}}}});
+  }
+  const tipoEntries = Object.entries(byTipo).sort((a,b)=>b[1]-a[1]);
+  mkDonut('ch-cogs-equipe-donut',tipoEntries.map(([k])=>k),tipoEntries.map(([,v])=>v),
+    ['rgba(245,158,11,.85)','rgba(34,211,238,.85)','rgba(167,139,250,.85)','rgba(52,211,153,.85)']);
+
+  document.getElementById('cg-equipe-count').textContent = rows.length + ' lançamentos';
+  document.getElementById('cg-equipe-table').innerHTML = rows.length ? `
+    <table><thead><tr><th>Data</th><th>Mês</th><th>Categoria</th><th>Colaborador / Item</th>
+    <th style="text-align:right">Valor R$</th><th style="text-align:right">% do Total</th>
+    </tr></thead><tbody>
+    ${rows.sort((a,b)=>a.data.localeCompare(b.data)).map(r=>{
+      const pct=total>0?(r.val/total*100).toFixed(1):0;
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px">${(r.data||'').split('-').reverse().join('/')}</td>
+        <td style="text-transform:capitalize;font-family:var(--font-mono);font-size:11px">${r.mes||'—'}</td>
+        <td><span class="bdg by">${r.cat||'?'}</span></td>
+        <td style="font-weight:500">${r.forn||'—'}</td>
+        <td style="color:var(--amber);font-family:var(--font-mono);font-weight:600;text-align:right">${fR(r.val)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--tx3)">${pct}%</td>
+      </tr>`;
+    }).join('')}</tbody></table>` :
+    '<div class="nd"><div class="nd-i">👥</div>Sem lançamentos de equipe neste período.</div>';
+}
+
+// ── ABA: HISTÓRICO ──
+function renderCogsHistorico() {
+  const allCogs = S.cogs || [];
+  const allBase = getAdjustedBase();
+  const meses = [...new Set([...allCogs.map(r=>r.mes),...allBase.map(r=>r.mes)].filter(Boolean))]
+    .sort((a,b)=>MESES.indexOf(a)-MESES.indexOf(b));
+
+  const hist = meses.map(m => {
+    const mCogs = allCogs.filter(r=>r.mes===m);
+    let fat = mCogs.filter(r=>getCatKey(r.cat)==='receita').reduce((s,r)=>s+r.val,0);
+    if(!fat) fat = allBase.filter(r=>r.mes===m).reduce((s,r)=>s+(r.prod||0),0);
+    const lab   = mCogs.filter(r=>getCatKey(r.cat)==='lab').reduce((s,r)=>s+r.val,0);
+    const ins   = mCogs.filter(r=>getCatKey(r.cat)==='insumos').reduce((s,r)=>s+r.val,0);
+    const fac   = mCogs.filter(r=>getCatKey(r.cat)==='facilities').reduce((s,r)=>s+r.val,0);
+    const adm   = mCogs.filter(r=>getCatKey(r.cat)==='admin').reduce((s,r)=>s+r.val,0);
+    const equi  = mCogs.filter(r=>getCatKey(r.cat)==='equipe').reduce((s,r)=>s+r.val,0);
+    const custo = lab+ins+fac+adm+equi;
+    const lucro = fat-custo;
+    const margem= fat>0?lucro/fat:0;
+    return {mes:m, fat, lab, ins, fac, adm, equi, custo, lucro, margem};
+  });
+
+  if(hist.length){
+    const last=hist[hist.length-1], prev=hist.length>1?hist[hist.length-2]:null;
+    const varFat=prev&&prev.fat>0?((last.fat-prev.fat)/prev.fat*100):0;
+    document.getElementById('cg-hist-kpi').innerHTML = [
+      kpiCard('Meses Analisados', hist.length, 'períodos com dados', 'var(--cyan)'),
+      kpiCard('Receita (Último Mês)', fR(last.fat), cap(last.mes), 'var(--cyan)'),
+      kpiCard('Lucro (Último Mês)', fR(last.lucro), `margem ${fP(last.margem)}`, last.lucro>=0?'var(--green)':'var(--red)'),
+      kpiCard('Variação Receita', (varFat>=0?'+':'')+varFat.toFixed(1)+'%', prev?`vs ${cap(prev.mes)}`:'—', varFat>=0?'var(--green)':'var(--red)'),
+    ].join('');
+  }
+
+  // Line chart evolução
+  killChart('ch-cogs-hist-line');
+  const ctx1=document.getElementById('ch-cogs-hist-line')?.getContext('2d');
+  if(ctx1&&hist.length){
+    S.charts['ch-cogs-hist-line']=new Chart(ctx1,{type:'line',data:{
+      labels:hist.map(h=>cap(h.mes)),
+      datasets:[
+        {label:'Faturamento',data:hist.map(h=>h.fat),borderColor:'#22d3ee',backgroundColor:'rgba(34,211,238,.08)',tension:.35,pointRadius:4,fill:true},
+        {label:'Custo Total', data:hist.map(h=>h.custo),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.06)',tension:.35,pointRadius:4,fill:true},
+        {label:'Lucro Bruto', data:hist.map(h=>h.lucro),borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.06)',tension:.35,pointRadius:4,fill:true},
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8faac8',font:{size:11}}}},
+      scales:{x:{ticks:{...TC},grid:{color:GC}},y:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}}}}});
+  }
+
+  // Stacked bar por categoria
+  killChart('ch-cogs-hist-stack');
+  const ctx3=document.getElementById('ch-cogs-hist-stack')?.getContext('2d');
+  if(ctx3&&hist.length){
+    S.charts['ch-cogs-hist-stack']=new Chart(ctx3,{type:'bar',data:{
+      labels:hist.map(h=>cap(h.mes)),
+      datasets:[
+        {label:'Laboratório',    data:hist.map(h=>h.lab),  backgroundColor:'rgba(34,211,238,.75)', stack:'a'},
+        {label:'Insumos e Med.', data:hist.map(h=>h.ins),  backgroundColor:'rgba(52,211,153,.75)', stack:'a'},
+        {label:'Facilities',     data:hist.map(h=>h.fac),  backgroundColor:'rgba(251,191,36,.75)', stack:'a'},
+        {label:'Administrativo', data:hist.map(h=>h.adm),  backgroundColor:'rgba(251,113,133,.75)',stack:'a'},
+        {label:'Equipe',         data:hist.map(h=>h.equi), backgroundColor:'rgba(167,139,250,.75)',stack:'a'},
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8faac8',font:{size:11}}}},
+      scales:{x:{ticks:{...TC},grid:{color:GC}},y:{stacked:true,ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}}}}});
+  }
+
+  // Margem
+  killChart('ch-cogs-hist-margin');
+  const ctx2=document.getElementById('ch-cogs-hist-margin')?.getContext('2d');
+  if(ctx2&&hist.length){
+    S.charts['ch-cogs-hist-margin']=new Chart(ctx2,{type:'bar',data:{
+      labels:hist.map(h=>cap(h.mes)),
+      datasets:[{label:'Margem %',data:hist.map(h=>+(h.margem*100).toFixed(1)),
+        backgroundColor:hist.map(h=>h.margem>=0.2?'rgba(52,211,153,.7)':h.margem>=0.1?'rgba(251,191,36,.7)':'rgba(239,68,68,.7)'),
+        borderRadius:5}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{...TC},grid:{color:GC}},y:{ticks:{...TC,callback:v=>v+'%'},grid:{color:GC}}}}});
+  }
+
+  document.getElementById('cg-hist-count').textContent = hist.length + ' meses';
+  document.getElementById('cg-hist-table').innerHTML = hist.length ? `
+    <table><thead><tr>
+      <th>Mês</th>
+      <th style="text-align:right">Faturamento</th>
+      <th style="text-align:right">🧪 Lab.</th>
+      <th style="text-align:right">💊 Insumos</th>
+      <th style="text-align:right">🏗️ Facilities</th>
+      <th style="text-align:right">📋 Admin.</th>
+      <th style="text-align:right">👥 Equipe</th>
+      <th style="text-align:right">Custo Total</th>
+      <th style="text-align:right">Lucro</th>
+      <th style="text-align:right">Margem</th>
+    </tr></thead><tbody>
+    ${hist.map((h,i)=>{
+      const prev=i>0?hist[i-1]:null;
+      const varF=prev&&prev.fat>0?((h.fat-prev.fat)/prev.fat*100):null;
+      const trend=varF===null?'—':varF>0?`<span style="color:var(--green)">↑ ${varF.toFixed(1)}%</span>`:`<span style="color:var(--red)">↓ ${Math.abs(varF).toFixed(1)}%</span>`;
+      const mClr=h.margem>=0.2?'var(--green)':h.margem>=0.1?'var(--amber)':'var(--red)';
+      return `<tr>
+        <td style="font-family:var(--font-display);font-weight:600;color:var(--tx)">${cap(h.mes)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:var(--cyan);font-weight:600">${fR(h.fat)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:#22d3ee">${fR(h.lab)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:#34d399">${fR(h.ins)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:#fbbf24">${fR(h.fac)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:#fb7185">${fR(h.adm)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:#a78bfa">${fR(h.equi)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:var(--pink);font-weight:600">${fR(h.custo)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:${h.lucro>=0?'var(--green)':'var(--red)'};font-weight:700">${fR(h.lucro)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);color:${mClr};font-weight:600">${(h.margem*100).toFixed(1)}%</td>
+      </tr>`;
+    }).join('')}</tbody></table>` :
+    '<div class="nd"><div class="nd-i">📅</div>Dados históricos insuficientes.</div>';
 }
 
 // ════════════════════════════════
