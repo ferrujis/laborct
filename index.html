@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="FJ Analytics — Plataforma de inteligência de negócios para gestão de comissões, custos e análises clínicas veterinárias.">
+<meta name="theme-color" content="#070a10">
+<meta name="robots" content="noindex, nofollow">
 <title>FJ Analytics — Ecossistema de Inteligência</title>
 <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1191,38 +1194,192 @@ select:focus {
   .hub-grid { grid-template-columns: 1fr; }
   .login-card { padding: 30px 24px; }
 }
+
+/* ══════════════════════════════════════════
+   KEYFRAMES — MODERN ANIMATION SYSTEM
+══════════════════════════════════════════ */
+
+@keyframes drift {
+  0%,100% { transform: scale(1)    translate(0,    0);    }
+  33%      { transform: scale(1.04) translate(-1%,  .8%); }
+  66%      { transform: scale(.97)  translate(.8%, -1%);  }
+}
+
+@keyframes glowPulse {
+  0%,100% { opacity: .45; }
+  50%     { opacity: .85; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes shimmer {
+  from { background-position: -500px 0; }
+  to   { background-position:  500px 0; }
+}
+
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+@keyframes kvalPop {
+  0%   { opacity: 0; transform: translateY(10px) scale(.92); }
+  70%  { transform: translateY(-2px) scale(1.03); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes loginEntrance {
+  from { opacity: 0; transform: translateY(28px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes heroEntrance {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes stripeIn {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Ambient background drift ── */
+body::before { animation: drift 28s ease-in-out infinite; }
+
+/* ── Login ── */
+.login-wrap  { animation: loginEntrance .55s cubic-bezier(.22,.68,0,1.1) both; }
+.login-card::before { animation: glowPulse 3s ease-in-out infinite; }
+
+/* ── Hub entrance ── */
+.hub-headline h1 { animation: heroEntrance .5s .1s ease both; }
+.hub-headline p  { animation: heroEntrance .5s .22s ease both; }
+
+.hub-module {
+  animation: fadeSlideUp .45s ease both;
+  transition: transform .3s cubic-bezier(.22,.68,0,1.2),
+              border-color .2s, box-shadow .3s;
+}
+.hub-module:nth-child(1) { animation-delay: .08s; }
+.hub-module:nth-child(2) { animation-delay: .14s; }
+.hub-module:nth-child(3) { animation-delay: .20s; }
+.hub-module:nth-child(4) { animation-delay: .26s; }
+.hub-module:nth-child(5) { animation-delay: .32s; }
+.hub-module:nth-child(6) { animation-delay: .38s; }
+
+.hub-mod-stripe { transform-origin: left; }
+.hub-module:hover .hub-mod-stripe {
+  opacity: 1;
+  animation: stripeIn .28s ease both;
+}
+
+/* ── KPI cards ── */
+.kc {
+  animation: fadeSlideUp .4s ease both;
+  transition: border-color .22s,
+              transform .22s cubic-bezier(.22,.68,0,1.2),
+              box-shadow .22s;
+}
+.kc:nth-child(1) { animation-delay: .04s; }
+.kc:nth-child(2) { animation-delay: .08s; }
+.kc:nth-child(3) { animation-delay: .12s; }
+.kc:nth-child(4) { animation-delay: .16s; }
+.kc:nth-child(5) { animation-delay: .20s; }
+.kc:nth-child(6) { animation-delay: .24s; }
+.kc:nth-child(7) { animation-delay: .28s; }
+.kc:nth-child(8) { animation-delay: .32s; }
+
+.kc:hover {
+  border-color: var(--clr, var(--cyan));
+  transform: translateY(-5px) scale(1.015);
+  box-shadow: 0 16px 40px rgba(0,0,0,.4), 0 0 0 1px var(--clr, var(--cyan));
+}
+
+.kval.updated { animation: kvalPop .4s cubic-bezier(.22,.68,0,1.2) both; }
+
+/* ── Charts & tables ── */
+.cc { animation: fadeSlideUp .45s ease both; }
+.tw { animation: fadeSlideUp .45s ease both; }
+
+/* ── Page transition ── */
+.pg.on { animation: fadeSlideUp .32s cubic-bezier(.22,.68,0,1.1) both; }
+
+/* ── Nav active indicator dot ── */
+.nb {
+  position: relative;
+  transition: color .18s, background .18s, transform .15s;
+}
+.nb:active { transform: scale(.94); }
+.nb.on::after {
+  content: '';
+  position: absolute;
+  bottom: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 16px; height: 2px;
+  background: var(--cyan);
+  border-radius: 2px;
+  animation: fadeSlideUp .2s ease both;
+}
+
+/* ── Ripple on click ── */
+.ripple-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,.3);
+  width: 10px; height: 10px;
+  margin-top: -5px; margin-left: -5px;
+  animation: ripple .55s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ── Shimmer skeleton ── */
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--sf) 25%, var(--sf2) 50%, var(--sf) 75%);
+  background-size: 500px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+  color: transparent !important;
+  user-select: none;
+}
+
+/* ── Accent glow ── */
+.login-logo .accent,
+.hub-topbar-logo .ac,
+.tbl { text-shadow: 0 0 20px rgba(34,211,238,.3); }
 </style>
 </head>
 <body>
 
 <!-- ██ LOGIN ██ -->
-<div id="ls">
+<main id="ls" aria-label="Acesso ao sistema">
   <div class="login-wrap">
-    <div class="login-brand">
-      <div class="login-logo">FJ<span class="accent"> Analytics</span><span class="tag">v2</span></div>
+    <div class="login-brand" role="banner">
+      <div class="login-logo" aria-label="FJ Analytics versão 2">FJ<span class="accent"> Analytics</span><span class="tag" aria-hidden="true">v2</span></div>
       <div class="login-sub">Ecossistema de Inteligência de Negócios</div>
     </div>
-    <div class="login-card">
-      <div class="login-field-label">Usuário Corporativo</div>
-      <input type="text" class="login-input" id="lu" placeholder="nome.sobrenome" autocomplete="off">
-      <div class="login-field-label">Senha de Acesso</div>
-      <input type="password" class="login-input" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="login-btn" onclick="doLogin()">Entrar no Sistema →</button>
-      <div class="login-err" id="lerr">Usuário ou senha incorretos. Tente novamente.</div>
+    <div class="login-card" role="form" aria-label="Formulário de login">
+      <label class="login-field-label" for="lu">Usuário Corporativo</label>
+      <input type="text" class="login-input" id="lu" placeholder="nome.sobrenome" autocomplete="username" aria-required="true">
+      <label class="login-field-label" for="lp">Senha de Acesso</label>
+      <input type="password" class="login-input" id="lp" placeholder="••••••••" autocomplete="current-password" aria-required="true" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-btn" onclick="doLogin()" type="button" aria-label="Entrar no sistema">Entrar no Sistema →</button>
+      <div class="login-err" id="lerr" role="alert" aria-live="assertive">Usuário ou senha incorretos. Tente novamente.</div>
     </div>
   </div>
-</div>
+</main>
 
 <!-- ██ APP WRAPPER ██ -->
 <div id="app" style="display:none;">
 
   <!-- HUB CENTRAL -->
   <div id="hub-view">
-    <div class="hub-topbar">
-      <div class="hub-topbar-logo">FJ<span class="ac"> Analytics</span></div>
-      <span class="brl" id="brl-hub"></span>
-      <button class="lgbtn" onclick="doLogout()">Sair</button>
-    </div>
+    <header class="hub-topbar">
+      <div class="hub-topbar-logo" aria-label="FJ Analytics">FJ<span class="ac"> Analytics</span></div>
+      <span class="brl" id="brl-hub" aria-label="Perfil do usuário"></span>
+      <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
+    </header>
     <div class="hub-body">
       <div class="hub-headline">
         <h1>Bem-vindo ao <span>FJ Analytics</span></h1>
@@ -1268,19 +1425,19 @@ select:focus {
 
   <!-- ██ MÓDULO: LABOR BI ██ -->
   <div id="labor-view" style="display:none;">
-    <div class="tb">
-      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
-      <div class="tbl">Labor<span>BI</span></div>
-      <div class="tnav" id="tnav-labor"></div>
+    <nav class="tb" aria-label="Módulo LaborBI">
+      <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
+      <div class="tbl" aria-hidden="true">Labor<span>BI</span></div>
+      <div class="tnav" id="tnav-labor" role="tablist" aria-label="Seções do LaborBI"></div>
       <div class="tbr">
-        <span class="last-upd" id="last-upd-labor"></span>
+        <span class="last-upd" id="last-upd-labor" aria-live="polite"></span>
         <span class="brl" id="brl-labor"></span>
-        <button class="lgbtn" onclick="doLogout()">Sair</button>
+        <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
       </div>
-    </div>
+    </nav>
 
     <div class="pg on" id="pg-petcare">
-      <div class="ptitle">FJ <span>Analytics 2026</span></div>
+      <div class="ptitle">Visão <span>Geral</span></div>
       <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
       <div class="frow">
         <span class="flbl">Filtrar:</span>
@@ -1470,21 +1627,20 @@ select:focus {
 
   <!-- ██ MÓDULO: COGS BI ██ -->
   <div id="cogs-view" style="display:none;">
-    <div class="tb">
-      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
-      <div class="tbl cogs">Cogs<span>BI</span></div>
-      <!-- Tabs geradas dinamicamente por buildCogsNav() -->
-      <div class="tnav" id="tnav-cogs">
-        <button class="nb cogs on" onclick="switchCogsTab('dre',this)">📊 DRE</button>
-        <button class="nb cogs"    onclick="switchCogsTab('ebitda',this)">📈 EBITDA</button>
-        <button class="nb cogs"    onclick="switchCogsTab('historico',this)">📅 Histórico</button>
+    <nav class="tb" aria-label="Módulo CogsBI">
+      <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
+      <div class="tbl cogs" aria-hidden="true">Cogs<span>BI</span></div>
+      <div class="tnav" id="tnav-cogs" role="tablist" aria-label="Seções do CogsBI">
+        <button class="nb cogs on" onclick="switchCogsTab('dre',this)" type="button" role="tab" aria-selected="true">📊 DRE</button>
+        <button class="nb cogs"    onclick="switchCogsTab('ebitda',this)" type="button" role="tab" aria-selected="false">📈 EBITDA</button>
+        <button class="nb cogs"    onclick="switchCogsTab('historico',this)" type="button" role="tab" aria-selected="false">📅 Histórico</button>
       </div>
       <div class="tbr">
-        <span class="last-upd" id="last-upd-cogs"></span>
+        <span class="last-upd" id="last-upd-cogs" aria-live="polite"></span>
         <span class="brl" id="brl-cogs"></span>
-        <button class="lgbtn" onclick="doLogout()">Sair</button>
+        <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
       </div>
-    </div>
+    </nav>
 
     <!-- Filtro global -->
     <div style="padding:14px 28px 0;background:var(--bg)">
@@ -1549,15 +1705,15 @@ select:focus {
       <!-- ██ MÓDULO: INSIGHTS AI ██ -->
       <!-- ██ MÓDULO: INSIGHTS AI ██ -->
   <div id="insights-view" style="display:none;">
-    <div class="tb">
-      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
-      <div class="tbl" style="color:var(--pink)">Insights<span style="color:var(--tx2)">AI</span></div>
+    <nav class="tb" aria-label="Módulo InsightsAI">
+      <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
+      <div class="tbl" style="color:var(--pink)" aria-hidden="true">Insights<span style="color:var(--tx2)">AI</span></div>
       <div class="tnav"></div>
       <div class="tbr">
         <span class="brl" id="brl-insights"></span>
-        <button class="lgbtn" onclick="doLogout()">Sair</button>
+        <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
       </div>
-    </div>
+    </nav>
     <div class="pg on">
       <div class="ptitle" style="color:var(--tx)">Análise <span style="color:var(--pink)">Executiva</span></div>
       <div class="psub">Motor analítico processando dados financeiros e operacionais em tempo real.</div>
@@ -2326,7 +2482,7 @@ function doLogout(){
 //  LABOR BI INIT
 // ════════════════════════════════
 const PAGES_LABOR=[
-  {id:'petcare',    label:'FJ Analytics 2026'},
+  {id:'petcare',    label:'Visão Geral'},
   {id:'ranking',    label:'Ranking'},
   {id:'faturamento',label:'Especialistas'},
   {id:'clinica',    label:'Clínica Médica'},
@@ -3326,28 +3482,185 @@ function getCatIcon(cat) {
 
 // Constrói as abas de categoria dinamicamente na navbar
 function buildCogsNav() {
+  // Cache all raw cats for other functions that still need them
   const allCats = [...new Set((S.cogs||[]).map(r => r.cat).filter(Boolean))]
-    .filter(c => getCatGroup(c) !== 'receita')   // faturamento não vira aba
-    .sort((a,b) => a.localeCompare(b));
+    .filter(c => getCatGroup(c) !== 'receita');
   _cogsCatsCache = allCats;
 
   const nav = document.getElementById('tnav-cogs');
   if (!nav) return;
 
-  // Mantém as 3 abas fixas e reconstrói as dinâmicas
-  const fixed = ['dre','ebitda','historico'];
-  // Remove abas dinâmicas antigas
+  // Remove dynamic tabs, rebuild as one button per GROUP (not per raw category)
   nav.querySelectorAll('.nb.cogs.dyn').forEach(b => b.remove());
 
-  // Adiciona uma aba por categoria
-  allCats.forEach(cat => {
+  const GROUP_ORDER = ['labor','lab','insumos','facilities','ti','admin','cogs_op','imposto','outros'];
+  const presentGroups = [...new Set(allCats.map(c => getCatGroup(c)))]
+    .sort((a,b) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b));
+
+  presentGroups.forEach(groupKey => {
+    const meta = GROUP_META[groupKey] || GROUP_META.outros;
     const btn = document.createElement('button');
     btn.className = 'nb cogs dyn';
-    btn.textContent = getCatIcon(cat) + ' ' + cat;
-    btn.onclick = function() { switchCogsCatTab(cat, this); };
-    if (_cogsActiveTab === 'cat' && _cogsActiveCat === cat) btn.classList.add('on');
+    btn.type = 'button';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', 'false');
+    btn.textContent = meta.icon + ' ' + meta.label;
+    btn.onclick = function() { switchCogsGroupTab(groupKey, this); };
+    if (_cogsActiveTab === 'group' && _cogsActiveCat === groupKey) btn.classList.add('on');
     nav.appendChild(btn);
   });
+}
+
+function switchCogsGroupTab(groupKey, btn) {
+  _cogsActiveTab = 'group';
+  _cogsActiveCat = groupKey;
+  document.querySelectorAll('.cogs-tab').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#tnav-cogs .nb').forEach(b => {
+    b.classList.remove('on');
+    b.setAttribute('aria-selected', 'false');
+  });
+  document.getElementById('cogs-tab-cat').style.display = 'block';
+  if (btn) { btn.classList.add('on'); btn.setAttribute('aria-selected', 'true'); }
+  renderCogsGroup(groupKey);
+}
+
+function renderCogsGroup(groupKey) {
+  if (!groupKey) return;
+  const meta     = GROUP_META[groupKey] || GROUP_META.outros;
+  const allRows  = getCogsFiltered();
+  const rows     = allRows.filter(r => getCatGroup(r.cat) === groupKey);
+  const totalGeral = allRows.filter(r => getCatGroup(r.cat) !== 'receita').reduce((s,r)=>s+r.val,0);
+  const total    = rows.reduce((s,r)=>s+r.val,0);
+  const pctTotal = totalGeral > 0 ? (total/totalGeral*100) : 0;
+
+  const byForn = {};
+  rows.forEach(r => { const k=r.forn||r.cat||'?'; byForn[k]=(byForn[k]||0)+r.val; });
+  const sortedForn = Object.entries(byForn).sort((a,b)=>b[1]-a[1]);
+
+  const byMes = {};
+  rows.forEach(r => { if(r.mes) byMes[r.mes]=(byMes[r.mes]||0)+r.val; });
+  const sortedMes = Object.entries(byMes).sort((a,b)=>MESES.indexOf(a[0])-MESES.indexOf(b[0]));
+
+  const byCat = {};
+  rows.forEach(r => { byCat[r.cat||'?']=(byCat[r.cat||'?']||0)+r.val; });
+  const sortedCat = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+
+  const el = document.getElementById('cogs-cat-content');
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="ptitle" style="color:var(--tx)">${meta.icon} <span style="color:${meta.color}">${meta.label}</span></div>
+    <div class="psub">${rows.length} lançamentos · ${Object.keys(byCat).length} subcategoria(s) · ${sortedMes.length} mês/meses</div>
+
+    <div class="kgrid">
+      ${kpiCard('Total '+meta.label, fR(total), rows.length+' lançamentos', meta.color)}
+      ${kpiCard('% dos Custos Totais', pctTotal.toFixed(1)+'%', 'participação no total', meta.color)}
+      ${kpiCard('Maior Fornecedor', sortedForn.length?fR(sortedForn[0][1]):'—', sortedForn.length?sortedForn[0][0].substring(0,24):'—', meta.color)}
+      ${kpiCard('Ticket Médio', rows.length?fR(total/rows.length):'—', 'por lançamento', meta.color)}
+      ${kpiCard('Subcategorias', Object.keys(byCat).length, 'distintas', 'var(--tx2)')}
+      ${kpiCard('Meses', sortedMes.length, 'com lançamentos', 'var(--tx2)')}
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px">
+      <div class="cc">
+        <div class="ctitle" style="--cyan:${meta.color}">Top Fornecedores / Itens — ${meta.label} (R$)</div>
+        <canvas id="ch-grp-bar" height="200"></canvas>
+      </div>
+      <div class="cc">
+        <div class="ctitle" style="--cyan:${meta.color}">Distribuição por Mês</div>
+        <canvas id="ch-grp-mes" height="200"></canvas>
+      </div>
+    </div>
+
+    ${sortedCat.length > 1 ? `
+    <div class="cc" style="margin-bottom:22px">
+      <div class="ctitle" style="--cyan:${meta.color}">Subcategorias em ${meta.label}</div>
+      <canvas id="ch-grp-cat" height="110"></canvas>
+    </div>` : ''}
+
+    <div class="tw">
+      <div class="th">
+        <span>${meta.icon} Lançamentos — ${meta.label}</span>
+        <span>${rows.length} itens</span>
+      </div>
+      <div class="tscroll"><div id="grp-table"></div></div>
+    </div>`;
+
+  // Chart: top suppliers (horizontal bar)
+  killChart('ch-grp-bar');
+  const ctx1 = document.getElementById('ch-grp-bar')?.getContext('2d');
+  if (ctx1 && sortedForn.length) {
+    S.charts['ch-grp-bar'] = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: sortedForn.slice(0,14).map(([k])=>k),
+        datasets: [{label:'Valor (R$)', data: sortedForn.slice(0,14).map(([,v])=>v),
+          backgroundColor: meta.color+'bb', borderRadius: 5}]
+      },
+      options: {indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}},
+                y:{ticks:{...TC,font:{size:10}},grid:{color:GC}}}}
+    });
+  }
+
+  // Chart: monthly doughnut
+  killChart('ch-grp-mes');
+  const ctx2 = document.getElementById('ch-grp-mes')?.getContext('2d');
+  if (ctx2 && sortedMes.length) {
+    S.charts['ch-grp-mes'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: sortedMes.map(([m])=>m.charAt(0).toUpperCase()+m.slice(1)),
+        datasets: [{data: sortedMes.map(([,v])=>v),
+          backgroundColor: CHART_COLORS.slice(0,sortedMes.length).map(c=>c+'bb')}]
+      },
+      options: {responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#8faac8',font:{size:11}}}}}
+    });
+  }
+
+  // Chart: subcategory bar (only when >1 subcategory)
+  if (sortedCat.length > 1) {
+    killChart('ch-grp-cat');
+    const ctx3 = document.getElementById('ch-grp-cat')?.getContext('2d');
+    if (ctx3) {
+      S.charts['ch-grp-cat'] = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: sortedCat.map(([k])=>k),
+          datasets: [{label:'R$', data: sortedCat.map(([,v])=>v),
+            backgroundColor: CHART_COLORS.slice(0,sortedCat.length).map(c=>c+'99'),
+            borderRadius: 5}]
+        },
+        options: {responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{x:{ticks:{...TC,font:{size:10}},grid:{color:GC}},
+                  y:{ticks:{...TC,callback:v=>'R$'+fN(v)},grid:{color:GC}}}}
+      });
+    }
+  }
+
+  // Detail table
+  document.getElementById('grp-table').innerHTML = rows.length ? `
+    <table><thead><tr>
+      <th>Data</th><th>Mês</th><th>Categoria</th><th>Fornecedor / Item</th>
+      <th style="text-align:right">Valor R$</th><th style="text-align:right">%</th>
+    </tr></thead><tbody>
+    ${rows.sort((a,b)=>b.val-a.val).map(r=>{
+      const p=total>0?(r.val/total*100).toFixed(1):0;
+      return `<tr>
+        <td style="font-family:var(--font-mono);font-size:11px">${(r.data||'').split('-').reverse().join('/')}</td>
+        <td style="text-transform:capitalize;font-family:var(--font-mono);font-size:11px">${r.mes||'—'}</td>
+        <td>${catBadge(r.cat)}</td>
+        <td style="font-weight:500;font-size:12px">${r.forn||'—'}</td>
+        <td style="color:${meta.color};font-family:var(--font-mono);font-weight:600;text-align:right">${fR(r.val)}</td>
+        <td style="text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--tx3)">
+          ${p}%<div class="pbar" style="width:50px;display:inline-block;vertical-align:middle;margin-left:6px"><div class="pfill" style="width:${p}%;background:${meta.color}"></div></div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>` :
+    `<div class="nd"><div class="nd-i">${meta.icon}</div>Sem lançamentos de "${meta.label}" neste período.</div>`;
 }
 
 function switchCogsTab(tab, btn) {
@@ -3393,6 +3706,7 @@ function renderCogsTab(tab) {
   else if (tab === 'ebitda')   renderCogsEBITDA();
   else if (tab === 'historico')renderCogsHistorico();
   else if (tab === 'cat')      renderCogsCatByName(_cogsActiveCat);
+  else if (tab === 'group')    renderCogsGroup(_cogsActiveCat);
 }
 
 // ── TOTAIS por grupo ──
@@ -6485,6 +6799,80 @@ setInterval(()=>{
     renderAdminDashboard();
   }
 }, 10000); // refresh every 10s when on admin
+
+// ════════════════════════════════
+//  MICRO-INTERACTIONS
+// ════════════════════════════════
+
+// Ripple effect on login button
+(function(){
+  var btn = document.querySelector('.login-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function(e){
+    var dot = document.createElement('span');
+    dot.className = 'ripple-dot';
+    var rect = btn.getBoundingClientRect();
+    dot.style.left = (e.clientX - rect.left) + 'px';
+    dot.style.top  = (e.clientY - rect.top)  + 'px';
+    btn.appendChild(dot);
+    setTimeout(function(){ dot.remove(); }, 600);
+  });
+})();
+
+// Animate KPI values whenever they are updated
+(function(){
+  function animateKval(el){
+    el.classList.remove('updated');
+    void el.offsetWidth; // reflow to restart animation
+    el.classList.add('updated');
+  }
+
+  // Observe kval elements for text changes
+  var observer = new MutationObserver(function(mutations){
+    mutations.forEach(function(m){
+      if (m.target.classList && m.target.classList.contains('kval')) {
+        animateKval(m.target);
+      }
+    });
+  });
+
+  function watchKvals(){
+    document.querySelectorAll('.kval').forEach(function(el){
+      observer.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  }
+
+  // Run once now and re-check after Firebase data arrives
+  watchKvals();
+  setTimeout(watchKvals, 2000);
+  setTimeout(watchKvals, 5000);
+})();
+
+// Intersection Observer — re-trigger fadeSlideUp when cards scroll into view
+(function(){
+  if (!window.IntersectionObserver) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) {
+        var el = e.target;
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+        io.unobserve(el);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  function observeCards(){
+    document.querySelectorAll('.kc, .cc, .tw, .hub-module').forEach(function(el){
+      io.observe(el);
+    });
+  }
+
+  observeCards();
+  // Re-observe after pages are revealed
+  document.addEventListener('click', function(){ setTimeout(observeCards, 100); });
+})();
 </script>
 </body>
 </html>
