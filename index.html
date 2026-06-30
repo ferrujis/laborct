@@ -4,19 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="FJ Analytics — Plataforma de inteligência de negócios para gestão de comissões, custos e análises clínicas veterinárias.">
-<meta name="theme-color" content="#070a10">
+<meta name="theme-color" content="#05060a">
 <meta name="robots" content="noindex, nofollow">
 <title>FJ Analytics — Ecossistema de Inteligência</title>
-<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<canvas id="fx-3d" aria-hidden="true"></canvas>
 
 <!-- ██ LOGIN ██ -->
 <main id="ls" aria-label="Acesso ao sistema">
@@ -54,32 +56,28 @@
       <div class="hub-grid">
 
         <div class="hub-module" style="--clr:var(--cyan);--clr-dim:var(--cyan-dim);--clr-border:rgba(0,212,255,.2);" onclick="openLabor()">
-          <div class="hub-mod-stripe"></div>
-          <div class="hub-mod-icon">🏥</div>
+                    <div class="hub-mod-icon">🏥</div>
           <div class="hub-mod-name">Labor<strong>BI</strong></div>
           <div class="hub-mod-desc">Gestão de Comissões, Produção Veterinária e Análises Clínicas completas.</div>
           <div class="hub-mod-arrow">↗</div>
         </div>
 
         <div class="hub-module" style="--clr:var(--violet);--clr-dim:var(--violet-dim);--clr-border:rgba(139,92,246,.2);" onclick="openCogs()">
-          <div class="hub-mod-stripe"></div>
-          <div class="hub-mod-icon">📊</div>
+                    <div class="hub-mod-icon">📊</div>
           <div class="hub-mod-name">Cogs<strong style="color:var(--violet)">BI</strong></div>
           <div class="hub-mod-desc">Gestão de Custos, Lucro Bruto e Inteligência Financeira por DRE.</div>
           <div class="hub-mod-arrow">↗</div>
         </div>
 
         <div class="hub-module" style="--clr:var(--pink);--clr-dim:var(--pink-dim);--clr-border:rgba(244,63,94,.2);" onclick="openInsights()">
-          <div class="hub-mod-stripe"></div>
-          <div class="hub-mod-icon">🧠</div>
+                    <div class="hub-mod-icon">🧠</div>
           <div class="hub-mod-name">Insights<strong style="color:var(--pink)">AI</strong></div>
           <div class="hub-mod-desc">Análise profunda focada no mês em vigor com planos de ação estratégicos.</div>
           <div class="hub-mod-arrow">↗</div>
         </div>
 
         <div class="hub-module" id="card-admin" style="--clr:var(--amber);--clr-dim:var(--amber-dim);--clr-border:rgba(245,158,11,.2);display:none;" onclick="openAdmin()">
-          <div class="hub-mod-stripe"></div>
-          <div class="hub-mod-icon">⚙️</div>
+                    <div class="hub-mod-icon">⚙️</div>
           <div class="hub-mod-name">Admin<strong style="color:var(--amber)">Center</strong></div>
           <div class="hub-mod-desc">Central de uploads, controle de usuários e auditoria de acessos.</div>
           <div class="hub-mod-arrow">↗</div>
@@ -108,7 +106,7 @@
       <div class="frow">
         <span class="flbl">Filtrar:</span>
         <select id="f-vet" onchange="renderPetcare()"><option value="">Todos os Veterinários</option></select>
-        <select id="f-mes" onchange="renderPetcare()"><option value="">Todos os Meses</option></select>
+        <select id="f-mes" onchange="syncLaborMonth('f-mes');renderPetcare()"><option value="">Todos os Meses</option></select>
         <select id="f-sem" onchange="renderPetcare()"><option value="">Todas as Semanas</option></select>
       </div>
       <div class="kgrid" id="pc-kpi"></div>
@@ -124,7 +122,7 @@
       <div class="psub">Produção total — filtro por mês</div>
       <div class="frow">
         <span class="flbl">Mês:</span>
-        <select id="r-mes" onchange="renderRanking()"><option value="">Todos os Meses</option></select>
+        <select id="r-mes" onchange="syncLaborMonth('r-mes');renderRanking()"><option value="">Todos os Meses</option></select>
       </div>
       <div class="cc" style="margin-bottom:16px"><div class="ctitle">Produção por Veterinário</div><canvas id="ch-rank" height="130"></canvas></div>
       <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
@@ -138,7 +136,7 @@
         <span class="flbl">Especialista:</span>
         <select id="fat-vet" onchange="renderFaturamento()"><option value="">Selecione o Especialista</option></select>
         <span class="flbl">Mês:</span>
-        <select id="fat-mes" onchange="renderFaturamento()"><option value="">Todos os Meses</option></select>
+        <select id="fat-mes" onchange="syncLaborMonth('fat-mes');renderFaturamento()"><option value="">Todos os Meses</option></select>
       </div>
       <div class="kgrid" id="fat-kpi"></div>
       <div id="fat-alert"></div>
@@ -152,7 +150,7 @@
       <div class="psub">Consultas e atendimentos clínicos — aba CLINICA do arquivo Análises</div>
       <div class="frow">
         <span class="flbl">Mês:</span>
-        <select id="cl-mes" onchange="renderClinica()"><option value="">Todos os Meses</option></select>
+        <select id="cl-mes" onchange="syncLaborMonth('cl-mes');renderClinica()"><option value="">Todos os Meses</option></select>
         <select id="cl-vet" onchange="renderClinica()"><option value="">Todos os Veterinários</option></select>
       </div>
       <div class="kgrid" id="cl-kpi"></div>
@@ -188,7 +186,7 @@
       <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
       <div class="frow">
         <span class="flbl">Mês:</span>
-        <select id="it-mes" onchange="renderInter()"><option value="">Todos os Meses</option></select>
+        <select id="it-mes" onchange="syncLaborMonth('it-mes');renderInter()"><option value="">Todos os Meses</option></select>
         <select id="it-vet" onchange="renderInter()"><option value="">Todos os Veterinários</option></select>
       </div>
       <div class="kgrid" id="it-kpi"></div>
@@ -224,7 +222,7 @@
       <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
       <div class="frow">
         <span class="flbl">Mês:</span>
-        <select id="ci-mes" onchange="renderCirurgico()"><option value="">Todos os Meses</option></select>
+        <select id="ci-mes" onchange="syncLaborMonth('ci-mes');renderCirurgico()"><option value="">Todos os Meses</option></select>
         <select id="ci-vet" onchange="renderCirurgico()"><option value="">Todos os Veterinários</option></select>
       </div>
       <div class="kgrid" id="ci-kpi"></div>
@@ -260,7 +258,7 @@
       <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
       <div class="frow">
         <span class="flbl">Mês:</span>
-        <select id="lb-mes" onchange="renderLab()"><option value="">Todos os Meses</option></select>
+        <select id="lb-mes" onchange="syncLaborMonth('lb-mes');renderLab()"><option value="">Todos os Meses</option></select>
         <select id="lb-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
       </div>
       <div class="kgrid" id="lb-kpi"></div>
@@ -570,7 +568,7 @@
                   <tbody>
                     <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">Hora Normal</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--cyan);font-family:var(--font-mono);font-weight:600">R$ 26,22</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx2);font-size:11px">Até 180h/mês</td></tr>
                     <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">Hora Normal</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--cyan);font-family:var(--font-mono);font-weight:600">R$ 23,60</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx2);font-size:11px">181h a 200h/mês</td></tr>
-                    <tr><td style="padding:8px 10px;color:var(--tx)">Hora Noturna</td><td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:var(--font-mono);font-weight:600">R$ 37,79</td><td style="padding:8px 10px;color:var(--tx2);font-size:11px">Turno ≥ 20h ou madrugada</td></tr>
+                    <tr><td style="padding:8px 10px;color:var(--tx)">Hora Noturna</td><td style="padding:8px 10px;text-align:right;color:#c9a455;font-family:var(--font-mono);font-weight:600">R$ 37,79</td><td style="padding:8px 10px;color:var(--tx2);font-size:11px">Turno ≥ 20h ou madrugada</td></tr>
                   </tbody>
                 </table>
               </div>
