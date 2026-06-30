@@ -1,44 +1,46 @@
 /* ══════════════════════════════════════════
-   DESIGN TOKENS — MODERN DARK PREMIUM v3
+   DESIGN TOKENS — EXECUTIVE BOARDROOM v4
+   FJ Analytics · Petcare Balneário Camboriú
+   Trust & Authority · Dark Mode · Restrained Glass
 ══════════════════════════════════════════ */
 :root {
-  /* Backgrounds — more contrast between layers */
-  --bg:       #070a10;
-  --bg2:      #0c1018;
-  --sf:       #101520;
-  --sf2:      #141b28;
-  --sf3:      #192030;
-  --bd:       #1e2d47;
-  --bd2:      #263654;
+  /* Backgrounds — quase preto, profundidade moderna */
+  --bg:       #05060a;
+  --bg2:      #07090d;
+  --sf:       #0c0f16;
+  --sf2:      #10141d;
+  --sf3:      #151a25;
+  --bd:       #232c3f;
+  --bd2:      #2d384e;
 
-  /* Brand Colors — refined saturation */
-  --cyan:       #22d3ee;
-  --cyan-dim:   rgba(34,211,238,.10);
-  --cyan-glow:  rgba(34,211,238,.30);
-  --violet:     #a78bfa;
-  --violet-dim: rgba(167,139,250,.10);
-  --pink:       #fb7185;
-  --pink-dim:   rgba(251,113,133,.08);
-  --green:      #34d399;
-  --green-dim:  rgba(52,211,153,.10);
-  --amber:      #fbbf24;
-  --amber-dim:  rgba(251,191,36,.10);
-  --red:        #f87171;
+  /* Brand Colors — single confident accent (teal) + muted gold for premium/financial weight */
+  --cyan:       #15b8a6;
+  --cyan-dim:   rgba(21,184,166,.10);
+  --cyan-glow:  rgba(21,184,166,.32);
+  --violet:     #c9a455;
+  --violet-dim: rgba(201,164,85,.10);
+  --pink:       #c97a8a;
+  --pink-dim:   rgba(201,122,138,.09);
+  --green:      #2dd4a0;
+  --green-dim:  rgba(45,212,160,.10);
+  --amber:      #e0a93a;
+  --amber-dim:  rgba(224,169,58,.10);
+  --red:        #e5685f;
 
-  /* Text — better readability contrast */
-  --tx:   #e8edf8;
-  --tx2:  #7f93b5;
-  --tx3:  #42567a;
+  /* Text — alto contraste sobre fundo escuro */
+  --tx:   #f6f8fc;
+  --tx2:  #aab4c9;
+  --tx3:  #707d97;
 
-  --font-display: 'Plus Jakarta Sans', sans-serif;
-  --font-body:    'Space Grotesk', sans-serif;
+  --font-display: 'Sora', sans-serif;
+  --font-body:    'Inter', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
-  --radius:    16px;
+  --radius:    14px;
   --radius-sm: 10px;
   --radius-xs: 6px;
-  --shadow:    0 4px 20px rgba(0,0,0,.45);
-  --shadow-lg: 0 16px 56px rgba(0,0,0,.70);
+  --shadow:    0 4px 22px rgba(0,0,0,.40);
+  --shadow-lg: 0 18px 60px rgba(0,0,0,.65);
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -63,9 +65,9 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 800px 500px at 10% 15%, rgba(34,211,238,.03) 0%, transparent 65%),
-    radial-gradient(ellipse 600px 600px at 90% 85%, rgba(167,139,250,.03) 0%, transparent 65%),
-    radial-gradient(ellipse 500px 400px at 55% 55%, rgba(251,113,133,.015) 0%, transparent 65%);
+    radial-gradient(ellipse 800px 500px at 10% 15%, rgba(21,184,166,.03) 0%, transparent 65%),
+    radial-gradient(ellipse 600px 600px at 90% 85%, rgba(201,164,85,.03) 0%, transparent 65%),
+    radial-gradient(ellipse 500px 400px at 55% 55%, rgba(201,122,138,.015) 0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
@@ -109,7 +111,7 @@ body::before {
   font-family: var(--font-mono);
   background: var(--cyan-dim);
   color: var(--cyan);
-  border: 1px solid rgba(34,211,238,.25);
+  border: 1px solid rgba(21,184,166,.25);
   padding: 3px 7px;
   border-radius: var(--radius-xs);
   letter-spacing: 2.5px;
@@ -189,7 +191,7 @@ body::before {
 
 .login-input:focus {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 3px rgba(34,211,238,.09);
+  box-shadow: 0 0 0 3px rgba(21,184,166,.09);
 }
 
 .login-btn {
@@ -219,7 +221,7 @@ body::before {
 
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 32px rgba(34,211,238,.28);
+  box-shadow: 0 10px 32px rgba(21,184,166,.28);
   opacity: .95;
 }
 
@@ -228,8 +230,8 @@ body::before {
 .login-err {
   margin-top: 14px;
   padding: 11px 15px;
-  background: rgba(248,113,113,.07);
-  border: 1px solid rgba(248,113,113,.22);
+  background: rgba(229,104,95,.07);
+  border: 1px solid rgba(229,104,95,.22);
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--red);
@@ -328,7 +330,7 @@ body::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 85% 15%, var(--clr-dim, rgba(34,211,238,.06)) 0%, transparent 55%);
+  background: radial-gradient(circle at 85% 15%, var(--clr-dim, rgba(21,184,166,.06)) 0%, transparent 55%);
   opacity: 0;
   transition: opacity .28s;
   pointer-events: none;
@@ -342,23 +344,12 @@ body::before {
 
 .hub-module:hover::after { opacity: 1; }
 
-.hub-mod-stripe {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--clr, var(--cyan));
-  opacity: 0;
-  transition: opacity .28s;
-  border-radius: 22px 22px 0 0;
-}
-.hub-module:hover .hub-mod-stripe { opacity: 1; }
-
 .hub-mod-icon {
   width: 54px;
   height: 54px;
   border-radius: 15px;
   background: var(--clr-dim, var(--cyan-dim));
-  border: 1px solid var(--clr-border, rgba(34,211,238,.2));
+  border: 1px solid var(--clr-border, rgba(21,184,166,.2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -468,13 +459,13 @@ body::before {
   font-family: var(--font-mono);
   background: var(--violet-dim);
   color: var(--violet);
-  border: 1px solid rgba(167,139,250,.25);
+  border: 1px solid rgba(201,164,85,.25);
   letter-spacing: 0.2px;
 }
 .brl.adm {
   background: var(--cyan-dim);
   color: var(--cyan);
-  border-color: rgba(34,211,238,.25);
+  border-color: rgba(21,184,166,.25);
 }
 
 .last-upd {
@@ -482,7 +473,7 @@ body::before {
   font-family: var(--font-mono);
   color: var(--cyan);
   background: var(--cyan-dim);
-  border: 1px solid rgba(34,211,238,.2);
+  border: 1px solid rgba(21,184,166,.2);
   padding: 4px 10px;
   border-radius: var(--radius-xs);
   display: none;
@@ -789,7 +780,7 @@ select {
 
 select:focus {
   border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(34,211,238,.10);
+  box-shadow: 0 0 0 2px rgba(21,184,166,.10);
 }
 
 /* ══════════════════════════════════════════
@@ -805,10 +796,10 @@ select:focus {
   display: inline-block;
   font-weight: 500;
 }
-.bg { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,211,153,.22); }
-.by { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(251,191,36,.22); }
-.br { background: rgba(248,113,113,.09); color: var(--red); border: 1px solid rgba(248,113,113,.22); }
-.bc { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(34,211,238,.22); }
+.bg { background: var(--green-dim); color: var(--green); border: 1px solid rgba(45,212,160,.22); }
+.by { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(224,169,58,.22); }
+.br { background: rgba(229,104,95,.09); color: var(--red); border: 1px solid rgba(229,104,95,.22); }
+.bc { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(21,184,166,.22); }
 
 /* ══════════════════════════════════════════
    INSIGHTS AI MODULE
@@ -850,7 +841,7 @@ select:focus {
   width: 46px;
   height: 46px;
   background: var(--pink-dim);
-  border: 1px solid rgba(251,113,133,.25);
+  border: 1px solid rgba(201,122,138,.25);
   border-radius: 13px;
   display: flex;
   align-items: center;
@@ -937,8 +928,8 @@ select:focus {
 .ab-sec.on { display: block; }
 
 .ibox {
-  background: rgba(251,191,36,.04);
-  border: 1px solid rgba(251,191,36,.18);
+  background: rgba(224,169,58,.04);
+  border: 1px solid rgba(224,169,58,.18);
   border-radius: var(--radius-sm);
   padding: 15px 18px;
   margin-bottom: 22px;
@@ -983,7 +974,7 @@ select:focus {
   font-size: 9px;
   font-family: var(--font-mono);
   letter-spacing: 1px;
-  border: 1px solid rgba(34,211,238,.15);
+  border: 1px solid rgba(21,184,166,.15);
 }
 
 .ubtn {
@@ -1005,8 +996,8 @@ select:focus {
 .fi { display: none; }
 
 .fst { margin-top: 8px; padding: 9px 13px; border-radius: var(--radius-xs); font-size: 11px; font-family: var(--font-mono); display: none; }
-.fst.ok { background: var(--green-dim); color: var(--green); display: block; border: 1px solid rgba(52,211,153,.2); }
-.fst.er  { background: rgba(248,113,113,.08); color: var(--red); display: block; border: 1px solid rgba(248,113,113,.2); }
+.fst.ok { background: var(--green-dim); color: var(--green); display: block; border: 1px solid rgba(45,212,160,.2); }
+.fst.er  { background: rgba(229,104,95,.08); color: var(--red); display: block; border: 1px solid rgba(229,104,95,.2); }
 
 /* Form panels */
 .panel {
@@ -1049,7 +1040,7 @@ select:focus {
   outline: none;
   transition: border-color .18s, box-shadow .18s;
 }
-.fgi:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(34,211,238,.09); }
+.fgi:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(21,184,166,.09); }
 
 .abtn {
   padding: 9px 18px;
@@ -1087,8 +1078,8 @@ select:focus {
   font-weight: 700;
   flex-shrink: 0;
 }
-.ua { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(34,211,238,.25); }
-.uv { background: var(--violet-dim); color: var(--violet); border: 1px solid rgba(167,139,250,.25); }
+.ua { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(21,184,166,.25); }
+.uv { background: var(--violet-dim); color: var(--violet); border: 1px solid rgba(201,164,85,.25); }
 
 .uin { flex: 1; }
 .unm { font-size: 13px; font-weight: 500; color: var(--tx); }
@@ -1251,12 +1242,6 @@ body::before { animation: drift 28s ease-in-out infinite; }
 .hub-module:nth-child(5) { animation-delay: .32s; }
 .hub-module:nth-child(6) { animation-delay: .38s; }
 
-.hub-mod-stripe { transform-origin: left; }
-.hub-module:hover .hub-mod-stripe {
-  opacity: 1;
-  animation: stripeIn .28s ease both;
-}
-
 /* ── KPI cards ── */
 .kc {
   animation: fadeSlideUp .4s ease both;
@@ -1330,4 +1315,175 @@ body::before { animation: drift 28s ease-in-out infinite; }
 /* ── Accent glow ── */
 .login-logo .accent,
 .hub-topbar-logo .ac,
-.tbl { text-shadow: 0 0 20px rgba(34,211,238,.3); }
+.tbl { text-shadow: 0 0 20px rgba(21,184,166,.3); }
+
+/* ══════════════════════════════════════════════════════════
+   FX LAYER 2026 — Liquid Glass · Iridescent · Three.js Depth
+   Linguagem visual: vidro líquido + malha 3D contínua,
+   tons metálicos/iridescentes, adequada à diretoria.
+══════════════════════════════════════════════════════════ */
+
+:root {
+  --iris-1: var(--cyan);   /* teal */
+  --iris-2: var(--violet); /* dourado fosco */
+  --iris-3: var(--pink);   /* rosa-acinzentado */
+}
+
+html, body { background: var(--bg); }
+
+#fx-3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+  transition: opacity .6s ease, filter .6s ease;
+}
+
+/* Quando um módulo de dados está ativo, a malha 3D recua para não competir com tabelas/gráficos */
+body.fx-dim-3d #fx-3d {
+  opacity: .38;
+  filter: blur(1.5px) saturate(85%);
+}
+
+/* Véu sutil para garantir contraste de leitura sobre a malha 3D */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 120% 90% at 50% -10%, transparent 0%, rgba(6,7,11,.55) 60%, rgba(6,7,11,.86) 100%);
+}
+
+.login-wrap, #app, main#ls {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Texto iridescente para títulos de destaque ── */
+.fx-iris-text,
+.login-logo .accent,
+.hub-topbar-logo .ac {
+  background: linear-gradient(100deg, var(--iris-1), var(--iris-2) 50%, var(--iris-3));
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: irisShift 9s ease-in-out infinite;
+  text-shadow: none !important;
+}
+@keyframes irisShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* ── Liquid Glass: cards com refração simulada e borda especular ── */
+.hub-module,
+.cc,
+.kc,
+.tw,
+.login-card {
+  position: relative;
+  background: linear-gradient(165deg, rgba(20,24,34,.58), rgba(10,12,18,.42));
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.07);
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease, border-color .35s ease;
+}
+
+.hub-module, .cc, .kc {
+  background: linear-gradient(165deg, rgba(20,24,34,.58), rgba(10,12,18,.42));
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.07);
+}
+
+.hub-module:hover,
+.cc:hover,
+.kc:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 56px -22px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.10);
+}
+
+/* Brilho especular que acompanha o mouse — efeito "vidro líquido" */
+.hub-module, .cc, .kc { --mx: 50%; --my: 50%; }
+.hub-module::after,
+.cc::after,
+.kc::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(260px circle at var(--mx) var(--my), rgba(255,255,255,.09), transparent 72%);
+  opacity: 0;
+  transition: opacity .35s ease;
+  pointer-events: none;
+}
+.hub-module:hover::after, .cc:hover::after, .kc:hover::after { opacity: 1; }
+
+.hub-module > *, .cc > *, .kc > *, .login-card > * { position: relative; z-index: 1; }
+
+/* ── Scroll reveal ── */
+.fx-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .6s cubic-bezier(.16,.8,.3,1),
+              transform .6s cubic-bezier(.16,.8,.3,1);
+}
+.fx-reveal.fx-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Entrada de view ── */
+.fx-view-enter {
+  animation: fxViewIn .45s cubic-bezier(.16,.8,.3,1) both;
+}
+@keyframes fxViewIn {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Botões metálicos/iridescentes ── */
+.login-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(100deg, var(--iris-1), var(--iris-2) 55%, var(--iris-3));
+  background-size: 220% auto;
+  transition: background-position .5s ease, transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease;
+}
+.login-btn:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 10px 28px -10px var(--cyan-glow);
+}
+.login-btn:active, .nb:active, .lgbtn:active { transform: scale(.985); }
+
+.lgbtn, .nb, button {
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease, filter .2s ease;
+}
+.nb:hover { filter: brightness(1.08); box-shadow: 0 6px 20px -8px var(--cyan-glow); }
+
+.fx-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,.22);
+  transform: scale(0);
+  animation: fxRippleAnim .5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes fxRippleAnim {
+  to { transform: scale(2.3); opacity: 0; }
+}
+
+.kval { transition: color .3s ease; }
+
+.hub-headline { transition: transform .1s linear; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-iris-text, .login-logo .accent, .hub-topbar-logo .ac { animation: none; }
+}
