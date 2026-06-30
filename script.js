@@ -2846,6 +2846,173 @@ function calculateHealthScore(metrics, team, costs, anomalies) {
   return {score, status, color, label, factors};
 }
 
+// ════════════════════════════════════════════════════════════
+//  METODOLOGIA InsightAI — Painel de KPIs com status + Gargalos
+//  (incorpora KPI definitions, benchmarks e bottleneck playbook
+//   do skill InsightAI_Vet_Productivity)
+// ════════════════════════════════════════════════════════════
+
+// Faixas de referência (benchmarks). Se houver metas oficiais do
+// hospital em S.metas, elas sobrepõem estes defaults.
+const INSIGHT_BENCHMARKS = {
+  margin:    { meta: 0.20, alerta: 0.10 },  // ≥20% ok, 10-20% alerta, <10% crítico
+  teamRatio: { meta: 0.45, alerta: 0.55 },  // ≤45% ok, 45-55% alerta, >55% crítico (menor é melhor)
+  opRatio:   { meta: 0.25, alerta: 0.35 },  // ≤25% ok (menor é melhor)
+  dependence:{ meta: 30,   alerta: 45 }     // ≤30% ok (menor é melhor)
+};
+
+// Resolve meta efetiva: metas do hospital (CLAUDE.md → S.metas) vencem o benchmark.
+function insightMeta(key) {
+  if (typeof S !== 'undefined' && S.metas && S.metas[key] != null) {
+    return { meta: S.metas[key], alerta: INSIGHT_BENCHMARKS[key] ? INSIGHT_BENCHMARKS[key].alerta : null, fonte: 'meta do hospital' };
+  }
+  const b = INSIGHT_BENCHMARKS[key] || {};
+  return { meta: b.meta, alerta: b.alerta, fonte: 'benchmark do setor' };
+}
+
+// Classifica um valor em ok / alerta / crítico.
+// higherIsBetter=true → valores maiores são melhores (ex.: margem).
+// higherIsBetter=false → valores menores são melhores (ex.: custo).
+function insightStatus(value, meta, alerta, higherIsBetter) {
+  if (meta == null) return { level: 'neutro', color: 'var(--tx3)', tag: '—' };
+  let level;
+  if (higherIsBetter) {
+    if (value >= meta) level = 'ok';
+    else if (alerta != null && value >= alerta) level = 'alerta';
+    else level = 'critico';
+  } else {
+    if (value <= meta) level = 'ok';
+    else if (alerta != null && value <= alerta) level = 'alerta';
+    else level = 'critico';
+  }
+  const map = {
+    ok:      { color: 'var(--green)', tag: '✅ na meta' },
+    alerta:  { color: 'var(--amber)', tag: '⚠️ alerta' },
+    critico: { color: 'var(--red)',   tag: '🔴 crítico' }
+  };
+  return Object.assign({ level }, map[level]);
+}
+
+// Monta o painel de KPIs metodológico: valor + meta/benchmark + status.
+function buildKpiPanel(metrics, costs, team) {
+  const rows = [];
+
+  // Margem (maior é melhor)
+  const mMeta = insightMeta('margin');
+  rows.push({
+    kpi: 'Margem de lucro',
+    valor: (metrics.margin.current * 100).toFixed(1) + '%',
+    metaTxt: mMeta.meta != null ? '≥ ' + (mMeta.meta * 100).toFixed(0) + '%' : '—',
+    fonte: mMeta.fonte,
+    status: insightStatus(metrics.margin.current, mMeta.meta, mMeta.alerta, true)
+  });
+
+  // Custo de equipe / receita (menor é melhor)
+  const tMeta = insightMeta('teamRatio');
+  rows.push({
+    kpi: 'Custo de equipe / receita',
+    valor: (costs.teamRatio * 100).toFixed(1) + '%',
+    metaTxt: tMeta.meta != null ? '≤ ' + (tMeta.meta * 100).toFixed(0) + '%' : '—',
+    fonte: tMeta.fonte,
+    status: insightStatus(costs.teamRatio, tMeta.meta, tMeta.alerta, false)
+  });
+
+  // Custo operacional / receita (menor é melhor)
+  const oMeta = insightMeta('opRatio');
+  rows.push({
+    kpi: 'Custo operacional / receita',
+    valor: (costs.opRatio * 100).toFixed(1) + '%',
+    metaTxt: oMeta.meta != null ? '≤ ' + (oMeta.meta * 100).toFixed(0) + '%' : '—',
+    fonte: oMeta.fonte,
+    status: insightStatus(costs.opRatio, oMeta.meta, oMeta.alerta, false)
+  });
+
+  // Concentração de receita num profissional (menor é melhor)
+  const dMeta = insightMeta('dependence');
+  rows.push({
+    kpi: 'Concentração num profissional',
+    valor: team.dependence.toFixed(1) + '%',
+    metaTxt: dMeta.meta != null ? '≤ ' + dMeta.meta.toFixed(0) + '%' : '—',
+    fonte: dMeta.fonte,
+    status: insightStatus(team.dependence, dMeta.meta, dMeta.alerta, false)
+  });
+
+  return rows;
+}
+
+// Diagnóstico de gargalos cruzando indicadores (bottleneck playbook do skill).
+// Cada gargalo: sintoma observado → causa provável (hipótese) → onde olhar.
+function diagnoseBottlenecks(metrics, sectors, team, costs, anomalies) {
+  const found = [];
+
+  // Receita caindo com custo de equipe subindo = produtividade/escala desalinhada
+  if (metrics.revenue.trend === 'down' && metrics.teamCostVar.trend === 'up') {
+    found.push({
+      sintoma: 'Receita em queda enquanto o custo de equipe sobe',
+      causa: 'Possível desalinhamento entre escala e demanda: horas pagas não estão se convertendo em produção.',
+      olhar: 'Cruze horas escaladas × produção por profissional e por faixa horária.',
+      sev: 'alta'
+    });
+  }
+
+  // Margem baixa mas receita ok = problema de custo, não de venda
+  if (metrics.margin.current > 0 && metrics.margin.current < 0.15 && metrics.revenue.trend !== 'down') {
+    found.push({
+      sintoma: 'Volume saudável, mas margem apertada',
+      causa: 'O gargalo é de custo, não de demanda — custos consomem o faturamento.',
+      olhar: 'Top fornecedores operacionais e razão custo-equipe/receita.',
+      sev: 'alta'
+    });
+  }
+
+  // Alta concentração num profissional = risco operacional
+  if (team.dependence > 45) {
+    found.push({
+      sintoma: `Um profissional concentra ${team.dependence.toFixed(0)}% da receita`,
+      causa: 'Recurso único como ponto de falha: férias/saída derrubam o resultado.',
+      olhar: 'Distribuição de carteira e cross-training entre a equipe.',
+      sev: 'alta'
+    });
+  } else if (team.dependence > 30) {
+    found.push({
+      sintoma: `Concentração moderada (${team.dependence.toFixed(0)}%) num profissional`,
+      causa: 'Dependência crescente de um recurso — risco a monitorar.',
+      olhar: 'Campanhas para distribuir demanda entre outros veterinários.',
+      sev: 'media'
+    });
+  }
+
+  // Setor em queda forte = gargalo localizado
+  const secNames = { clinica: 'Clínica Médica', inter: 'Internação', cirurgico: 'Bloco Cirúrgico', lab: 'Laboratório' };
+  Object.keys(secNames).forEach(key => {
+    const s = sectors[key];
+    if (s && s.revenue > 0 && s.variation.trend === 'down' && Math.abs(s.variation.variation) > 15) {
+      found.push({
+        sintoma: `${secNames[key]} caiu ${Math.abs(s.variation.variation).toFixed(0)}% vs mês anterior`,
+        causa: 'Queda localizada num setor — demanda, capacidade ou encaminhamento interno.',
+        olhar: `Volume e ocupação de ${secNames[key]}; follow-up pós-atendimento.`,
+        sev: 'media'
+      });
+    }
+  });
+
+  // Profissional(is) com queda abrupta = capacidade ociosa
+  const lowAnomaly = anomalies.filter(a => a.type === 'low');
+  if (lowAnomaly.length) {
+    found.push({
+      sintoma: `${lowAnomaly.length} profissional(is) com queda abrupta de produção`,
+      causa: 'Capacidade contratada não convertida — bloqueio, afastamento ou perda de carteira.',
+      olhar: 'Agenda e carteira dos profissionais sinalizados (ver Anomalias).',
+      sev: 'media'
+    });
+  }
+
+  // Prioriza: alta antes de média
+  const ord = { alta: 0, media: 1, baixa: 2 };
+  found.sort((a, b) => ord[a.sev] - ord[b.sev]);
+  return found;
+}
+
 // ── HELPER: gerar plano de ação ──
 function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes) {
   const actions = [];
@@ -3372,6 +3539,10 @@ function generateInsights() {
     // ===== 8. Plano de ação =====
     const actions = generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes);
 
+    // ===== 8b. Painel de KPIs (metodologia InsightAI) e diagnóstico de gargalos =====
+    const kpiPanel = buildKpiPanel(metrics, costs, team);
+    const bottlenecks = diagnoseBottlenecks(metrics, sectors, team, costs, anomalies);
+
     // ===== 9. RENDER =====
     const healthCirc = 327; // 2*pi*52
 
@@ -3655,6 +3826,73 @@ function generateInsights() {
     ` : '';
 
     // Final HTML
+    // ── Painel de KPIs com status (na meta / alerta / crítico) ──
+    const kpiPanelHTML = `
+      <div style="margin-bottom:24px">
+        <div class="ctitle" style="margin-bottom:6px">🎯 Painel de KPIs — Valor vs. Meta</div>
+        <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-bottom:14px">
+          Metas do hospital sobrepõem benchmarks de setor. Status: ✅ na meta · ⚠️ alerta · 🔴 crítico.
+        </div>
+        <div class="tw" style="margin-bottom:0">
+          <div class="tscroll">
+            <table>
+              <thead><tr>
+                <th>Indicador</th>
+                <th style="text-align:right">Valor</th>
+                <th style="text-align:right">Meta</th>
+                <th style="text-align:right">Status</th>
+              </tr></thead>
+              <tbody>
+                ${kpiPanel.map(k => `
+                  <tr>
+                    <td style="padding:10px 14px;font-weight:600">${k.kpi}
+                      <span style="display:block;font-size:9.5px;color:var(--tx3);font-family:var(--font-mono);font-weight:400">${k.fonte}</span>
+                    </td>
+                    <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);color:${k.status.color};font-weight:600">${k.valor}</td>
+                    <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);color:var(--tx2);font-size:11.5px">${k.metaTxt}</td>
+                    <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-size:11px;color:${k.status.color};white-space:nowrap">${k.status.tag}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // ── Diagnóstico de gargalos (cruzamento de indicadores) ──
+    const bottleSev = { alta: { c: 'var(--red)', b: 'rgba(229,104,95,.25)', bg: 'rgba(229,104,95,.05)', t: 'ALTA' },
+                        media:{ c: 'var(--amber)', b: 'rgba(224,169,58,.25)', bg: 'rgba(224,169,58,.05)', t: 'MÉDIA' } };
+    const bottlenecksHTML = `
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:24px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
+          <div style="width:46px;height:46px;background:var(--amber-dim);border:1px solid rgba(224,169,58,.3);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🔧</div>
+          <div style="flex:1">
+            <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.3px">Diagnóstico de Gargalos</div>
+            <div style="font-size:11.5px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px">${bottlenecks.length} ${bottlenecks.length === 1 ? 'gargalo identificado' : 'gargalos identificados'} · causa provável cruzando indicadores</div>
+          </div>
+        </div>
+        ${bottlenecks.length > 0 ? bottlenecks.map(g => {
+          const s = bottleSev[g.sev] || bottleSev.media;
+          return `
+            <div style="background:${s.bg};border:1px solid ${s.b};border-left:3px solid ${s.c};border-radius:10px;padding:14px 18px;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <span style="color:${s.c};font-size:9px;font-family:var(--font-mono);font-weight:700;letter-spacing:1px;padding:2px 8px;border:1px solid ${s.b};border-radius:100px">${s.t}</span>
+                <span style="font-family:var(--font-display);font-size:13.5px;font-weight:600;color:var(--tx)">${g.sintoma}</span>
+              </div>
+              <div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:5px"><strong style="color:var(--tx)">Causa provável:</strong> ${g.causa}</div>
+              <div style="font-size:11.5px;color:var(--tx3);font-family:var(--font-mono);line-height:1.6">🔎 Onde olhar: ${g.olhar}</div>
+            </div>
+          `;
+        }).join('') : `
+          <div style="text-align:center;padding:24px;background:rgba(45,212,160,.05);border:1px solid rgba(45,212,160,.2);border-radius:10px">
+            <div style="font-size:28px;margin-bottom:6px">✅</div>
+            <div style="font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--green)">Nenhum gargalo crítico detectado no cruzamento de indicadores</div>
+          </div>
+        `}
+      </div>
+    `;
+
     content.innerHTML = `
       <!-- ═══ HEADER: SCORE DE SAÚDE ═══ -->
       <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;padding:24px;background:linear-gradient(135deg, ${health.color}10 0%, var(--sf) 60%);border:1px solid var(--bd);border-radius:18px;margin-bottom:20px;align-items:center">
@@ -3700,6 +3938,8 @@ function generateInsights() {
           ${momCard('🏢 Custo Operacional', metrics.opCostVar)}
         </div>
       </div>
+
+      ${kpiPanelHTML}
 
       <!-- ═══ PERFORMANCE POR SETOR ═══ -->
       <div class="ctitle" style="margin-bottom:14px">🏥 Performance por Setor</div>
@@ -3759,13 +3999,15 @@ function generateInsights() {
 
       ${monthHistoryHTML}
 
+      ${bottlenecksHTML}
+
       <!-- ═══ PLANO DE AÇÃO ═══ -->
       <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:24px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--bd)">
           <div style="width:46px;height:46px;background:var(--pink-dim);border:1px solid rgba(201,122,138,.3);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎯</div>
           <div style="flex:1">
             <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.3px">Plano de Ação Prioritário</div>
-            <div style="font-size:11.5px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px">${actions.length} ${actions.length === 1 ? 'ação identificada' : 'ações identificadas'} · ordenado por criticidade</div>
+            <div style="font-size:11.5px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px">${actions.length} ${actions.length === 1 ? 'ação identificada' : 'ações identificadas'} · priorizado por impacto × esforço</div>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             ${actions.filter(a => a.priority === 'alta').length > 0 ? `<span style="display:flex;align-items:center;gap:4px;padding:4px 9px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:100px;font-size:10px;font-family:var(--font-mono);color:var(--red)"><span style="width:6px;height:6px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite"></span>${actions.filter(a => a.priority === 'alta').length} urgente</span>` : ''}
@@ -3780,8 +4022,8 @@ function generateInsights() {
       <div style="margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(74,90,128,.08);border:1px solid rgba(74,90,128,.2);display:flex;gap:10px;align-items:flex-start;">
         <span style="font-size:16px;flex-shrink:0">💡</span>
         <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);line-height:1.8;">
-          <strong style="color:var(--tx2)">Sobre o Motor Analítico v2.0:</strong> Análise multidimensional gerada por regras heurísticas a partir dos dados carregados no sistema.
-          Os insights devem ser usados como <strong style="color:var(--tx2)">ponto de partida para investigação</strong>, não como verdade absoluta. Sempre valide com o contexto real e considere fatores externos (sazonalidade, eventos locais, equipe em férias).
+          <strong style="color:var(--tx2)">Metodologia InsightAI:</strong> painel de KPIs comparado a metas/benchmarks, diagnóstico de gargalos por cruzamento de indicadores e plano de ação priorizado por impacto × esforço, a partir dos dados carregados no sistema.
+          Os insights são <strong style="color:var(--tx2)">ponto de partida para investigação</strong>, não verdade absoluta. Valide com o contexto real e fatores externos (sazonalidade litorânea de Balneário Camboriú, eventos locais, equipe em férias).
           <br><br>
           <strong style="color:var(--tx2)">Lembrete:</strong> exames laboratoriais são solicitados pelos médicos veterinários — o volume do setor LAB é reflexo direto da produção clínica, não uma operação independente.
         </div>
