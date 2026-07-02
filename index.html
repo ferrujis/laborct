@@ -5141,10 +5141,15 @@ function buildMonthHistory(baseRowsAll, cogsRowsAll) {
   const meses = mesesSet.sort((a, b) => MESES.indexOf(a) - MESES.indexOf(b));
 
   // cirúrgico por mês (mesma lógica do Labor BI)
+  // IMPORTANTE: soma apenas Larissa/Vitor — são os únicos cujo valor cirúrgico
+  // foi DEDUZIDO do 'prod' base em getAdjustedBase(). Somar de todos os vets
+  // duplicava a receita cirúrgica dos demais (já incluída no 'prod' bruto).
   function getCirByMes(mes) {
     if (!mes) return 0;
     const cirRows = (S.anal && S.anal['C_CIRURGICO']) || [];
-    return cirRows.filter(r => r.mes === mes).reduce((s, r) => s + (r.valL || 0), 0);
+    return cirRows
+      .filter(r => r.mes === mes && (r.vet === 'larissa.iozzi' || r.vet === 'vitor.tridapalli'))
+      .reduce((s, r) => s + (r.valL || 0), 0);
   }
 
   return meses.map(m => {
@@ -5284,10 +5289,16 @@ function generateInsights() {
     };
 
     // ── cirúrgico por mês (mesmo filtro do Labor BI) ──
+    // IMPORTANTE: soma apenas Larissa/Vitor — são os únicos cujo valor cirúrgico
+    // foi DEDUZIDO do 'prod' base em getAdjustedBase(). Somar de todos os vets
+    // duplicava a receita cirúrgica dos demais (já incluída no 'prod' bruto),
+    // inflando a "Receita Total" do InsightsAI acima do valor real do Labor/COGS BI.
     function getCirurgicoByMes(mes) {
       if (!mes) return 0;
       const cirRows = (S.anal && S.anal['C_CIRURGICO']) || [];
-      return cirRows.filter(x => x.mes === mes).reduce((s, r) => s + (r.valL || 0), 0);
+      return cirRows
+        .filter(x => x.mes === mes && (x.vet === 'larissa.iozzi' || x.vet === 'vitor.tridapalli'))
+        .reduce((s, r) => s + (r.valL || 0), 0);
     }
 
     // ===== 2. Métricas financeiras (exatamente como Labor BI) =====
