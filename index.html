@@ -1718,6 +1718,13 @@ body::before { animation: drift 28s ease-in-out infinite; }
       <div class="ptitle" style="color:var(--tx)">Análise <span style="color:var(--pink)">Executiva</span></div>
       <div class="psub">Motor analítico processando dados financeiros e operacionais em tempo real.</div>
 
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+        <label for="insights-mes-select" style="font-size:11px;font-family:var(--font-mono);color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px">Mês analisado</label>
+        <select id="insights-mes-select" onchange="generateInsights(this.value || null)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);outline:none;cursor:pointer">
+          <option value="">Automático (mês mais recente)</option>
+        </select>
+      </div>
+
       <div class="ai-box">
         <div class="ai-header">
           <div class="ai-icon-wrap">🧠</div>
@@ -2243,10 +2250,32 @@ function openCogs() {
   requestAnimationFrame(() => requestAnimationFrame(() => { renderCogs(); }));
 }
 
+function populateInsightsMesSelect(selected) {
+  const sel = document.getElementById('insights-mes-select');
+  if (!sel) return;
+  const baseRowsAll = getAdjustedBase();
+  const cogsRowsAll = S.cogs || [];
+  const allMeses = [...new Set([
+    ...baseRowsAll.map(r => r.mes).filter(Boolean),
+    ...cogsRowsAll.map(r => r.mes).filter(Boolean)
+  ])].filter(Boolean).sort((a,b) => MESES.indexOf(a) - MESES.indexOf(b));
+
+  const prevValue = selected !== undefined ? selected : sel.value;
+  let html = '<option value="">Automático (mês mais recente)</option>';
+  allMeses.forEach(m => {
+    html += `<option value="${m}">${m.charAt(0).toUpperCase() + m.slice(1)}</option>`;
+  });
+  sel.innerHTML = html;
+  if (prevValue && allMeses.includes(prevValue)) sel.value = prevValue;
+}
+
 function openInsights() {
   document.getElementById('hub-view').style.display = 'none';
   document.getElementById('insights-view').style.display = 'block';
-  requestAnimationFrame(() => requestAnimationFrame(() => { generateInsights(); }));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    populateInsightsMesSelect();
+    generateInsights();
+  }));
 }
 
 function openAdmin() {
@@ -5170,7 +5199,7 @@ function buildMonthHistory(baseRowsAll, cogsRowsAll) {
 }
 
 // ── FUNÇÃO PRINCIPAL ──
-function generateInsights() {
+function generateInsights(mesEscolhido) {
   const content = document.getElementById('ai-content');
 
   if(!S.base || !S.base.length) {
@@ -5246,23 +5275,32 @@ function generateInsights() {
       ...cogsRowsAll.map(r => r.mes).filter(Boolean)
     ])].filter(Boolean).sort((a,b) => MESES.indexOf(a) - MESES.indexOf(b));
 
+    // Se o usuário escolheu um mês manualmente no seletor, usa-o diretamente
+    if (mesEscolhido && allMeses.includes(mesEscolhido)) {
+      targetMes = mesEscolhido;
+      previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
+    }
+
     let baseTarget = filterByMes(baseRowsAll, targetMes);
     let cogsTarget = filterByMes(cogsRowsAll, targetMes);
 
-    // Se estamos nos primeiros 10 dias do mês E não há dados do mês atual, o mês anterior já está fechado
-    // Usa o mês anterior como target (mês fechado/completo)
-    if (diaAtual <= 10 && !baseTarget.length && !cogsTarget.length && allMeses.length) {
-      targetMes = allMeses[allMeses.length - 1];
-      previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
-      baseTarget = filterByMes(baseRowsAll, targetMes);
-      cogsTarget = filterByMes(cogsRowsAll, targetMes);
-    }
-    // Se não há dados do mês atual, usa o mais recente disponível
-    else if (!baseTarget.length && !cogsTarget.length && allMeses.length) {
-      targetMes = allMeses[allMeses.length - 1];
-      previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
-      baseTarget = filterByMes(baseRowsAll, targetMes);
-      cogsTarget = filterByMes(cogsRowsAll, targetMes);
+    // Fallbacks automáticos só se o mês não foi escolhido manualmente
+    if (!mesEscolhido) {
+      // Se estamos nos primeiros 10 dias do mês E não há dados do mês atual, o mês anterior já está fechado
+      // Usa o mês anterior como target (mês fechado/completo)
+      if (diaAtual <= 10 && !baseTarget.length && !cogsTarget.length && allMeses.length) {
+        targetMes = allMeses[allMeses.length - 1];
+        previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
+        baseTarget = filterByMes(baseRowsAll, targetMes);
+        cogsTarget = filterByMes(cogsRowsAll, targetMes);
+      }
+      // Se não há dados do mês atual, usa o mais recente disponível
+      else if (!baseTarget.length && !cogsTarget.length && allMeses.length) {
+        targetMes = allMeses[allMeses.length - 1];
+        previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
+        baseTarget = filterByMes(baseRowsAll, targetMes);
+        cogsTarget = filterByMes(cogsRowsAll, targetMes);
+      }
     }
     if (!baseTarget.length && !cogsTarget.length) {
       content.innerHTML = '<div class="nd"><div class="nd-i">❌</div>Não há dados suficientes para gerar insights.</div>';
@@ -6021,21 +6059,50 @@ function parseCogs(wb,fname){
   const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
 
   let hi = -1;
-  let col = { data:-1, cat:-1, forn:-1, val:-1, mes:-1 };
+  let col = { data:-1, cat:-1, forn:-1, val:-1, mes:-1, period:-1, year:-1, costCenter:-1, desc:-1 };
+  let isRawExport = false;
 
   for(let i=0; i<raw.length; i++){
     if(raw[i] && Array.isArray(raw[i])){
       let achouData = false;
+      let achouAmount = false;
+      let achouCostCenter = false;
+      let achouEffDate = false;
+      let achouDesc = false;
       for(let j=0; j<raw[i].length; j++) {
         if(!raw[i][j]) continue;
-        const norm = String(raw[i][j]).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        if(norm.includes('data')) { col.data = j; achouData = true; }
-        else if(norm.includes('categoria')) col.cat = j;
-        else if(norm.includes('fornecedor') || norm.includes('item')) col.forn = j;
-        else if(norm.includes('valor')) col.val = j;
-        else if(norm==='mes'||norm==='mês') col.mes = j;
+        const norm = String(raw[i][j]).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+        // ── Formato bruto (export ERP/Helios) ──
+        if(norm.includes('effective date')) { col.data = j; achouEffDate = true; }
+        else if(norm === 'period') { col.period = j; }
+        else if(norm === 'year') { col.year = j; }
+        else if(norm === 'cost center') { col.costCenter = j; achouCostCenter = true; }
+        else if(norm.includes('account description')) { col.desc = j; achouDesc = true; }
+        else if(norm.includes('entry reference')) { col.forn = j; }
+        else if(norm === 'amount' || norm.includes('amount')) { col.val = j; achouAmount = true; }
+
+        // ── Formato manual pt-BR ──
+        else if(norm.includes('data')) { col.data = j; achouData = true; }
+        else if(norm.includes('categoria')) { col.desc = j; achouDesc = true; } // fallback
+        else if(norm.includes('fornecedor') || norm.includes('item')) { col.forn = j; }
+        else if(norm.includes('valor')) { col.val = j; achouAmount = true; }
+        else if(norm==='mes'||norm==='mês') { col.mes = j; }
       }
-      if(achouData && col.val !== -1) { hi = i; break; }
+      // Se encontramos os campos mínimos, define o cabeçalho
+      if((achouEffDate || achouData) && achouAmount) {
+        // Prioridade: desc (ACCOUNT DESCRIPTION) > costCenter
+        if(achouDesc) {
+          col.cat = col.desc;
+        } else if(achouCostCenter) {
+          col.cat = col.costCenter;
+        } else {
+          col.cat = -1;
+        }
+        hi = i;
+        isRawExport = achouEffDate;
+        break;
+      }
     }
   }
 
@@ -6044,7 +6111,9 @@ function parseCogs(wb,fname){
   const rows=[];
   for(let i=hi+1; i<raw.length; i++){
     const r=raw[i];
-    if(!r || r[col.val] == null) continue;
+    if(!r || r[col.val] == null || typeof r[col.val] !== 'number') continue;
+    // Ignora linhas de rodapé/filtro
+    if(isRawExport && (!r[col.data] || col.cat < 0 || !r[col.cat])) continue;
 
     let ds='';
     const dc=r[col.data];
@@ -6063,10 +6132,20 @@ function parseCogs(wb,fname){
       }
     }
 
-    const mesRaw = col.mes >= 0 && r[col.mes] ? String(r[col.mes]).trim().toLowerCase() : '';
-    const mes = mesRaw || getMes(ds);
-    const cat=String(r[col.cat]||'Geral').trim();
-    const forn=String(r[col.forn]||'').trim();
+    let mes = '';
+    if(isRawExport){
+      const periodRaw = col.period >= 0 && r[col.period] ? String(r[col.period]) : '';
+      const pm = periodRaw.match(/(\d{1,2})/);
+      if(pm) mes = MESES[parseInt(pm[1],10)] || '';
+      if(!mes) mes = getMes(ds);
+    } else {
+      const mesRaw = col.mes >= 0 && r[col.mes] ? String(r[col.mes]).trim().toLowerCase() : '';
+      mes = mesRaw || getMes(ds);
+    }
+
+    // Categoria: agora usamos col.cat que foi definida como desc ou costCenter
+    const cat = col.cat >= 0 ? String(r[col.cat]||'Geral').trim() : 'Geral';
+    const forn = col.forn >= 0 ? String(r[col.forn]||'').trim() : '';
 
     let valRaw = r[col.val];
     let valTotal = 0;
