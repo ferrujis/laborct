@@ -1,0 +1,202 @@
+  <div id="labor-view" style="display:none;">
+    <nav class="tb" aria-label="Módulo LaborBI">
+      <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
+      <div class="tbl" aria-hidden="true">Labor<span>BI</span></div>
+      <div class="tnav" id="tnav-labor" role="tablist" aria-label="Seções do LaborBI"></div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-labor" aria-live="polite"></span>
+        <span class="brl" id="brl-labor"></span>
+        <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
+      </div>
+    </nav>
+
+    <div class="pg on" id="pg-petcare">
+      <div class="ptitle">Visão <span>Geral</span></div>
+      <div class="psub" id="petcare-sub">Sincronizando com a nuvem...</div>
+      <div class="frow">
+        <span class="flbl">Filtrar:</span>
+        <select id="f-vet" onchange="renderPetcare()"><option value="">Todos os Veterinários</option></select>
+        <select id="f-mes" onchange="renderPetcare()"><option value="">Todos os Meses</option></select>
+        <select id="f-sem" onchange="renderPetcare()"><option value="">Todas as Semanas</option></select>
+      </div>
+      <div class="kgrid" id="pc-kpi"></div>
+      <div class="cgrid cgrid-2">
+        <div class="cc"><div class="ctitle">Fixo + Variável + Horas por Semana</div><canvas id="ch-combo" height="130"></canvas></div>
+        <div class="cc"><div class="ctitle">Fixo vs Variável</div><canvas id="ch-donut" height="130"></canvas></div>
+      </div>
+      <div class="tw"><div class="th"><span>Por Veterinário</span><span id="pc-tcount"></span></div><div class="tscroll" id="pc-table"></div></div>
+    </div>
+
+    <div class="pg" id="pg-ranking">
+      <div class="ptitle">Ranking <span>Veterinários</span></div>
+      <div class="psub">Produção total — filtro por mês</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="r-mes" onchange="renderRanking()"><option value="">Todos os Meses</option></select>
+      </div>
+      <div class="cc" style="margin-bottom:16px"><div class="ctitle">Produção por Veterinário</div><canvas id="ch-rank" height="130"></canvas></div>
+      <div class="tw"><div class="th"><span>Tabela de Ranking</span><span id="r-count"></span></div><div class="tscroll" id="rank-table"></div></div>
+    </div>
+
+    <!-- ═══ ESPECIALISTAS ═══ -->
+    <div class="pg" id="pg-faturamento">
+      <div class="ptitle">Especialistas <span>Individual</span></div>
+      <div class="psub">Análise por especialista, mês a mês — principais lançamentos e comparativo</div>
+      <div class="frow">
+        <span class="flbl">Especialista:</span>
+        <select id="fat-vet" onchange="renderFaturamento()"><option value="">Selecione o Especialista</option></select>
+        <span class="flbl">Mês:</span>
+        <select id="fat-mes" onchange="renderFaturamento()"><option value="">Todos os Meses</option></select>
+      </div>
+      <div class="kgrid" id="fat-kpi"></div>
+      <div id="fat-alert"></div>
+      <div class="cc" style="margin-bottom:16px"><div class="ctitle">Top 20 Lançamentos — Quantidade</div><canvas id="ch-fat" height="150"></canvas></div>
+      <div class="tw"><div class="th"><span>Top 20 Lançamentos (por quantidade)</span><span id="fat-tcount"></span></div><div class="tscroll" id="fat-table"></div></div>
+    </div>
+
+    <!-- ═══ CLÍNICA MÉDICA ═══ -->
+    <div class="pg" id="pg-clinica">
+      <div class="ptitle">Clínica <span>Médica</span></div>
+      <div class="psub">Consultas e atendimentos clínicos — aba CLINICA do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="cl-mes" onchange="renderClinica()"><option value="">Todos os Meses</option></select>
+        <select id="cl-vet" onchange="renderClinica()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="cl-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Faturamento por Veterinário (R$)</div>
+          <canvas id="ch-cl-vet" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Eficiência — Lançado vs Tabela por Vet</div>
+          <canvas id="ch-cl-efic" height="130"></canvas>
+        </div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Top 10 Procedimentos — Valor Total (R$)</div>
+          <canvas id="ch-cl-proc" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Top 10 Procedimentos — Volume (Qtd)</div>
+          <canvas id="ch-cl-vol" height="130"></canvas>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Detalhamento por Veterinário</span><span id="cl-tcount"></span></div>
+        <div class="tscroll" id="cl-table"></div>
+      </div>
+    </div>
+
+    <!-- ═══ INTERNAÇÃO ═══ -->
+    <div class="pg" id="pg-inter">
+      <div class="ptitle">Internação <span>— INTER</span></div>
+      <div class="psub">Procedimentos de internação — aba INTER do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="it-mes" onchange="renderInter()"><option value="">Todos os Meses</option></select>
+        <select id="it-vet" onchange="renderInter()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="it-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Faturamento por Veterinário (R$)</div>
+          <canvas id="ch-it-vet" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Lançado vs Tabela — Eficiência por Vet</div>
+          <canvas id="ch-it-efic" height="130"></canvas>
+        </div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Top 10 Procedimentos — Valor Total (R$)</div>
+          <canvas id="ch-it-proc" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Top 10 Procedimentos — Volume (Qtd)</div>
+          <canvas id="ch-it-vol" height="130"></canvas>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Detalhamento por Procedimento</span><span id="it-tcount"></span></div>
+        <div class="tscroll" id="it-table"></div>
+      </div>
+    </div>
+
+    <!-- ═══ CIRÚRGICO ═══ -->
+    <div class="pg" id="pg-cirurgico">
+      <div class="ptitle">Bloco <span>Cirúrgico</span></div>
+      <div class="psub">Procedimentos cirúrgicos — aba C. CIRURGICO do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="ci-mes" onchange="renderCirurgico()"><option value="">Todos os Meses</option></select>
+        <select id="ci-vet" onchange="renderCirurgico()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="ci-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Faturamento por Veterinário (R$)</div>
+          <canvas id="ch-ci-vet" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Lançado vs Tabela — Eficiência por Vet</div>
+          <canvas id="ch-ci-efic" height="130"></canvas>
+        </div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Top 10 Cirurgias — Valor Total (R$)</div>
+          <canvas id="ch-ci-proc" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Top 10 Cirurgias — Volume (Qtd)</div>
+          <canvas id="ch-ci-vol" height="130"></canvas>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Detalhamento por Procedimento Cirúrgico</span><span id="ci-tcount"></span></div>
+        <div class="tscroll" id="ci-table"></div>
+      </div>
+    </div>
+
+    <!-- ═══ LABORATÓRIO ═══ -->
+    <div class="pg" id="pg-laboratorio">
+      <div class="ptitle">Laboratório <span>— LAB</span></div>
+      <div class="psub">Exames e procedimentos laboratoriais — aba LAB do arquivo Análises</div>
+      <div class="frow">
+        <span class="flbl">Mês:</span>
+        <select id="lb-mes" onchange="renderLab()"><option value="">Todos os Meses</option></select>
+        <select id="lb-vet" onchange="renderLab()"><option value="">Todos os Veterinários</option></select>
+      </div>
+      <div class="kgrid" id="lb-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Top 10 Exames — Volume de Solicitações</div>
+          <canvas id="ch-lb-vol" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Top 10 Exames — Faturamento Total (R$)</div>
+          <canvas id="ch-lb-fat" height="130"></canvas>
+        </div>
+      </div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc">
+          <div class="ctitle">Faturamento por Veterinário Solicitante (R$)</div>
+          <canvas id="ch-lb-vet" height="130"></canvas>
+        </div>
+        <div class="cc">
+          <div class="ctitle">Ticket Médio por Exame (Top 10)</div>
+          <canvas id="ch-lb-ticket" height="130"></canvas>
+        </div>
+      </div>
+      <div class="tw">
+        <div class="th"><span>Catálogo de Exames</span><span id="lb-tcount"></span></div>
+        <div class="tscroll" id="lb-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ MÓDULO: COGS BI ██ -->

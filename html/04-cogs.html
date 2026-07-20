@@ -1,0 +1,78 @@
+  <div id="cogs-view" style="display:none;">
+    <nav class="tb" aria-label="Módulo CogsBI">
+      <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
+      <div class="tbl cogs" aria-hidden="true">Cogs<span>BI</span></div>
+      <div class="tnav" id="tnav-cogs" role="tablist" aria-label="Seções do CogsBI">
+        <button class="nb cogs on" onclick="switchCogsTab('dre',this)" type="button" role="tab" aria-selected="true">📊 DRE</button>
+        <button class="nb cogs"    onclick="switchCogsTab('ebitda',this)" type="button" role="tab" aria-selected="false">📈 EBITDA</button>
+        <button class="nb cogs"    onclick="switchCogsTab('historico',this)" type="button" role="tab" aria-selected="false">📅 Histórico</button>
+      </div>
+      <div class="tbr">
+        <span class="last-upd" id="last-upd-cogs" aria-live="polite"></span>
+        <span class="brl" id="brl-cogs"></span>
+        <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
+      </div>
+    </nav>
+
+    <!-- Filtro global -->
+    <div style="padding:14px 28px 0;background:var(--bg)">
+      <div class="frow" style="margin-bottom:0">
+        <span class="flbl">Mês:</span>
+        <select id="cg-mes" onchange="renderCogs()"><option value="">Todos os Meses</option></select>
+        <span class="flbl" style="margin-left:8px">Buscar:</span>
+        <input id="cg-search" type="text" placeholder="Fornecedor ou item..." oninput="renderCogs()"
+          style="background:var(--sf2);border:1px solid var(--bd);border-radius:6px;color:var(--tx);padding:5px 10px;font-size:12px;font-family:var(--font-mono);width:180px">
+      </div>
+    </div>
+
+    <!-- ── ABA: DRE ── -->
+    <div class="pg on cogs-tab" id="cogs-tab-dre" style="display:block">
+      <div class="ptitle">DRE <span style="color:var(--violet)">— Resultado</span></div>
+      <div class="psub">Faturamento bruto, labor, COGS, pré-tributação, impostos e lucro líquido.</div>
+      <div class="kgrid" id="cg-kpi"></div>
+      <div id="cg-dre-visual" style="margin-bottom:22px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle" style="--cyan:var(--violet)">Composição dos Custos por Grupo</div><canvas id="ch-cogs-donut" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle" style="--cyan:var(--violet)">Resultado — Receita × Custos × Lucro</div><canvas id="ch-cogs-gauge" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span style="--cyan:var(--violet)">Demonstrativo de Resultado — DRE Completo</span><span id="cg-dre-mes-label"></span></div>
+        <div id="cg-dre-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: EBITDA ── -->
+    <div class="pg cogs-tab" id="cogs-tab-ebitda" style="display:none">
+      <div class="ptitle">Pré-tributação <span style="color:var(--green)">— 6 Camadas</span></div>
+      <div class="psub">Faturamento → Labor → COGS → Pré-tributação → Impostos → Lucro Líquido.</div>
+      <div class="kgrid" id="cg-ebitda-kpi"></div>
+      <div id="cg-ebitda-visual" style="margin-bottom:22px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+        <div class="cc"><div class="ctitle" style="--cyan:var(--green)">Decomposição do Resultado</div><canvas id="ch-ebitda-bar" height="190"></canvas></div>
+        <div class="cc"><div class="ctitle" style="--cyan:var(--green)">Composição do Faturamento</div><canvas id="ch-ebitda-pie" height="190"></canvas></div>
+      </div>
+      <div class="tw">
+        <div class="th"><span style="--cyan:var(--green)">Demonstrativo Detalhado</span><span id="cg-ebitda-mes-label"></span></div>
+        <div id="cg-ebitda-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ABA: HISTÓRICO ── -->
+    <div class="pg cogs-tab" id="cogs-tab-historico" style="display:none">
+      <div class="ptitle">Histórico <span style="color:var(--violet)">Mensal</span></div>
+      <div class="psub">Evolução de receita, custos por grupo, pré-tributação e lucro líquido mês a mês.</div>
+      <div class="kgrid" id="cg-hist-kpi"></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Receita, Pré-tributação e Lucro Líquido (R$)</div><canvas id="ch-cogs-hist-line" height="130"></canvas></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Custos por Grupo — Empilhado Mensal (R$)</div><canvas id="ch-cogs-hist-stack" height="120"></canvas></div>
+      <div class="cc" style="margin-bottom:14px"><div class="ctitle" style="--cyan:var(--violet)">Margem Pré-tributação % e Margem Líquida % — Mensal</div><canvas id="ch-cogs-hist-margin" height="100"></canvas></div>
+      <div class="tw"><div class="th"><span style="--cyan:var(--violet)">Resumo Mês a Mês</span><span id="cg-hist-count"></span></div><div class="tscroll" id="cg-hist-table"></div></div>
+    </div>
+
+    <!-- ── ABA DINÂMICA: por categoria (gerada em JS) ── -->
+    <div class="pg cogs-tab" id="cogs-tab-cat" style="display:none">
+      <div id="cogs-cat-content"></div>
+    </div>
+  </div>
+
+      <!-- ██ MÓDULO: INSIGHTS AI ██ -->
+      <!-- ██ MÓDULO: INSIGHTS AI ██ -->

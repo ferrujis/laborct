@@ -1,0 +1,50 @@
+  <div id="hub-view">
+    <header class="hub-topbar">
+      <div class="hub-topbar-logo" aria-label="FJ Analytics">FJ<span class="ac"> Analytics</span></div>
+      <span class="brl" id="brl-hub" aria-label="Perfil do usuário"></span>
+      <button class="lgbtn" onclick="doLogout()" type="button" aria-label="Sair do sistema">Sair</button>
+    </header>
+    <div class="hub-body">
+      <div class="hub-headline">
+        <h1>Bem-vindo ao <span>FJ Analytics</span></h1>
+        <p>Selecione um módulo para começar sua análise</p>
+      </div>
+      <div class="hub-grid">
+
+        <div class="hub-module" style="--clr:var(--cyan);--clr-dim:var(--cyan-dim);--clr-border:rgba(0,212,255,.2);" onclick="openLabor()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">🏥</div>
+          <div class="hub-mod-name">Labor<strong>BI</strong></div>
+          <div class="hub-mod-desc">Gestão de Comissões, Produção Veterinária e Análises Clínicas completas.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+
+        <div class="hub-module" style="--clr:var(--violet);--clr-dim:var(--violet-dim);--clr-border:rgba(139,92,246,.2);" onclick="openCogs()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">📊</div>
+          <div class="hub-mod-name">Cogs<strong style="color:var(--violet)">BI</strong></div>
+          <div class="hub-mod-desc">Gestão de Custos, Lucro Bruto e Inteligência Financeira por DRE.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+
+        <div class="hub-module" style="--clr:var(--pink);--clr-dim:var(--pink-dim);--clr-border:rgba(244,63,94,.2);" onclick="openInsights()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">🧠</div>
+          <div class="hub-mod-name">Insights<strong style="color:var(--pink)">AI</strong></div>
+          <div class="hub-mod-desc">Análise profunda focada no mês em vigor com planos de ação estratégicos.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+
+        <div class="hub-module" id="card-admin" style="--clr:var(--amber);--clr-dim:var(--amber-dim);--clr-border:rgba(245,158,11,.2);display:none;" onclick="openAdmin()">
+          <div class="hub-mod-stripe"></div>
+          <div class="hub-mod-icon">⚙️</div>
+          <div class="hub-mod-name">Admin<strong style="color:var(--amber)">Center</strong></div>
+          <div class="hub-mod-desc">Central de uploads, controle de usuários e auditoria de acessos.</div>
+          <div class="hub-mod-arrow">↗</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ MÓDULO: LABOR BI ██ -->
