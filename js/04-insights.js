@@ -1319,5 +1319,211 @@ function generateInsights(mesEscolhido, semEscolhido) {
         </div>
       </div>
     `;
+
+    // Inicializa/atualiza o comparador de múltiplos períodos sempre que a tela é (re)gerada
+    try { initPeriodComparator(); } catch (e) { /* silencioso */ }
   }, 1800);
+}
+
+// ════════════════════════════════
+//  COMPARADOR DE MÚLTIPLOS PERÍODOS
+//  (compara N períodos livres: mês inteiro ou mês+semana,
+//   de meses diferentes — ex: Sem 1 e 2 de Julho vs Sem 1 e 2 de Junho)
+// ════════════════════════════════
+
+let comparePeriods = []; // [{mes, week: null | '1' | '2' ...}]
+
+function periodKey(p) { return p.mes + '__' + (p.week || 'ALL'); }
+
+function periodLabel(p) {
+  return p.week ? `${cap(p.mes)} · Sem ${p.week}` : `${cap(p.mes)} (mês inteiro)`;
+}
+
+// Filtra linhas por mês + (opcionalmente) número de semana — mesma regra usada em analyzeSector
+function filterRowsByMesWeek(rows, mes, weekNum) {
+  let res = (rows || []).filter(r => r.mes === mes);
+  if (!weekNum) return res;
+  return res.filter(r => {
+    const semVal = r.sem || r.Semana || '';
+    if (semVal) {
+      const semNum = extractWeekNumber(semVal);
+      if (semNum !== null) return semNum === weekNum;
+    }
+    if (r.data) {
+      try {
+        const wn = weekNumFromDateStr(r.data);
+        if (wn) return parseInt(wn, 10) === weekNum;
+      } catch (e) { return false; }
+    }
+    return false;
+  });
+}
+
+function getAvailableWeeksForMesCompare(mes) {
+  if (!mes) return [];
+  const base = getAdjustedBase();
+  const raw = [...new Set(base.filter(r => r.mes === mes).map(r => r.sem || r.Semana || '').filter(Boolean))];
+  const nums = raw.map(s => extractWeekNumber(s)).filter(n => n !== null);
+  return [...new Set(nums)].sort((a, b) => a - b);
+}
+
+function computePeriodSummary(p) {
+  const wkNum = p.week ? extractWeekNumber(p.week) : null;
+  const baseRowsAll = getAdjustedBase();
+  const cogsRowsAll = S.cogs || [];
+
+  const baseRows = filterRowsByMesWeek(baseRowsAll, p.mes, wkNum);
+  const cogsRows = filterRowsByMesWeek(cogsRowsAll, p.mes, wkNum);
+
+  const cirRows = (S.anal && S.anal['C_CIRURGICO']) || [];
+  const cirProd = filterRowsByMesWeek(cirRows, p.mes, wkNum)
+    .filter(r => r.vet === 'larissa.iozzi' || r.vet === 'vitor.tridapalli')
+    .reduce((s, r) => s + (r.valL || 0), 0);
+
+  const baseProd = sumC(baseRows, 'prod');
+  const revenue = baseProd + cirProd;
+  const teamCost = sumC(baseRows, 'valTotal');
+  const opCost = sumCogsBy(cogsRows, 'operational');
+  const cost = teamCost + opCost;
+  const profit = revenue - cost;
+  const margin = revenue > 0 ? profit / revenue : 0;
+
+  function sectorRevenue(sheet) {
+    const rows = (S.anal && S.anal[sheet]) || [];
+    return filterRowsByMesWeek(rows, p.mes, wkNum).reduce((s, r) => s + (r.valL || 0), 0);
+  }
+
+  return {
+    key: periodKey(p), label: periodLabel(p), mes: p.mes, week: p.week,
+    revenue, teamCost, opCost, cost, profit, margin,
+    count: baseRows.length,
+    clinica: sectorRevenue('CLINICA'),
+    inter: sectorRevenue('INTER'),
+    cirurgico: sectorRevenue('C_CIRURGICO'),
+    lab: sectorRevenue('LAB')
+  };
+}
+
+function initPeriodComparator() {
+  const mesSel = document.getElementById('cmp-mes-select');
+  if (!mesSel) return; // HTML do comparador ainda não presente nesta tela
+
+  const allMeses = [...new Set([
+    ...(S.base || []).map(r => r.mes),
+    ...(S.cogs || []).map(r => r.mes)
+  ])].filter(Boolean).sort((a, b) => MESES.indexOf(a) - MESES.indexOf(b));
+
+  const currentMesVal = mesSel.value;
+  mesSel.innerHTML = allMeses.map(m => `<option value="${m}">${cap(m)}</option>`).join('');
+  if (currentMesVal && allMeses.includes(currentMesVal)) mesSel.value = currentMesVal;
+
+  updateCmpWeekSelect();
+  renderComparePeriodsChips();
+}
+
+function updateCmpWeekSelect() {
+  const mesSel = document.getElementById('cmp-mes-select');
+  const wkSel = document.getElementById('cmp-week-select');
+  if (!mesSel || !wkSel) return;
+  const mes = mesSel.value;
+  const weeks = getAvailableWeeksForMesCompare(mes);
+  wkSel.innerHTML = '<option value="">Mês inteiro</option>' + weeks.map(w => `<option value="${w}">Semana ${w}</option>`).join('');
+}
+
+function addComparePeriod() {
+  const mesSel = document.getElementById('cmp-mes-select');
+  const wkSel = document.getElementById('cmp-week-select');
+  const mes = mesSel?.value;
+  const week = wkSel?.value || null;
+  if (!mes) return;
+  const p = { mes, week };
+  if (comparePeriods.some(x => periodKey(x) === periodKey(p))) return; // já adicionado, evita duplicata
+  comparePeriods.push(p);
+  renderComparePeriodsChips();
+}
+
+function removeComparePeriod(key) {
+  comparePeriods = comparePeriods.filter(p => periodKey(p) !== key);
+  renderComparePeriodsChips();
+  const resultBox = document.getElementById('cmp-result');
+  if (resultBox) resultBox.innerHTML = '';
+}
+
+function clearComparePeriods() {
+  comparePeriods = [];
+  renderComparePeriodsChips();
+  const resultBox = document.getElementById('cmp-result');
+  if (resultBox) resultBox.innerHTML = '';
+}
+
+function renderComparePeriodsChips() {
+  const box = document.getElementById('cmp-chips');
+  if (!box) return;
+  if (!comparePeriods.length) {
+    box.innerHTML = '<span style="font-size:11px;color:var(--tx3);font-family:var(--font-mono)">Nenhum período adicionado ainda. Escolha mês + semana e clique em "Adicionar".</span>';
+    return;
+  }
+  box.innerHTML = comparePeriods.map(p => `
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--sf2);border:1px solid var(--bd);border-radius:100px;font-size:11px;font-family:var(--font-mono);color:var(--tx2)">
+      ${periodLabel(p)}
+      <button onclick="removeComparePeriod('${periodKey(p)}')" type="button" title="Remover" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;line-height:1;padding:0">✕</button>
+    </span>
+  `).join('');
+}
+
+function runPeriodComparison() {
+  const resultBox = document.getElementById('cmp-result');
+  if (!resultBox) return;
+  if (comparePeriods.length < 2) {
+    resultBox.innerHTML = '<div class="nd" style="padding:20px"><div class="nd-i">⚠️</div>Adicione pelo menos 2 períodos para comparar.</div>';
+    return;
+  }
+
+  const summaries = comparePeriods.map(computePeriodSummary);
+  const maxRev = Math.max(...summaries.map(s => s.revenue), 1);
+
+  const rows = [
+    { label: '💰 Receita', key: 'revenue', fmt: v => fR(v) },
+    { label: '👥 Custo Equipe', key: 'teamCost', fmt: v => fR(v) },
+    { label: '🏢 Custo Operacional', key: 'opCost', fmt: v => fR(v) },
+    { label: '💵 Lucro Líquido', key: 'profit', fmt: v => fR(v) },
+    { label: '% Margem', key: 'margin', fmt: v => (v * 100).toFixed(1) + '%' },
+    { label: '🩺 Clínica Médica', key: 'clinica', fmt: v => fR(v) },
+    { label: '🏨 Internação', key: 'inter', fmt: v => fR(v) },
+    { label: '🔪 Bloco Cirúrgico', key: 'cirurgico', fmt: v => fR(v) },
+    { label: '🧪 Laboratório', key: 'lab', fmt: v => fR(v) }
+  ];
+
+  resultBox.innerHTML = `
+    <div style="overflow-x:auto;margin-top:16px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:10px 12px;border-bottom:2px solid var(--bd);font-size:10.5px;font-family:var(--font-mono);color:var(--tx3);text-transform:uppercase">Indicador</th>
+            ${summaries.map(s => `<th style="text-align:right;padding:10px 12px;border-bottom:2px solid var(--bd);font-size:11px;font-family:var(--font-mono);color:var(--tx)">${s.label}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td style="padding:9px 12px;border-bottom:1px solid rgba(30,45,71,.4);font-size:12px;color:var(--tx2)">${r.label}</td>
+              ${summaries.map(s => `<td style="padding:9px 12px;border-bottom:1px solid rgba(30,45,71,.4);text-align:right;font-family:var(--font-mono);font-size:12px;color:var(--tx)">${r.fmt(s[r.key])}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:20px">
+      <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Receita por período</div>
+      <div style="display:flex;align-items:flex-end;gap:14px;height:150px;padding:0 4px">
+        ${summaries.map(s => `
+          <div style="display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end">
+            <div style="font-size:10px;font-family:var(--font-mono);color:var(--tx2);margin-bottom:4px">${fR(s.revenue)}</div>
+            <div style="width:100%;max-width:56px;background:linear-gradient(180deg, var(--pink), var(--violet));border-radius:6px 6px 0 0;height:${Math.max(4, (s.revenue / maxRev) * 110)}px"></div>
+            <div style="font-size:9.5px;font-family:var(--font-mono);color:var(--tx3);margin-top:6px;text-align:center">${s.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
