@@ -619,11 +619,297 @@ function renderLab(){
   }).join('')}</tbody></table>`;
 }
 
-
-
 // ════════════════════════════════
-//  PAGE: COGS BI — DINÂMICO (lê categorias do xlsx automaticamente)
+//  COMPARATIVO MENSAL (NOVA FUNÇÃO)
 // ════════════════════════════════
+// Normalize month names to canonical values present in `MESES`.
+function normMes(m){
+  if(!m) return '';
+  const raw = String(m).trim().toLowerCase();
+  // quick exact match
+  const exact = MESES.find(x => x && x.toLowerCase() === raw);
+  if(exact) return exact;
+  // sanitize: remove digits, slashes, dashes and extra chars so 'janeiro/2026' -> 'janeiro'
+  const cleaned = raw.replace(/[^a-zà-ú\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  // try token match (common when value contains year or extra text)
+  const tokens = cleaned.split(' ').filter(Boolean);
+  for(const t of tokens){
+    const tokMatch = MESES.find(x => x && x.toLowerCase() === t);
+    if(tokMatch) return tokMatch;
+  }
+  // fallback: check if any month name appears as substring
+  const substr = MESES.find(x => x && raw.includes(x.toLowerCase()));
+  if(substr) return substr;
+  return raw;
+}
 
-// ── Grupos de categorias: mapeamento dinâmico ──
-// Cada categoria do xlsx é classificada num grupo pelo nome
+function mesEq(a,b){ return normMes(a) === normMes(b); }
+
+function populateComparativoSelects(){
+  const collectMeses = (rows) => [...new Set((rows||[]).map(r => r?.mes).filter(Boolean))];
+  const adjustedBase = getAdjustedBase();
+  const baseMeses = collectMeses(adjustedBase);
+  const cogsMeses = collectMeses(S.cogs);
+  const analMeses = collectMeses(getLancamentos());
+  try{ console.debug('comparativo: adjustedBase rows', adjustedBase.length, 'S.cogs', (S.cogs||[]).length, 'anal rows', getLancamentos().length); }catch(e){}
+  let allMeses = [...new Set([...baseMeses, ...cogsMeses, ...analMeses])];
+  // fallback: try legacy S.anal structure if nothing found
+  if(!allMeses.length){
+    try{
+      const legacyAnal = [];
+      if(S.anal){
+        Object.values(S.anal).forEach(entry => {
+          const rows = Array.isArray(entry) ? entry : Object.values(entry || {});
+          legacyAnal.push(...collectMeses(rows));
+        });
+      }
+      const legacyBase = collectMeses(S.base);
+      const legacyCogs = collectMeses(S.cogs);
+      allMeses = [...new Set([...legacyBase, ...legacyCogs, ...legacyAnal])];
+      console.debug('comparativo: fallback months used', allMeses);
+    }catch(e){ console.warn('comparativo: fallback failed', e); }
+  }
+  // normalize month names and dedupe
+  allMeses = [...new Set(allMeses.map(normMes).filter(Boolean))];
+  allMeses = allMeses.sort((a,b) => {
+    const ia = MESES.indexOf(a);
+    const ib = MESES.indexOf(b);
+    if (ia !== ib) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    return a.localeCompare(b, 'pt-BR');
+  });
+  fillSel('comp-mes2','Selecione o mês comparado', allMeses, true);
+  fillSel('comp-mes1','Selecione o mês base', allMeses, true);
+  fillSel('comp-week-from','Todas as semanas', [], true);
+  fillSel('comp-week-to','Todas as semanas', [], true);
+}
+
+function onComparativoInput(){
+  populateComparativoWeeks();
+  renderComparativoMensal();
+}
+
+function populateComparativoWeeks(){
+  const mesBase = document.getElementById('comp-mes1').value;
+  const mesComp = document.getElementById('comp-mes2').value;
+  const weeks = new Set();
+  const adjustedBase = getAdjustedBase();
+  try{ console.debug('comparativo: populateComparativoWeeks adjustedBase', adjustedBase.length, 'mesBase', mesBase, 'mesComp', mesComp); }catch(e){}
+  // collect from adjusted base
+  if(mesBase) adjustedBase.filter(r => mesEq(r.mes, mesBase) && r.sem).forEach(r => weeks.add(String(r.sem).trim()));
+  if(mesComp) adjustedBase.filter(r => mesEq(r.mes, mesComp) && r.sem).forEach(r => weeks.add(String(r.sem).trim()));
+  // fallback: try raw base and S.base
+  if(!weeks.size){
+    try{
+      const raw = getRawBase();
+      console.debug('comparativo: no weeks from adjustedBase, checking raw base', raw.length);
+      if(mesBase) raw.filter(r => mesEq(r.mes, mesBase) && r.sem).forEach(r => weeks.add(String(r.sem).trim()));
+      if(mesComp) raw.filter(r => mesEq(r.mes, mesComp) && r.sem).forEach(r => weeks.add(String(r.sem).trim()));
+    }catch(e){ console.warn('comparativo: raw base fallback failed', e); }
+  }
+  // final debug
+  try{ console.debug('comparativo: weeks collected', Array.from(weeks).sort()); }catch(e){}
+  if(!weeks.size){
+    try{ console.debug('comparativo: no weeks found - sample adjustedBase.mes', (adjustedBase||[]).slice(0,12).map(r=>r.mes)); }catch(e){}
+  }
+  const sorted = Array.from(weeks).map(Number).filter(n=>!Number.isNaN(n)).sort((a,b)=>a-b).map(String);
+  // If no explicit week numbers found, fallback to calendar-derived weeks
+  if(!sorted.length){
+    try{
+      const nm = normMes(mesBase) || normMes(mesComp);
+      const n = getNumSemanas(nm) || 0;
+      const calWeeks = Array.from({length:n}, (_,i)=>String(i+1));
+      if(calWeeks.length){
+        console.debug('comparativo: using calendar weeks fallback', calWeeks);
+        fillSel('comp-week-from','Todas as semanas', calWeeks, true);
+        fillSel('comp-week-to','Todas as semanas', calWeeks, true);
+        document.getElementById('comp-week-from').disabled = false;
+        document.getElementById('comp-week-to').disabled = false;
+        // default to full calendar range
+        try{ document.getElementById('comp-week-from').value = calWeeks[0]; document.getElementById('comp-week-to').value = calWeeks[calWeeks.length-1]; }catch(e){}
+        return;
+      }
+    }catch(e){ console.warn('comparativo: calendar weeks fallback failed', e); }
+  }
+  fillSel('comp-week-from','Todas as semanas', sorted, true);
+  fillSel('comp-week-to','Todas as semanas', sorted, true);
+  const elFrom = document.getElementById('comp-week-from');
+  const elTo = document.getElementById('comp-week-to');
+  if(elFrom) elFrom.disabled = sorted.length===0;
+  if(elTo) elTo.disabled = sorted.length===0;
+  // if the base data contains explicit week numbers, default to full available range
+  if(sorted.length){
+    try{
+      if(!elFrom.value) elFrom.value = sorted[0];
+      if(!elTo.value) elTo.value = sorted[sorted.length-1];
+    }catch(e){}
+  }
+}
+
+function renderComparativoMensal(){
+  const mesComp = document.getElementById('comp-mes2').value;
+  const mesBase = document.getElementById('comp-mes1').value;
+  const weekFrom = document.getElementById('comp-week-from').value;
+  const weekTo = document.getElementById('comp-week-to').value;
+  if(!mesBase || !mesComp) {
+    document.getElementById('comp-kpi').innerHTML = '';
+    document.getElementById('comp-tcount').textContent = '';
+    document.getElementById('comp-table').innerHTML = '<div class="nd">Selecione dois meses para comparar.</div>';
+    killChart('ch-comp-prod');
+    killChart('ch-comp-fat');
+    return;
+  }
+
+  const weekSet = getWeekRange(weekFrom, weekTo);
+  const adjustedBase = getAdjustedBase();
+  try{ console.debug('comparativo: renderComparativoMensal adjustedBase', adjustedBase.length, 'mesBase', mesBase, 'mesComp', mesComp, 'weekSet', weekSet); }catch(e){}
+  const nmBase = normMes(mesBase);
+  const nmComp = normMes(mesComp);
+  const filteredBase = adjustedBase.filter(r => {
+    if(!mesEq(r.mes, nmBase)) return false;
+    if(!weekSet.length) return true;
+    const sem = String(r.sem || '').trim();
+    if(sem) return weekSet.includes(sem);
+    const wn = weekNumFromDateStr(r.data);
+    return wn && weekSet.includes(wn);
+  });
+  const filteredComp = adjustedBase.filter(r => {
+    if(!mesEq(r.mes, nmComp)) return false;
+    if(!weekSet.length) return true;
+    const sem = String(r.sem || '').trim();
+    if(sem) return weekSet.includes(sem);
+    const wn = weekNumFromDateStr(r.data);
+    return wn && weekSet.includes(wn);
+  });
+  try{ console.debug('comparativo: filteredBase', filteredBase.length, 'filteredComp', filteredComp.length); }catch(e){}
+
+  const prod1 = filteredBase.reduce((s,r)=>s+r.prod,0);
+  const prod2 = filteredComp.reduce((s,r)=>s+r.prod,0);
+  const dias1 = getDiasPeriodo(nmBase).dias;
+  const dias2 = getDiasPeriodo(nmComp).dias;
+  const avgProd1 = dias1 ? prod1 / dias1 : 0;
+  const avgProd2 = dias2 ? prod2 / dias2 : 0;
+  const varProd = avgProd1 > 0 ? ((avgProd2 - avgProd1)/avgProd1*100) : 0;
+
+  const lanc = getLancamentos();
+  const filteredLanc1 = lanc.filter(r => mesEq(r.mes, nmBase) && (!weekSet.length || weekSet.includes(String(r.sem || '').trim())));
+  const filteredLanc2 = lanc.filter(r => mesEq(r.mes, nmComp) && (!weekSet.length || weekSet.includes(String(r.sem || '').trim())));
+  const fat1 = filteredLanc1.reduce((s,r)=>s+r.valL,0);
+  const fat2 = filteredLanc2.reduce((s,r)=>s+r.valL,0);
+  const avgFat1 = dias1 ? fat1 / dias1 : 0;
+  const avgFat2 = dias2 ? fat2 / dias2 : 0;
+  const varFat = avgFat1 > 0 ? ((avgFat2 - avgFat1)/avgFat1*100) : 0;
+
+  document.getElementById('comp-kpi').innerHTML = `
+    ${kpiCard(`Média Diária Produção (${cap(mesBase)})`, fR(avgProd1), `${dias1} dias`, 'var(--cyan)')}
+    ${kpiCard(`Média Diária Produção (${cap(mesComp)})`, fR(avgProd2), `${dias2} dias`, 'var(--cyan)')}
+    ${kpiCard('Variação Produção', (varProd>=0?'+':'')+varProd.toFixed(1)+'%', `${cap(mesComp)} vs ${cap(mesBase)}`, varProd>=0?'var(--green)':'var(--red)')}
+  `;
+
+  const days = Math.max(dias1, dias2);
+  const labels = Array.from({length: days}, (_,i) => `Dia ${i+1}`);
+  const dataProd1 = Array.from({length: days}, (_,i) => {
+    if(i >= dias1) return null;
+    const dayRows = filteredBase.filter(r => {
+      const d = new Date(r.data);
+      return d.getDate() === i+1;
+    });
+    return dayRows.reduce((s,r)=>s+r.prod,0);
+  });
+  const dataProd2 = Array.from({length: days}, (_,i) => {
+    if(i >= dias2) return null;
+    const dayRows = filteredComp.filter(r => {
+      const d = new Date(r.data);
+      return d.getDate() === i+1;
+    });
+    return dayRows.reduce((s,r)=>s+r.prod,0);
+  });
+
+  const fatData1 = Array.from({length: days}, (_,i) => {
+    if(i >= dias1) return null;
+    return filteredLanc1.filter(r => new Date(r.data).getDate() === i+1).reduce((s,r)=>s+r.valL,0);
+  });
+  const fatData2 = Array.from({length: days}, (_,i) => {
+    if(i >= dias2) return null;
+    return filteredLanc2.filter(r => new Date(r.data).getDate() === i+1).reduce((s,r)=>s+r.valL,0);
+  });
+
+  mkBar('ch-comp-prod', labels, [
+    {label: cap(mesBase), data: dataProd1, backgroundColor: 'rgba(34,211,238,.7)', borderRadius: 4},
+    {label: cap(mesComp), data: dataProd2, backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4}
+  ], {yFmt: v=>'R$'+fN(v)});
+
+  mkBar('ch-comp-fat', labels, [
+    {label: cap(mesBase), data: fatData1, backgroundColor: 'rgba(251,113,133,.7)', borderRadius: 4},
+    {label: cap(mesComp), data: fatData2, backgroundColor: 'rgba(251,191,36,.7)', borderRadius: 4}
+  ], {yFmt: v=>'R$'+fN(v)});
+
+  const diasBaseFiltered = weekSet.length ? countUniqueDays(filteredBase) : dias1;
+  const diasCompFiltered = weekSet.length ? countUniqueDays(filteredComp) : dias2;
+  const vetAvgs = getAverageByVet(filteredBase, filteredComp, diasBaseFiltered, diasCompFiltered);
+  document.getElementById('comp-table').innerHTML = renderVetAverageTable(vetAvgs, mesBase, mesComp, weekSet, diasBaseFiltered, diasCompFiltered);
+  document.getElementById('comp-tcount').textContent = `${vetAvgs.length} veterinário(s) comparados`;
+}
+
+function countUniqueDays(rows){
+  return new Set(rows.filter(r => r.data).map(r => r.data)).size;
+}
+
+function getWeekRange(from, to){
+  const all = [];
+  const start = Number(from) || 0;
+  const end = Number(to) || 0;
+  if(!start && !end) return [];
+  if(start && !end) return [String(start)];
+  if(!start && end) return [String(end)];
+  const low = Math.min(start,end);
+  const high = Math.max(start,end);
+  for(let w=low; w<=high; w++) all.push(String(w));
+  return all;
+}
+
+// Derive a week-of-month number (1..N) from a date string (fallback when `sem` missing).
+function weekNumFromDateStr(ds){
+  try{
+    if(!ds) return '';
+    const d = new Date(ds);
+    if(isNaN(d)) return '';
+    const day = d.getDate();
+    return String(Math.ceil(day/7));
+  }catch(e){ return ''; }
+}
+
+function getAverageByVet(baseRows, compRows, diasBase, diasComp){
+  const vets = {};
+  baseRows.forEach(r => {
+    const vet = r.vet || 'Sem nome';
+    vets[vet] = vets[vet] || {vet, baseProd:0, compProd:0};
+    vets[vet].baseProd += r.prod;
+  });
+  compRows.forEach(r => {
+    const vet = r.vet || 'Sem nome';
+    vets[vet] = vets[vet] || {vet, baseProd:0, compProd:0};
+    vets[vet].compProd += r.prod;
+  });
+  return Object.values(vets).map(v => ({
+    vet: v.vet,
+    avgBase: diasBase ? v.baseProd / diasBase : 0,
+    avgComp: diasComp ? v.compProd / diasComp : 0,
+    totalBase: v.baseProd,
+    totalComp: v.compProd,
+  })).sort((a,b) => b.avgComp - a.avgComp);
+}
+
+function renderVetAverageTable(vets, mesBase, mesComp, weekSet, diasBase, diasComp){
+  if(!vets.length) return '<div class="nd">Sem dados por veterinário para este filtro.</div>';
+  const rows = vets.map(v => `
+    <tr>
+      <td style="font-weight:600">${v.vet}</td>
+      <td style="color:var(--cyan);font-weight:700">${fR(v.totalBase)}</td>
+      <td style="color:var(--cyan);font-weight:700">${fR(v.totalComp)}</td>
+      <td>${fR(v.avgBase)}<div style="font-size:11px;color:var(--tx3);margin-top:4px">÷ ${diasBase} dia(s)</div></td>
+      <td>${fR(v.avgComp)}<div style="font-size:11px;color:var(--tx3);margin-top:4px">÷ ${diasComp} dia(s)</div></td>
+    </tr>
+  `).join('');
+  const periodLabel = weekSet.length ? `Semanas ${weekSet[0]} a ${weekSet[weekSet.length-1]}` : 'Todas as semanas';
+  return `<table><thead><tr><th>Veterinário</th><th>Total ${cap(mesBase)}</th><th>Total ${cap(mesComp)}</th><th>Média Diária ${cap(mesBase)}</th><th>Média Diária ${cap(mesComp)}</th></tr></thead><tbody>${rows}</tbody></table><div class="period-note">Filtro: ${periodLabel}</div>`;
+}

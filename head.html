@@ -6,6 +6,64 @@
 <meta name="description" content="FJ Analytics — Plataforma de inteligência de negócios">
 <meta name="theme-color" content="#070a10">
 <meta name="robots" content="noindex, nofollow">
+<script>
+  (function(){
+    const html = document.documentElement;
+    const stored = localStorage.getItem('fj-theme');
+    const theme = stored === 'light' ? 'light' : 'dark';
+    html.dataset.theme = theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = theme === 'light' ? '#f8fafc' : '#070a10';
+    window.toggleTheme = function(){
+      const next = html.dataset.theme === 'light' ? 'dark' : 'light';
+      html.dataset.theme = next;
+      localStorage.setItem('fj-theme', next);
+      if (meta) meta.content = next === 'light' ? '#f8fafc' : '#070a10';
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = next === 'light' ? '☀️' : '🌙';
+    };
+    document.addEventListener('DOMContentLoaded', function(){
+      if (!document.getElementById('theme-toggle')) {
+        const btn = document.createElement('button');
+        btn.id = 'theme-toggle';
+        btn.type = 'button';
+        btn.title = 'Alternar tema';
+        btn.setAttribute('aria-label', 'Alternar tema');
+        btn.textContent = theme === 'light' ? '☀️' : '🌙';
+        btn.onclick = window.toggleTheme;
+        document.body.appendChild(btn);
+      }
+      // Insert project logo (from /public/logo.png) with entrance motion
+      if (!document.getElementById('site-logo')) {
+        const img = document.createElement('img');
+        img.id = 'site-logo';
+        img.alt = 'FJ Analytics';
+        img.setAttribute('aria-hidden','false');
+        img.title = 'FJ Analytics';
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', () => { if(typeof goHub === 'function') goHub(); else window.location.href = './html/02-hub.html'; });
+
+        // Resolve likely locations relative to current document URL (handles /dist, /html, root)
+        const candidates = [
+          new URL('../public/logo.png', location.href).href,
+          new URL('./public/logo.png', location.href).href,
+          new URL('../public/logo.png', location.origin + location.pathname.replace(/\/[^/]*$/, '')).href,
+          new URL('/public/logo.png', location.origin).href
+        ];
+        let tried = 0;
+        function tryNext(){
+          if(tried >= candidates.length) return;
+          img.src = candidates[tried++];
+        }
+        img.onerror = () => tryNext();
+        // Start with the most likely candidate
+        tryNext();
+
+        document.body.appendChild(img);
+      }
+    });
+  })();
+</script>
 <title>FJ Analytics — Ecossistema de Inteligência</title>
 <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

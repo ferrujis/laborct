@@ -1,4 +1,4 @@
-  <div id="labor-view" style="display:none;">
+<div id="labor-view" style="display:none;">
     <nav class="tb" aria-label="Módulo LaborBI">
       <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
       <div class="tbl" aria-hidden="true">Labor<span>BI</span></div>
@@ -197,6 +197,37 @@
         <div class="tscroll" id="lb-table"></div>
       </div>
     </div>
+
+    <!-- ═══ COMPARATIVO MENSAL ═══ -->
+    <div class="pg comparativo-mensal" id="pg-comparativo">
+      <div class="ptitle">Comparativo <span>Mensal</span></div>
+      <div class="psub">Compare médias diárias entre dois meses e entre faixas de semanas.</div>
+      <div class="comp-mes-range">
+        <div>
+          <label for="comp-mes2" class="flbl">Mês comparado</label>
+          <select id="comp-mes2" onchange="onComparativoInput()"><option value="">Selecione</option></select>
+        </div>
+        <div>
+          <label for="comp-mes1" class="flbl">Mês base</label>
+          <select id="comp-mes1" onchange="onComparativoInput()"><option value="">Selecione</option></select>
+        </div>
+        <div>
+          <label for="comp-week-from" class="flbl">Semana inicial</label>
+          <select id="comp-week-from" onchange="renderComparativoMensal()"><option value="">Todas as semanas</option></select>
+        </div>
+        <div>
+          <label for="comp-week-to" class="flbl">Semana final</label>
+          <select id="comp-week-to" onchange="renderComparativoMensal()"><option value="">Todas as semanas</option></select>
+        </div>
+      </div>
+      <div class="kgrid" id="comp-kpi"></div>
+      <div class="cgrid cgrid-2" style="margin-bottom:14px">
+        <div class="cc"><div class="ctitle">Média Diária de Produção (R$)</div><canvas id="ch-comp-prod" height="160"></canvas></div>
+        <div class="cc"><div class="ctitle">Média Diária de Faturamento (R$)</div><canvas id="ch-comp-fat" height="160"></canvas></div>
+      </div>
+      <div class="comp-table-wrap"><div class="th"><span>Média Diária por Veterinário</span><span id="comp-tcount"></span></div><div class="tscroll" id="comp-table"></div></div>
+    </div>
+
   </div>
 
   <!-- ██ MÓDULO: COGS BI ██ -->

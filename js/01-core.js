@@ -101,6 +101,23 @@ db.ref('laborbi').on('value', (snap) => {
 
   populateAllFilters();
 
+  // Garantia extra: repopula comparativo e escolhe dois meses recentes automaticamente
+  try{
+    if(typeof populateComparativoSelects === 'function') populateComparativoSelects();
+    const sel1 = document.getElementById('comp-mes1');
+    const sel2 = document.getElementById('comp-mes2');
+    if(sel1 && sel2){
+      const vals = Array.from(sel1.querySelectorAll('option')).map(o=>o.value).filter(Boolean);
+      if(vals.length>1){
+        // ordenar por índice em MESES
+        vals.sort((a,b)=> (MESES.indexOf(a)||999) - (MESES.indexOf(b)||999));
+        sel2.value = vals[vals.length-1];
+        sel1.value = vals[vals.length-2] || vals[vals.length-1];
+        if(typeof populateComparativoWeeks === 'function') populateComparativoWeeks();
+      }
+    }
+  }catch(e){ console.warn('comparativo: auto-select failed', e); }
+
   // Refresh admin dashboard if open
   if(document.getElementById('admin-view') && document.getElementById('admin-view').style.display === 'block'){
     renderAdminDashboard();
@@ -114,6 +131,8 @@ db.ref('laborbi').on('value', (snap) => {
       renderInter();
       renderCirurgico();
       renderLab();
+      // nova aba comparativo também pode ser chamada se estiver visível
+      if(document.getElementById('pg-comparativo').classList.contains('on')) renderComparativoMensal();
     }));
   }
 
@@ -183,6 +202,25 @@ function populateInsightsMesSelect(selected) {
   });
   sel.innerHTML = html;
   if (prevValue && allMeses.includes(prevValue)) sel.value = prevValue;
+  populateInsightsWeekSelect(sel.value || null);
+}
+
+function populateInsightsWeekSelect(mes, selectedWeek) {
+  const sel = document.getElementById('insights-week-select');
+  if (!sel) return;
+  const baseRowsAll = getAdjustedBase();
+  const semanas = mes
+    ? [...new Set(baseRowsAll.filter(r => r.mes === mes && r.sem).map(r => String(r.sem).trim()))]
+        .filter(Boolean)
+        .sort((a,b) => parseInt(a,10) - parseInt(b,10))
+    : [];
+
+  let html = '<option value="">Todas as semanas</option>';
+  semanas.forEach(w => { html += `<option value="${w}">Semana ${w}</option>`; });
+  sel.innerHTML = html;
+  sel.disabled = !mes || semanas.length === 0;
+  if (selectedWeek && semanas.includes(selectedWeek)) sel.value = selectedWeek;
+  else sel.value = '';
 }
 
 function openInsights() {
@@ -434,6 +472,7 @@ const PAGES_LABOR=[
   {id:'inter',      label:'Internação'},
   {id:'cirurgico',  label:'Bloco Cirúrgico'},
   {id:'laboratorio',label:'Laboratório'},
+  {id:'comparativo',label:'Comparativo Mensal'}, // NOVA ABA
 ];
 
 function initLaborApp(){
@@ -444,17 +483,20 @@ function initLaborApp(){
   document.querySelectorAll('#labor-view .pg').forEach(p=>p.classList.remove('on'));
   document.getElementById('pg-petcare').classList.add('on');
   populateAllFilters();
-  requestAnimationFrame(() => requestAnimationFrame(() => { renderPetcare(); }));
+  requestAnimationFrame(() => requestAnimationFrame(() => { const fn = PAGE_RENDER_MAP && PAGE_RENDER_MAP['petcare']; if(typeof fn === 'function') fn(); }));
 }
 
+// Lazy wrappers: resolve actual render functions at call time to avoid
+// ReferenceError if the render modules load after this file.
 const PAGE_RENDER_MAP = {
-  'petcare':     renderPetcare,
-  'ranking':     renderRanking,
-  'faturamento': renderFaturamento,
-  'clinica':     renderClinica,
-  'inter':       renderInter,
-  'cirurgico':   renderCirurgico,
-  'laboratorio': renderLab,
+  'petcare':     () => (window.renderPetcare ? window.renderPetcare() : undefined),
+  'ranking':     () => (window.renderRanking ? window.renderRanking() : undefined),
+  'faturamento': () => (window.renderFaturamento ? window.renderFaturamento() : undefined),
+  'clinica':     () => (window.renderClinica ? window.renderClinica() : undefined),
+  'inter':       () => (window.renderInter ? window.renderInter() : undefined),
+  'cirurgico':   () => (window.renderCirurgico ? window.renderCirurgico() : undefined),
+  'laboratorio': () => (window.renderLab ? window.renderLab() : undefined),
+  'comparativo': () => (window.renderComparativoMensal ? window.renderComparativoMensal() : undefined),
 };
 
 function showPg(id,btn){
@@ -582,6 +624,8 @@ function populateAllFilters(){
     fillSel('fat-vet','Selecione o Especialista',fatV);
     fillSel('fat-mes','Todos os Meses',fatM,true);
   }
+  // Popula selects da aba comparativo
+  populateComparativoSelects();
 }
 
 // Junta os lançamentos de todos os setores de análise num array só,
@@ -710,7 +754,3 @@ function fAnal(sheet,mesId,vetId){
 function kpiCard(lbl,val,sub,clr='var(--cyan)'){
   return `<div class="kc" style="--clr:${clr}"><div class="klbl">${lbl}</div><div class="kval">${val}</div><div class="ksub">${sub}</div></div>`;
 }
-
-// ════════════════════════════════
-//  PAGE: PETCARE-2026
-// ════════════════════════════════

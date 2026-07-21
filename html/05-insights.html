@@ -1,4 +1,4 @@
-  <div id="insights-view" style="display:none;">
+<div id="insights-view" style="display:none;">
     <nav class="tb" aria-label="Módulo InsightsAI">
       <button class="lgbtn btn-back" onclick="goHub()" type="button" aria-label="Voltar ao hub">⟵ Hub</button>
       <div class="tbl" style="color:var(--pink)" aria-hidden="true">Insights<span style="color:var(--tx2)">AI</span></div>
@@ -14,8 +14,12 @@
 
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
         <label for="insights-mes-select" style="font-size:11px;font-family:var(--font-mono);color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px">Mês analisado</label>
-        <select id="insights-mes-select" onchange="generateInsights(this.value || null)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);outline:none;cursor:pointer">
+        <select id="insights-mes-select" onchange="populateInsightsWeekSelect(this.value || null); generateInsights(this.value || null, null)" style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);outline:none;cursor:pointer">
           <option value="">Automático (mês mais recente)</option>
+        </select>
+        <label for="insights-week-select" style="font-size:11px;font-family:var(--font-mono);color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px">Semana analisada</label>
+        <select id="insights-week-select" onchange="generateInsights(document.getElementById('insights-mes-select').value || null, this.value || null)" disabled style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);outline:none;cursor:pointer">
+          <option value="">Todas as semanas</option>
         </select>
       </div>
 
@@ -24,7 +28,7 @@
           <div class="ai-icon-wrap">🧠</div>
           <div>
             <div class="ai-title">Diagnóstico Gerencial</div>
-            <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px;">Heuristic Engine v2.0 · Beta</div>
+            <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px;">Heuristic Engine v2.2 · com suporte a semanas</div>
           </div>
         </div>
         <div id="ai-content"><div class="nd">Aguardando dados...</div></div>
@@ -33,3 +37,4 @@
   </div>
 
   <!-- ██ MÓDULO: ADMIN CENTER ██ -->
+  <!-- (restante do HTML conforme seu sistema) -->

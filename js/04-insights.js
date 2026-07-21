@@ -1,3 +1,41 @@
+// ════════════════════════════════
+//  INSIGHTS AI — MOTOR v2.2
+//  (com análise semanal baseada no dia do mês)
+// ════════════════════════════════
+
+// ── UTILITY: número da semana a partir da data (baseado no DIA do mês) ──
+function weekNumFromDateStr(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    const day = d.getDate(); // dia do mês (1-31)
+    if (day <= 7) return '1';
+    if (day <= 14) return '2';
+    if (day <= 21) return '3';
+    return '4';
+  } catch (_) { return ''; }
+}
+
+// ── UTILITY: extrair número da semana de "Semana 1" ou "1" ──
+function extractWeekNumber(weekStr) {
+  if (!weekStr) return null;
+  const cleaned = String(weekStr).trim();
+  // Tenta extrair número de "Semana 1", "Semana 2", etc.
+  const match = cleaned.match(/\d+/);
+  if (match) return parseInt(match[0], 10);
+  // Se for só um número, retorna ele
+  if (/^\d+$/.test(cleaned)) return parseInt(cleaned, 10);
+  return null;
+}
+
+// ── UTILITY: formatar número da semana para exibição ──
+function formatWeekNumber(num) {
+  if (!num) return '';
+  return `Semana ${num}`;
+}
+
+// ── HELPER: comparação mês a mês ──
 function momCompare(current, previous) {
   if (previous === 0 || previous === undefined || previous === null) {
     return {current, previous: previous||0, change: current, variation: 0, trend: current > 0 ? 'up' : 'flat'};
@@ -19,36 +57,71 @@ function sumCogsBy(rows, type) {
   return rows.filter(r => classifyCogsRow(r) === type).reduce((s,r) => s + r.val, 0);
 }
 
-// ── HELPER: análise de setor (filtra por mês real da DATA) ──
-function analyzeSector(sheet, targetMes, previousMes) {
-  if (!S.anal || !S.anal[sheet]) return {revenue:0, previousRevenue:0, count:0, efficiency:0, variation: momCompare(0,0), topProc:null, topVet:null, topVetProd:null};
+// ── HELPER: análise de setor (com semana baseada no dia do mês) ──
+function analyzeSector(sheet, targetMes, previousMes, weekKey, prevWeekKey) {
+  if (!S.anal || !S.anal[sheet]) return {
+    revenue: 0, previousRevenue: 0, count: 0, efficiency: 0,
+    variation: momCompare(0, 0),
+    weekVariation: momCompare(0, 0),
+    topProc: null, topVet: null, topVetProd: 0
+  };
 
-  // Filtra pelo campo `mes` (mesma lógica do Labor BI)
-  const target = S.anal[sheet].filter(r => r.mes === targetMes);
-  const previous = previousMes ? S.anal[sheet].filter(r => r.mes === previousMes) : [];
-  const tRev = target.reduce((s,r) => s + r.valL, 0);
-  const tTab = target.reduce((s,r) => s + r.valT, 0);
-  const pRev = previous.reduce((s,r) => s + r.valL, 0);
-  // top proc
+  const filterByWeek = (rows, mes, wk) => {
+    let res = (rows || []).filter(r => r.mes === mes);
+    if (!wk) return res;
+    // Normaliza a chave da semana: extrai o número
+    const wkNum = extractWeekNumber(wk);
+    if (wkNum === null) return res;
+    return res.filter(r => {
+      // Primeiro tenta usar o campo 'sem' (já calculado no Excel)
+      const semVal = r.sem || r.Semana || '';
+      if (semVal) {
+        const semNum = extractWeekNumber(semVal);
+        if (semNum !== null) return semNum === wkNum;
+      }
+      // Fallback: calcula a semana a partir da data
+      if (r.data) {
+        try {
+          const wn = weekNumFromDateStr(r.data);
+          if (wn) return parseInt(wn, 10) === wkNum;
+        } catch (e) { return false; }
+      }
+      return false;
+    });
+  };
+
+  const target = filterByWeek(S.anal[sheet], targetMes, weekKey);
+  const previous = previousMes ? filterByWeek(S.anal[sheet], previousMes, weekKey) : [];
+  const prevWeek = prevWeekKey ? filterByWeek(S.anal[sheet], targetMes, prevWeekKey) : [];
+
+  const tRev = target.reduce((s, r) => s + r.valL, 0);
+  const tTab = target.reduce((s, r) => s + r.valT, 0);
+  const pRev = previous.reduce((s, r) => s + r.valL, 0);
+  const pwRev = prevWeek.reduce((s, r) => s + r.valL, 0);
+
   const pMap = {};
   target.forEach(r => {
     if (!r.proc) return;
-    if (!pMap[r.proc]) pMap[r.proc] = {val:0, n:0};
+    if (!pMap[r.proc]) pMap[r.proc] = { val: 0, n: 0 };
     pMap[r.proc].val += r.valL; pMap[r.proc].n++;
   });
-  const procList = Object.entries(pMap).sort((a,b) => b[1].val - a[1].val);
-  // top vet
+  const procList = Object.entries(pMap).sort((a, b) => b[1].val - a[1].val);
   const vMap = {};
   target.forEach(r => {
     if (!r.vet) return;
     if (!vMap[r.vet]) vMap[r.vet] = 0;
     vMap[r.vet] += r.valL;
   });
-  const vetList = Object.entries(vMap).sort((a,b) => b[1] - a[1]);
+  const vetList = Object.entries(vMap).sort((a, b) => b[1] - a[1]);
+
   return {
-    revenue: tRev, previousRevenue: pRev, count: target.length,
+    revenue: tRev,
+    previousRevenue: pRev,
+    count: target.length,
     efficiency: tTab > 0 ? tRev / tTab : 0,
     variation: momCompare(tRev, pRev),
+    weekVariation: momCompare(tRev, pwRev),
+    prevWeekRevenue: pwRev,
     topProc: procList[0] || null,
     topVet: vetList[0] ? vetList[0][0] : null,
     topVetProd: vetList[0] ? vetList[0][1] : 0
@@ -60,13 +133,11 @@ function calculateHealthScore(metrics, team, costs, anomalies) {
   let score = 100;
   const factors = [];
 
-  // Margem (até -40)
   if (metrics.margin.current < 0) { score -= 40; factors.push({pts:-40, txt:'Margem negativa (prejuízo)'}); }
   else if (metrics.margin.current < 0.10) { score -= 25; factors.push({pts:-25, txt:'Margem baixa (<10%)'}); }
   else if (metrics.margin.current < 0.20) { score -= 12; factors.push({pts:-12, txt:'Margem moderada (<20%)'}); }
   else if (metrics.margin.current >= 0.30) { score += 5; factors.push({pts:+5, txt:'Margem excelente (≥30%)'}); }
 
-  // Tendência de receita (até -20)
   if (metrics.revenue.trend === 'down') {
     const drop = Math.min(20, Math.abs(metrics.revenue.variation) / 2);
     score -= drop; factors.push({pts:-drop, txt:`Queda de receita (${Math.abs(metrics.revenue.variation).toFixed(1)}%)`});
@@ -74,23 +145,18 @@ function calculateHealthScore(metrics, team, costs, anomalies) {
     score += 5; factors.push({pts:+5, txt:`Crescimento forte (+${metrics.revenue.variation.toFixed(1)}%)`});
   }
 
-  // Custo de equipe (até -15)
   if (costs.teamRatio > 0.55) { score -= 15; factors.push({pts:-15, txt:'Custo de equipe crítico (>55%)'}); }
   else if (costs.teamRatio > 0.45) { score -= 8; factors.push({pts:-8, txt:'Custo de equipe elevado (>45%)'}); }
 
-  // Custo operacional (até -15)
   if (costs.opRatio > 0.35) { score -= 15; factors.push({pts:-15, txt:'Custo operacional crítico (>35%)'}); }
   else if (costs.opRatio > 0.25) { score -= 7; factors.push({pts:-7, txt:'Custo operacional elevado (>25%)'}); }
 
-  // Dependência de um profissional (até -15)
   if (team.dependence > 45) { score -= 15; factors.push({pts:-15, txt:'Dependência crítica de um profissional'}); }
   else if (team.dependence > 30) { score -= 8; factors.push({pts:-8, txt:'Concentração moderada de receita'}); }
 
-  // Anomalias (até -10)
   const anPts = Math.min(10, anomalies.length * 2);
   if (anPts > 0) { score -= anPts; factors.push({pts:-anPts, txt:`${anomalies.length} anomalia(s) detectada(s)`}); }
 
-  // Equipe muito pequena (até -10)
   if (team.totalVets < 3 && team.totalVets > 0) { score -= 5; factors.push({pts:-5, txt:'Equipe pequena (<3 vets ativos)'}); }
 
   score = Math.max(0, Math.min(100, Math.round(score)));
@@ -108,7 +174,6 @@ function calculateHealthScore(metrics, team, costs, anomalies) {
 function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes) {
   const actions = [];
 
-  // 1. Queda forte de receita
   if (metrics.revenue.trend === 'down' && Math.abs(metrics.revenue.variation) > 8) {
     actions.push({
       priority: 'alta', icon: '📉', title: 'Plano de Recuperação de Receita',
@@ -117,7 +182,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 2. Crescimento forte - oportunidade
   if (metrics.revenue.variation > 15) {
     actions.push({
       priority: 'baixa', icon: '🚀', title: 'Capitalizar Crescimento',
@@ -126,7 +190,21 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 3. Renegociação com fornecedor
+  // Alertas de queda semanal por setor (intra-mês)
+  Object.entries(sectors).forEach(([key, sec]) => {
+    if (sec.weekVariation && sec.weekVariation.trend === 'down' && Math.abs(sec.weekVariation.variation) > 20 && sec.revenue > 1000) {
+      const nomeSetor = { clinica:'Clínica', inter:'Internação', cirurgico:'Cirúrgico', lab:'Laboratório' }[key] || key;
+      actions.push({
+        priority: 'media',
+        icon: '📉',
+        title: `Queda semanal no setor ${nomeSetor}`,
+        desc: `O setor ${nomeSetor} caiu ${Math.abs(sec.weekVariation.variation).toFixed(1)}% em relação à semana anterior. Investigue causas: faltas, feriados, mudanças na equipe ou demanda sazonal.`,
+        impact: 'Médio',
+        effort: 'Imediato'
+      });
+    }
+  });
+
   if (costs.topProviders.length > 0) {
     const top = costs.topProviders[0];
     const share = metrics.revenue.current > 0 ? (top[1] / metrics.revenue.current * 100) : 0;
@@ -139,7 +217,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     }
   }
 
-  // 4. Dependência de um profissional
   if (team.dependence > 30 && team.topPerformers.length > 0) {
     actions.push({
       priority: team.dependence > 45 ? 'alta' : 'media', icon: '⚠️', title: 'Reduzir Concentração de Receita',
@@ -148,7 +225,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 5. Profissionais abaixo da média
   if (team.bottomPerformers.length > 0) {
     const names = team.bottomPerformers.slice(0,3).map(([n]) => n.split('.')[0]).join(', ');
     actions.push({
@@ -158,7 +234,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 6. Setor em queda
   ['clinica','inter','cirurgico','lab'].forEach((key, i) => {
     const names = ['Clínica Médica','Internação','Bloco Cirúrgico','Laboratório'];
     const sec = sectors[key];
@@ -171,7 +246,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     }
   });
 
-  // 7. Eficiência baixa na clínica
   if (sectors.clinica.efficiency > 0 && sectors.clinica.efficiency < 0.7 && sectors.clinica.revenue > 5000) {
     actions.push({
       priority: 'baixa', icon: '💵', title: 'Revisar Tabela de Preços',
@@ -180,7 +254,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 8. Carga horária elevada
   const totalHoras = team.totalHoras || 0;
   const avgHoras = team.totalVets > 0 ? totalHoras / team.totalVets : 0;
   if (avgHoras > 200) {
@@ -191,7 +264,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 9. Anomalia positiva - reconhecer
   const positiveAnomaly = anomalies.find(a => a.type === 'high');
   if (positiveAnomaly) {
     actions.push({
@@ -201,7 +273,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 10. Margem baixa
   if (metrics.margin.current > 0 && metrics.margin.current < 0.15 && metrics.revenue.current > 50000) {
     actions.push({
       priority: 'media', icon: '📊', title: 'Otimizar Estrutura de Custos',
@@ -210,7 +281,6 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // 11. Margem excelente - investir
   if (metrics.margin.current >= 0.30) {
     actions.push({
       priority: 'baixa', icon: '💎', title: 'Janela de Investimento',
@@ -219,26 +289,21 @@ function generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes)
     });
   }
 
-  // Sort by priority
   const order = {alta: 0, media: 1, baixa: 2};
   actions.sort((a, b) => order[a.priority] - order[b.priority]);
   return actions;
 }
 
 // ── HELPER: projeção baseada nos dados do próprio mês-alvo ──
-// Detecta se o mês está completo ou em andamento olhando as DATAS dos dados
 function projectMonthFromData(rows, currentRevenue, currentProfit, targetMes) {
   if (!rows || !rows.length) return null;
 
   const monthIdx = MESES.indexOf(targetMes);
   if (monthIdx < 1) return null;
 
-  // ── Se o mês-alvo NÃO é o mês corrente do calendário, ele já está fechado.
-  //    Mostra os totais REAIS (iguais ao Labor BI / Cogs BI), sem projetar/inflar.
   const _hoje = new Date();
-  const _mesCorrenteIdx = _hoje.getMonth() + 1;     // MESES é 1-indexado
+  const _mesCorrenteIdx = _hoje.getMonth() + 1;
   const _anoCorrente = _hoje.getFullYear();
-  // Ano dos dados do mês-alvo (para comparar past/current corretamente)
   const _mDatas = rows.filter(r => r.mes === targetMes).map(r => r.data).filter(Boolean).sort();
   const _yearTarget = _mDatas.length ? parseInt(_mDatas[_mDatas.length - 1].split('-')[0]) : _anoCorrente;
   const _isPastMonth = (_yearTarget < _anoCorrente) || (_yearTarget === _anoCorrente && monthIdx < _mesCorrenteIdx);
@@ -249,23 +314,16 @@ function projectMonthFromData(rows, currentRevenue, currentProfit, targetMes) {
       currentDay: _totalDays,
       totalDays: _totalDays,
       progress: 1,
-      projectedRevenue: currentRevenue,   // total real = mesmo do Labor BI
-      projectedProfit: currentProfit,     // total real = mesmo do Cogs BI
+      projectedRevenue: currentRevenue,
+      projectedProfit: currentProfit,
       dailyAverage: _totalDays ? currentRevenue / _totalDays : 0
     };
   }
 
-  // MESES[] é 1-indexado: MESES[6] = "junho"
-  // JavaScript Date é 0-indexado: janeiro=0, ..., junho=5
-  // new Date(year, monthIdx, 0) retorna o último dia do mês ANTERIOR
-  // new Date(year, 6, 0) = último dia de JUNHO = 30 dias ✓
   const jsMonthIdx = monthIdx - 1;
-
-  // Pega todas as datas DENTRO do mês-alvo (pelo campo mes, não pela data)
   const mRows = rows.filter(r => r.mes === targetMes);
   const allDates = mRows.map(r => r.data).filter(d => d).sort();
 
-  // Se não há datas do mês-alvo mas há dados → mês anterior já fechou
   if (!allDates.length) {
     const rawDates = rows.map(r => r.data).filter(Boolean).sort();
     if (!rawDates.length) return null;
@@ -287,13 +345,10 @@ function projectMonthFromData(rows, currentRevenue, currentProfit, targetMes) {
   const dataLatestDay = parseInt(allDates[allDates.length - 1].split('-')[2], 10);
   const earliestDay = parseInt(allDates[0].split('-')[2], 10);
 
-  // Se o mês-alvo é o mês corrente do calendário, o "dia atual" é o dia real de hoje
-  // (assim a barra não fica presa no último dia com dados — ex.: hoje 03/jun mostra "Dia 3").
   const isCurrentCalendarMonth = (year === _anoCorrente && monthIdx === _mesCorrenteIdx);
   const calendarDay = isCurrentCalendarMonth ? _hoje.getDate() : dataLatestDay;
   const latestDay = Math.min(Math.max(dataLatestDay, calendarDay), totalDays);
 
-  // Se os dados cobrem até o último dia do mês (ou faltando 1 dia), considera completo
   if (dataLatestDay >= totalDays - 1) {
     return {
       isComplete: true,
@@ -306,10 +361,7 @@ function projectMonthFromData(rows, currentRevenue, currentProfit, targetMes) {
     };
   }
 
-  // Projeção da RECEITA/LUCRO usa o progresso REAL dos dados (dias com dados),
-  // pois projetar pelo dia do calendário inflaria se os dados estiverem atrasados.
   const dataProgress = Math.max(0.05, dataLatestDay / totalDays);
-  // A barra/indicador de DIA usa o dia do calendário (corrige "Dia 28" quando já é dia 3 do mês seguinte).
   const dayProgress = Math.max(0.05, latestDay / totalDays);
   return {
     isComplete: false,
@@ -324,25 +376,17 @@ function projectMonthFromData(rows, currentRevenue, currentProfit, targetMes) {
   };
 }
 
-// ── HELPER: histórico mês a mês (separado, sem misturar) ──
+// ── HELPER: histórico mês a mês ──
 function buildMonthHistory(baseRowsAll, cogsRowsAll) {
-  // Usa campo `mes` como Labor BI (não extrai da data)
-  function getRealMes(r) {
-    return r.mes || '';
-  }
+  function getRealMes(r) { return r.mes || ''; }
 
   const mesesSet = [...new Set([
     ...baseRowsAll.map(getRealMes),
     ...cogsRowsAll.map(getRealMes)
   ])].filter(Boolean);
 
-  // Ordena cronologicamente usando MESES
   const meses = mesesSet.sort((a, b) => MESES.indexOf(a) - MESES.indexOf(b));
 
-  // cirúrgico por mês (mesma lógica do Labor BI)
-  // IMPORTANTE: soma apenas Larissa/Vitor — são os únicos cujo valor cirúrgico
-  // foi DEDUZIDO do 'prod' base em getAdjustedBase(). Somar de todos os vets
-  // duplicava a receita cirúrgica dos demais (já incluída no 'prod' bruto).
   function getCirByMes(mes) {
     if (!mes) return 0;
     const cirRows = (S.anal && S.anal['C_CIRURGICO']) || [];
@@ -354,7 +398,6 @@ function buildMonthHistory(baseRowsAll, cogsRowsAll) {
   return meses.map(m => {
     const mBase = baseRowsAll.filter(r => r.mes === m);
     const mCogs = cogsRowsAll.filter(r => r.mes === m);
-    // produção base (ajustada) + cirúrgico (mesmo cálculo do KPI Produção Total)
     const baseProd = mBase.reduce((s, r) => s + (r.prod || 0), 0);
     const cirProd = getCirByMes(m);
     const rev = baseProd + cirProd;
@@ -368,8 +411,43 @@ function buildMonthHistory(baseRowsAll, cogsRowsAll) {
   });
 }
 
-// ── FUNÇÃO PRINCIPAL ──
-function generateInsights(mesEscolhido) {
+// ── FUNÇÃO para popular select de semanas (usada no HTML) ──
+function populateInsightsWeekSelect(mes) {
+  const sel = document.getElementById('insights-week-select');
+  if (!sel) return;
+  // Limpar
+  sel.innerHTML = '<option value="">Todas as semanas</option>';
+  if (!mes) { sel.disabled = true; return; }
+
+  const base = getAdjustedBase();
+  // Extrai semanas do mês selecionado (normalizando "Semana 1" para "1")
+  const semanasRaw = [...new Set(base.filter(r => r.mes === mes).map(r => r.sem || r.Semana || '').filter(Boolean))];
+  if (semanasRaw.length === 0) { sel.disabled = true; return; }
+  sel.disabled = false;
+  
+  // Converte para números e ordena
+  const semanasNum = semanasRaw.map(s => extractWeekNumber(s)).filter(n => n !== null);
+  const semanasUnicas = [...new Set(semanasNum)].sort((a, b) => a - b);
+  
+  semanasUnicas.forEach(num => {
+    const opt = document.createElement('option');
+    opt.value = String(num); // valor numérico
+    opt.textContent = `Semana ${num}`;
+    sel.appendChild(opt);
+  });
+  
+  // Se havia uma semana selecionada anteriormente, tenta restaurar
+  const currentVal = sel.dataset.lastValue || '';
+  if (currentVal) {
+    const exists = Array.from(sel.options).some(o => o.value === currentVal);
+    if (exists) sel.value = currentVal;
+  }
+}
+
+// ════════════════════════════════
+//  FUNÇÃO PRINCIPAL: generateInsights
+// ════════════════════════════════
+function generateInsights(mesEscolhido, semEscolhido) {
   const content = document.getElementById('ai-content');
 
   if(!S.base || !S.base.length) {
@@ -377,7 +455,7 @@ function generateInsights(mesEscolhido) {
     return;
   }
 
-  // ── Loading com estágios ──
+  // Loading animation
   const stages = [
     {pct: 18, label: 'Coletando dados do período...', icon: '📊'},
     {pct: 36, label: 'Calculando variações mensais...', icon: '📈'},
@@ -393,8 +471,8 @@ function generateInsights(mesEscolhido) {
         <div style="position:absolute;inset:0;border:3px solid var(--bd);border-top-color:var(--pink);border-radius:50%;animation: spin 1s linear infinite"></div>
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px">🧠</div>
       </div>
-      <div style="color:var(--pink);font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:6px">Motor Analítico v2.0</div>
-      <div style="color:var(--tx3);font-size:12px;font-family:var(--font-mono);margin-bottom:22px">Análise multidimensional em andamento</div>
+      <div style="color:var(--pink);font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:6px">Motor Analítico v2.2</div>
+      <div style="color:var(--tx3);font-size:12px;font-family:var(--font-mono);margin-bottom:22px">Análise multidimensional com suporte a semanas</div>
       <div style="max-width:420px;margin:0 auto;height:5px;background:var(--sf2);border-radius:3px;overflow:hidden;border:1px solid var(--bd)">
         <div id="ai-progress" style="height:100%;background:linear-gradient(90deg, var(--pink), var(--violet), var(--cyan));width:0%;transition:width 0.3s ease;border-radius:3px"></div>
       </div>
@@ -413,39 +491,33 @@ function generateInsights(mesEscolhido) {
     }
   }, 280);
 
-  // ── ANÁLISE PRINCIPAL ──
+  // ── Análise principal ──
   setTimeout(() => {
     clearInterval(stageInterval);
     progressEl.style.width = '100%';
     stageEl.textContent = '✓ Análise completa';
 
-// ===== 1. Determinar período-alvo =====
+    // ===== 1. Determinar período-alvo =====
     const hoje = new Date();
     const diaAtual = hoje.getDate();
-    // JavaScript Date: janeiro=0, junho=5 → mesAtualIdx=6 → MESES[6]="junho"
     const mesAtualIdx = hoje.getMonth() + 1;
-    // Mes atual em texto
     let targetMes = MESES[mesAtualIdx] || '';
     let previousMes = null;
     if (MESES.indexOf(targetMes) > 1) previousMes = MESES[MESES.indexOf(targetMes) - 1];
 
-    // Filtra base por mês (usa campo mes como Labor BI)
     function filterByMes(rows, mes) {
       if (!mes) return rows;
       return rows.filter(r => r.mes === mes);
     }
 
-    // getAdjustedBase() calcula exatamente como Labor BI (proporção - dedução cirúrgica para Larissa/Vitor)
     let baseRowsAll = getAdjustedBase();
     let cogsRowsAll = S.cogs || [];
 
-    // Descobre meses disponíveis
     const allMeses = [...new Set([
       ...baseRowsAll.map(r => r.mes).filter(Boolean),
       ...cogsRowsAll.map(r => r.mes).filter(Boolean)
     ])].filter(Boolean).sort((a,b) => MESES.indexOf(a) - MESES.indexOf(b));
 
-    // Se o usuário escolheu um mês manualmente no seletor, usa-o diretamente
     if (mesEscolhido && allMeses.includes(mesEscolhido)) {
       targetMes = mesEscolhido;
       previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
@@ -453,19 +525,41 @@ function generateInsights(mesEscolhido) {
 
     let baseTarget = filterByMes(baseRowsAll, targetMes);
     let cogsTarget = filterByMes(cogsRowsAll, targetMes);
+    
+    // Normaliza a semana selecionada (pode vir como "Semana 1" ou "1")
+    let selectedWeek = semEscolhido || document.getElementById('insights-week-select')?.value || '';
+    if (selectedWeek) {
+      const wkNum = extractWeekNumber(selectedWeek);
+      if (wkNum !== null) selectedWeek = String(wkNum);
+    }
 
-    // Fallbacks automáticos só se o mês não foi escolhido manualmente
+    // Calcular semana anterior intra-mês
+    let prevWeekKey = null;
+    if (selectedWeek) {
+      const wkNum = extractWeekNumber(selectedWeek);
+      if (wkNum !== null && wkNum > 1) {
+        prevWeekKey = String(wkNum - 1);
+        // Verificar se existem dados para essa semana no mês atual
+        const hasPrevWeek = baseRowsAll.some(r => r.mes === targetMes && extractWeekNumber(r.sem || r.Semana || '') === wkNum - 1);
+        if (!hasPrevWeek) prevWeekKey = null;
+      }
+    }
+
+    if (selectedWeek) {
+      const wkNum = extractWeekNumber(selectedWeek);
+      if (wkNum !== null) {
+        baseTarget = baseTarget.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
+        cogsTarget = cogsTarget.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
+      }
+    }
+
     if (!mesEscolhido) {
-      // Se estamos nos primeiros 10 dias do mês E não há dados do mês atual, o mês anterior já está fechado
-      // Usa o mês anterior como target (mês fechado/completo)
       if (diaAtual <= 10 && !baseTarget.length && !cogsTarget.length && allMeses.length) {
         targetMes = allMeses[allMeses.length - 1];
         previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
         baseTarget = filterByMes(baseRowsAll, targetMes);
         cogsTarget = filterByMes(cogsRowsAll, targetMes);
-      }
-      // Se não há dados do mês atual, usa o mais recente disponível
-      else if (!baseTarget.length && !cogsTarget.length && allMeses.length) {
+      } else if (!baseTarget.length && !cogsTarget.length && allMeses.length) {
         targetMes = allMeses[allMeses.length - 1];
         previousMes = MESES.indexOf(targetMes) > 1 ? MESES[MESES.indexOf(targetMes) - 1] : null;
         baseTarget = filterByMes(baseRowsAll, targetMes);
@@ -477,10 +571,16 @@ function generateInsights(mesEscolhido) {
       return;
     }
 
-    const basePrevious = previousMes ? filterByMes(baseRowsAll, previousMes) : [];
-    const cogsPrevious = previousMes ? filterByMes(cogsRowsAll, previousMes) : [];
+    let basePrevious = previousMes ? filterByMes(baseRowsAll, previousMes) : [];
+    let cogsPrevious = previousMes ? filterByMes(cogsRowsAll, previousMes) : [];
+    if (selectedWeek) {
+      const wkNum = extractWeekNumber(selectedWeek);
+      if (wkNum !== null) {
+        basePrevious = basePrevious.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
+        cogsPrevious = cogsPrevious.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
+      }
+    }
 
-    // ── Reconhecimento automático da semana em análise ──
     const totalSemanas   = getNumSemanas(targetMes);
     const semanaAtual    = getSemanaAtual(targetMes);
     const mesEhCorrente  = (MES_IDX[targetMes] === (new Date().getMonth()+1));
@@ -489,18 +589,14 @@ function generateInsights(mesEscolhido) {
       total: totalSemanas,
       atual: semanaAtual,
       parcial: periodoParcial,
-      // fração do mês já decorrida (para projeções proporcionais)
       fracaoDecorrida: totalSemanas ? Math.min(1, semanaAtual / totalSemanas) : 1,
-      label: periodoParcial
-        ? `Semana ${semanaAtual} de ${totalSemanas} (mês em andamento)`
-        : `Mês completo · ${totalSemanas} semanas`
+      label: selectedWeek
+        ? `Semana ${selectedWeek} · ${cap(targetMes)}`
+        : periodoParcial
+          ? `Semana ${semanaAtual} de ${totalSemanas} (mês em andamento)`
+          : `Mês completo · ${totalSemanas} semanas`
     };
 
-    // ── cirúrgico por mês (mesmo filtro do Labor BI) ──
-    // IMPORTANTE: soma apenas Larissa/Vitor — são os únicos cujo valor cirúrgico
-    // foi DEDUZIDO do 'prod' base em getAdjustedBase(). Somar de todos os vets
-    // duplicava a receita cirúrgica dos demais (já incluída no 'prod' bruto),
-    // inflando a "Receita Total" do InsightsAI acima do valor real do Labor/COGS BI.
     function getCirurgicoByMes(mes) {
       if (!mes) return 0;
       const cirRows = (S.anal && S.anal['C_CIRURGICO']) || [];
@@ -509,18 +605,14 @@ function generateInsights(mesEscolhido) {
         .reduce((s, r) => s + (r.valL || 0), 0);
     }
 
-    // ===== 2. Métricas financeiras (exatamente como Labor BI) =====
-    // produção base (já com dedução cirúrgica para Larissa/Vitor)
+    // ===== 2. Métricas financeiras =====
     const baseProd = sumC(baseTarget, 'prod');
     const baseProdPrev = sumC(basePrevious, 'prod');
-    // cirúrgico adicionado
     const cirProd = getCirurgicoByMes(targetMes);
     const cirProdPrev = getCirurgicoByMes(previousMes);
-    // Produção Total = base + cirúrgico (mesmo cálculo do KPI)
     const currentRevenue = baseProd + cirProd;
     const previousRevenue = baseProdPrev + cirProdPrev;
 
-    // Custos de equipe = valor total a pagar (fixo + variável) — mesmo do Labor BI
     const currentTeamCost = sumC(baseTarget, 'valTotal');
     const previousTeamCost = sumC(basePrevious, 'valTotal');
     const currentOpCost = sumCogsBy(cogsTarget, 'operational');
@@ -540,12 +632,12 @@ function generateInsights(mesEscolhido) {
       opCostVar: momCompare(currentOpCost, previousOpCost)
     };
 
-    // ===== 3. Análise por setor =====
+    // ===== 3. Análise por setor (com semana anterior intra-mês) =====
     const sectors = {
-      clinica:   analyzeSector('CLINICA', targetMes, previousMes),
-      inter:     analyzeSector('INTER', targetMes, previousMes),
-      cirurgico: analyzeSector('C_CIRURGICO', targetMes, previousMes),
-      lab:       analyzeSector('LAB', targetMes, previousMes)
+      clinica:   analyzeSector('CLINICA', targetMes, previousMes, selectedWeek, prevWeekKey),
+      inter:     analyzeSector('INTER', targetMes, previousMes, selectedWeek, prevWeekKey),
+      cirurgico: analyzeSector('C_CIRURGICO', targetMes, previousMes, selectedWeek, prevWeekKey),
+      lab:       analyzeSector('LAB', targetMes, previousMes, selectedWeek, prevWeekKey)
     };
 
     // ===== 4. Análise de equipe =====
@@ -567,7 +659,6 @@ function generateInsights(mesEscolhido) {
     const avgProd = topVets.length ? topVets.reduce((s,[,d]) => s + d.prod, 0) / topVets.length : 0;
     const bottomVets = topVets.filter(([,d]) => d.prod < avgProd * 0.5 && d.horas > 10);
 
-    // ── Produção por vet no mês ANTERIOR (referência para anomalias) ──
     const prevVetMap = {};
     basePrevious.forEach(r => {
       if (!r.vet) return;
@@ -578,12 +669,10 @@ function generateInsights(mesEscolhido) {
       ? Object.values(prevVetMap).reduce((s, v) => s + v.prod, 0) / Math.max(1, Object.keys(prevVetMap).length)
       : 0;
 
-    // Anomalias: variação vs mês anterior por vet (>+50% = alta positiva, <-30% = baixa)
-    // Se vet não existia no mês anterior, usa a média do mês anterior como referência.
     const anomalies = [];
     topVets.forEach(([n, d]) => {
       const prevProd = prevVetMap[n] ? prevVetMap[n].prod : prevVetAvg;
-      if (prevProd <= 0) return; // sem referência
+      if (prevProd <= 0) return;
       const pctChange = ((d.prod / prevProd) - 1) * 100;
       if (pctChange >= 50 && d.prod > 20000) {
         anomalies.push({type:'high', vet:n, prod:d.prod, prevProd, deviation: pctChange.toFixed(0)});
@@ -591,7 +680,6 @@ function generateInsights(mesEscolhido) {
         anomalies.push({type:'low', vet:n, prod:d.prod, prevProd, deviation: Math.abs(pctChange).toFixed(0), horas: d.horas});
       }
     });
-    // Ordena: maiores variações positivas primeiro, depois negativas
     anomalies.sort((a, b) => {
       if (a.type === b.type) return b.prod - a.prod;
       return a.type === 'high' ? -1 : 1;
@@ -627,12 +715,11 @@ function generateInsights(mesEscolhido) {
     // ===== 6. Health score =====
     const health = calculateHealthScore(metrics, team, costs, anomalies);
 
-    // ===== 7. Projeção (baseada nos dados do próprio mês) =====
+    // ===== 7. Projeção =====
     const projection = projectMonthFromData(baseTarget, currentRevenue, currentProfit, targetMes);
 
-    // ===== 7b. Histórico mês a mês (separado, sem misturar) =====
+    // ===== 7b. Histórico mês a mês =====
     const monthHistory = buildMonthHistory(baseRowsAll, cogsRowsAll);
-    // Variação mês a mês
     monthHistory.forEach((m, i) => {
       if (i > 0) {
         const prev = monthHistory[i - 1];
@@ -641,8 +728,6 @@ function generateInsights(mesEscolhido) {
       } else {
         m.varRev = 0; m.varProfit = 0;
       }
-      // Marca "Em andamento" apenas se for o mês corrente do calendário.
-      // Meses passados (mesmo que sejam o targetMes) aparecem como "Fechado".
       const _calMesNome = MESES[hoje.getMonth() + 1] || '';
       m.isCurrent = (m.mes === _calMesNome);
     });
@@ -651,9 +736,8 @@ function generateInsights(mesEscolhido) {
     const actions = generateActionPlan(metrics, sectors, team, costs, anomalies, targetMes);
 
     // ===== 9. RENDER =====
-    const healthCirc = 327; // 2*pi*52
+    const healthCirc = 327;
 
-    // MoM card
     const momCard = (label, mom, isPct = false) => {
       const trendColor = mom.trend === 'up' ? 'var(--green)' : mom.trend === 'down' ? 'var(--red)' : 'var(--cyan)';
       const sym = mom.trend === 'up' ? '↑' : mom.trend === 'down' ? '↓' : '→';
@@ -667,11 +751,13 @@ function generateInsights(mesEscolhido) {
       `;
     };
 
-    // Sector card
     const sectorCard = (name, icon, data) => {
       const trendColor = data.variation.trend === 'up' ? 'var(--green)' : data.variation.trend === 'down' ? 'var(--red)' : 'var(--tx3)';
+      const weekColor = data.weekVariation.trend === 'up' ? 'var(--green)' : data.weekVariation.trend === 'down' ? 'var(--red)' : 'var(--tx3)';
       const sym = data.variation.trend === 'up' ? '↑' : data.variation.trend === 'down' ? '↓' : '→';
+      const weekSym = data.weekVariation.trend === 'up' ? '↑' : data.weekVariation.trend === 'down' ? '↓' : '→';
       const efColor = data.efficiency >= 0.9 ? 'var(--green)' : data.efficiency >= 0.7 ? 'var(--amber)' : 'var(--red)';
+      const weekLabel = selectedWeek ? `sem. ant.` : 'sem. ant.';
       return `
         <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden">
           <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${trendColor};opacity:0.7"></div>
@@ -684,7 +770,8 @@ function generateInsights(mesEscolhido) {
           </div>
           <div style="font-family:var(--font-display);font-size:19px;font-weight:700;color:${trendColor};letter-spacing:-0.4px;margin-bottom:8px">${data.revenue > 0 ? fR(data.revenue) : '—'}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-family:var(--font-mono);color:var(--tx3)">
-            <span>${sym} ${Math.abs(data.variation.variation).toFixed(1)}%</span>
+            <span>${sym} ${Math.abs(data.variation.variation).toFixed(1)}% vs mês ant.</span>
+            ${selectedWeek ? `<span>${weekSym} ${Math.abs(data.weekVariation.variation).toFixed(1)}% vs sem. ant.</span>` : ''}
             <span>Ef: <span style="color:${efColor};font-weight:600">${data.efficiency > 0 ? (data.efficiency*100).toFixed(0) + '%' : '—'}</span></span>
           </div>
           ${data.topProc ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:10.5px;color:var(--tx3);font-family:var(--font-mono);line-height:1.5">
@@ -696,7 +783,6 @@ function generateInsights(mesEscolhido) {
       `;
     };
 
-    // Top performers table
     const topVetsHTML = team.topPerformers.length > 0 ? team.topPerformers.map(([n, d], i) => {
       const medal = ['🥇', '🥈', '🥉'][i] || `#${i+1}`;
       const share = team.total > 0 ? (d.prod / team.total * 100) : 0;
@@ -714,7 +800,6 @@ function generateInsights(mesEscolhido) {
       `;
     }).join('') : '<tr><td colspan="5" class="nd" style="padding:30px">Sem dados</td></tr>';
 
-    // Anomalies
     const anomaliesHTML = anomalies.length > 0 ? anomalies.map(a => {
       const bg = a.type === 'high' ? 'rgba(52,211,153,.05)' : 'rgba(248,113,113,.05)';
       const border = a.type === 'high' ? 'rgba(52,211,153,.25)' : 'rgba(248,113,113,.25)';
@@ -737,7 +822,6 @@ function generateInsights(mesEscolhido) {
       </div>
     `;
 
-    // Priority badge
     const priorityBadge = p => {
       const c = {
         alta:  {bg:'rgba(239,68,68,.15)', fg:'var(--red)', border:'rgba(239,68,68,.35)'},
@@ -751,7 +835,6 @@ function generateInsights(mesEscolhido) {
       return `<span style="color:${c};font-size:10px;font-family:var(--font-mono);font-weight:600">● ${i}</span>`;
     };
 
-    // Action items
     const actionsHTML = actions.length > 0 ? actions.map(a => `
       <div style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${a.priority === 'alta' ? 'var(--red)' : a.priority === 'media' ? 'var(--amber)' : 'var(--green)'};border-radius:10px;padding:14px 18px;margin-bottom:10px">
         <div style="display:flex;align-items:flex-start;gap:12px">
@@ -776,7 +859,6 @@ function generateInsights(mesEscolhido) {
       </div>
     `;
 
-    // Top providers
     const providersHTML = topProviders.length > 0 ? `
       <table style="width:100%;border-collapse:collapse">
         ${topProviders.map(([f, v], i) => `
@@ -795,7 +877,6 @@ function generateInsights(mesEscolhido) {
       </div>
     ` : '<div class="nd" style="padding:20px">Nenhum custo operacional registrado no período.</div>';
 
-    // Projeção (baseada em dados do próprio mês — não mistura com outros meses)
     let projHTML;
     if (!projection) {
       projHTML = `
@@ -805,7 +886,6 @@ function generateInsights(mesEscolhido) {
         </div>
       `;
     } else if (projection.isComplete) {
-      // Mês fechado - mostra totais reais, sem projeção
       const projVariacao = previousRevenue > 0 ? ((projection.projectedRevenue / previousRevenue - 1) * 100) : 0;
       projHTML = `
         <div style="margin-bottom:14px;padding:10px 14px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:10px;display:flex;align-items:center;gap:10px">
@@ -835,7 +915,6 @@ function generateInsights(mesEscolhido) {
         ` : ''}
       `;
     } else {
-      // Mês em andamento - projeta com base no progresso real dos dados
       const projVariacao = previousRevenue > 0 ? ((projection.projectedRevenue / previousRevenue - 1) * 100) : 0;
       projHTML = `
         <div style="margin-bottom:14px">
@@ -869,7 +948,198 @@ function generateInsights(mesEscolhido) {
       `;
     }
 
-    // Histórico mês a mês (separado por mês)
+    // ═══ NOVA SEÇÃO: EVOLUÇÃO SEMANAL (intra-mês) ═══
+    let weeklyCompareHTML = '';
+    if (baseTarget.length > 0) {
+      const weekMap = {};
+      baseTarget.forEach(r => {
+        const semVal = r.sem || r.Semana || '';
+        const wkNum = extractWeekNumber(semVal);
+        if (wkNum !== null) {
+          weekMap[wkNum] = (weekMap[wkNum] || 0) + r.prod;
+        } else if (r.data) {
+          const wn = weekNumFromDateStr(r.data);
+          if (wn) {
+            const num = parseInt(wn, 10);
+            weekMap[num] = (weekMap[num] || 0) + r.prod;
+          }
+        }
+      });
+      const weeksSorted = Object.keys(weekMap).map(Number).sort((a, b) => a - b);
+      if (weeksSorted.length > 1) {
+        const data = weeksSorted.map(w => weekMap[w] || 0);
+        const lastIdx = data.length - 1;
+        const prevIdx = lastIdx - 1;
+        const lastVal = data[lastIdx];
+        const prevVal = data[prevIdx];
+        const weekChange = prevVal > 0 ? ((lastVal - prevVal) / prevVal * 100) : 0;
+        const weekTrend = weekChange > 0 ? '↑' : weekChange < 0 ? '↓' : '→';
+        const weekColor = weekChange > 0 ? 'var(--green)' : weekChange < 0 ? 'var(--red)' : 'var(--tx3)';
+
+        weeklyCompareHTML = `
+          <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:22px;margin-bottom:20px;margin-top:20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
+              <div style="width:42px;height:42px;background:var(--cyan-dim);border:1px solid rgba(34,211,238,.3);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📆</div>
+              <div style="flex:1">
+                <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-0.3px">Evolução Semanal — ${cap(targetMes)}</div>
+                <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px">
+                  ${weeksSorted.length} semanas com dados
+                  ${weeksSorted.length > 1 ? `· Última semana ${weekTrend} ${Math.abs(weekChange).toFixed(1)}%` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="cc" style="margin-bottom:0">
+              <div class="ctitle" style="--cyan:${weekColor}">Produção por Semana (R$)</div>
+              <canvas id="ch-insights-weekly-evolution" height="150"></canvas>
+            </div>
+          </div>
+        `;
+
+        killChart('ch-insights-weekly-evolution');
+        const ctxW = document.getElementById('ch-insights-weekly-evolution')?.getContext('2d');
+        if (ctxW) {
+          S.charts['ch-insights-weekly-evolution'] = new Chart(ctxW, {
+            type: 'line',
+            data: {
+              labels: weeksSorted.map(w => `Sem ${w}`),
+              datasets: [{
+                label: 'Receita',
+                data: data,
+                borderColor: 'var(--cyan)',
+                backgroundColor: 'rgba(34,211,238,.1)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: 'var(--cyan)',
+                pointRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: TC, grid: { color: GC } },
+                y: { ticks: { ...TC, callback: v => 'R$' + fN(v) }, grid: { color: GC } }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // ═══ COMPARAÇÃO SEMANAL COM MÊS ANTERIOR ═══
+    let weeklyCompareMonthHTML = '';
+    if (previousMes && baseTarget.length && basePrevious.length) {
+      const weeks1 = {};
+      baseTarget.forEach(r => {
+        const semVal = r.sem || r.Semana || '';
+        const wkNum = extractWeekNumber(semVal);
+        if (wkNum !== null) {
+          weeks1[wkNum] = (weeks1[wkNum] || 0) + r.prod;
+        } else if (r.data) {
+          const wn = weekNumFromDateStr(r.data);
+          if (wn) {
+            const num = parseInt(wn, 10);
+            weeks1[num] = (weeks1[num] || 0) + r.prod;
+          }
+        }
+      });
+      const weeks2 = {};
+      basePrevious.forEach(r => {
+        const semVal = r.sem || r.Semana || '';
+        const wkNum = extractWeekNumber(semVal);
+        if (wkNum !== null) {
+          weeks2[wkNum] = (weeks2[wkNum] || 0) + r.prod;
+        } else if (r.data) {
+          const wn = weekNumFromDateStr(r.data);
+          if (wn) {
+            const num = parseInt(wn, 10);
+            weeks2[num] = (weeks2[num] || 0) + r.prod;
+          }
+        }
+      });
+
+      const allWeeks = [...new Set([...Object.keys(weeks1), ...Object.keys(weeks2)])].map(Number).sort((a,b) => a-b);
+      if(allWeeks.length > 0){
+        const data1 = allWeeks.map(w => weeks1[w] || 0);
+        const data2 = allWeeks.map(w => weeks2[w] || 0);
+
+        const total1 = data1.reduce((s,v)=>s+v,0);
+        const total2 = data2.reduce((s,v)=>s+v,0);
+        const avg1 = total1 / data1.length;
+        const avg2 = total2 / data2.length;
+        const varPct = avg1 > 0 ? ((avg2 - avg1)/avg1*100) : 0;
+        const trend = varPct >= 0 ? '↑' : '↓';
+        const trendColor = varPct >= 0 ? 'var(--green)' : 'var(--red)';
+
+        weeklyCompareMonthHTML = `
+          <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:22px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
+              <div style="width:42px;height:42px;background:var(--cyan-dim);border:1px solid rgba(34,211,238,.3);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📊</div>
+              <div style="flex:1">
+                <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-0.3px">Comparação Semanal</div>
+                <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-top:3px">${cap(targetMes)} vs ${cap(previousMes)}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+              <div style="padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
+                <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Média Semanal — ${cap(targetMes)}</div>
+                <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--cyan)">${fR(avg1)}</div>
+              </div>
+              <div style="padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px">
+                <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Média Semanal — ${cap(previousMes)}</div>
+                <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:${trendColor}">${fR(avg2)}</div>
+                <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);margin-top:2px">${trend} ${Math.abs(varPct).toFixed(1)}%</div>
+              </div>
+            </div>
+            <div class="cc" style="margin-bottom:0">
+              <div class="ctitle" style="--cyan:${trendColor}">Produção por Semana (R$)</div>
+              <canvas id="ch-insights-weekly-compare" height="150"></canvas>
+            </div>
+          </div>
+        `;
+
+        killChart('ch-insights-weekly-compare');
+        const ctxC = document.getElementById('ch-insights-weekly-compare')?.getContext('2d');
+        if(ctxC) {
+          S.charts['ch-insights-weekly-compare'] = new Chart(ctxC, {
+            type: 'bar',
+            data: {
+              labels: allWeeks.map(w => `Sem ${w}`),
+              datasets: [
+                { label: cap(targetMes), data: data1, backgroundColor: 'rgba(34,211,238,.7)', borderRadius: 4 },
+                { label: cap(previousMes), data: data2, backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { labels: { color: '#8faac8', font: { size: 11 } } } },
+              scales: {
+                x: { ticks: TC, grid: { color: GC } },
+                y: { ticks: { ...TC, callback: v => 'R$' + fN(v) }, grid: { color: GC } }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // Cost structure
+    const costPie = (costs.teamRatio > 0 || costs.opRatio > 0) ? `
+      <div style="margin-bottom:14px">
+        <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--sf3);border:1px solid var(--bd)">
+          <div style="background:var(--amber);width:${(costs.teamRatio*100/(costs.teamRatio+costs.opRatio||1)*100).toFixed(1)}%;transition:width 0.5s ease" title="Equipe"></div>
+          <div style="background:var(--red);width:${(costs.opRatio*100/(costs.teamRatio+costs.opRatio||1)*100).toFixed(1)}%;transition:width 0.5s ease" title="Operacional"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;font-family:var(--font-mono)">
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--amber);border-radius:2px;margin-right:6px;vertical-align:middle"></span>Equipe: <strong style="color:var(--amber)">${(costs.teamRatio*100).toFixed(1)}%</strong></span>
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--red);border-radius:2px;margin-right:6px;vertical-align:middle"></span>Operacional: <strong style="color:var(--red)">${(costs.opRatio*100).toFixed(1)}%</strong></span>
+        </div>
+      </div>
+    ` : '';
+
+    // Histórico mês a mês
     const monthHistoryHTML = monthHistory.length > 1 ? `
       <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:22px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
@@ -917,24 +1187,8 @@ function generateInsights(mesEscolhido) {
       </div>
     ` : '';
 
-    // Cost structure
-    const totalCost = costs.totalOp + costs.totalTeam;
-    const costPie = (costs.teamRatio > 0 || costs.opRatio > 0) ? `
-      <div style="margin-bottom:14px">
-        <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--sf3);border:1px solid var(--bd)">
-          <div style="background:var(--amber);width:${(costs.teamRatio*100/(costs.teamRatio+costs.opRatio||1)*100).toFixed(1)}%;transition:width 0.5s ease" title="Equipe"></div>
-          <div style="background:var(--red);width:${(costs.opRatio*100/(costs.teamRatio+costs.opRatio||1)*100).toFixed(1)}%;transition:width 0.5s ease" title="Operacional"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;font-family:var(--font-mono)">
-          <span><span style="display:inline-block;width:8px;height:8px;background:var(--amber);border-radius:2px;margin-right:6px;vertical-align:middle"></span>Equipe: <strong style="color:var(--amber)">${(costs.teamRatio*100).toFixed(1)}%</strong></span>
-          <span><span style="display:inline-block;width:8px;height:8px;background:var(--red);border-radius:2px;margin-right:6px;vertical-align:middle"></span>Operacional: <strong style="color:var(--red)">${(costs.opRatio*100).toFixed(1)}%</strong></span>
-        </div>
-      </div>
-    ` : '';
-
-    // Final HTML
+    // ===== FINAL =====
     content.innerHTML = `
-      <!-- ═══ HEADER: SCORE DE SAÚDE ═══ -->
       <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;padding:24px;background:linear-gradient(135deg, ${health.color}10 0%, var(--sf) 60%);border:1px solid var(--bd);border-radius:18px;margin-bottom:20px;align-items:center">
         <div style="position:relative;width:130px;height:130px;flex-shrink:0">
           <svg viewBox="0 0 130 130" style="transform:rotate(-90deg);width:100%;height:100%">
@@ -966,7 +1220,6 @@ function generateInsights(mesEscolhido) {
         </div>
       </div>
 
-      <!-- ═══ COMPARAÇÃO MÊS A MÊS ═══ -->
       <div style="margin-bottom:24px">
         <div class="ctitle" style="margin-bottom:14px">📊 Indicadores de Performance — ${cap(targetMes)} vs ${cap(previousMes || 'mês anterior')}</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">
@@ -979,7 +1232,6 @@ function generateInsights(mesEscolhido) {
         </div>
       </div>
 
-      <!-- ═══ PERFORMANCE POR SETOR ═══ -->
       <div class="ctitle" style="margin-bottom:14px">🏥 Performance por Setor</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px">
         ${sectorCard('Clínica Médica', '🩺', sectors.clinica)}
@@ -988,7 +1240,6 @@ function generateInsights(mesEscolhido) {
         ${sectorCard('Laboratório', '🧪', sectors.lab)}
       </div>
 
-      <!-- ═══ EQUIPE & ANOMALIAS ═══ -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
         <div class="tw" style="margin-bottom:0">
           <div class="th">
@@ -1020,7 +1271,6 @@ function generateInsights(mesEscolhido) {
         </div>
       </div>
 
-      <!-- ═══ CUSTOS & PROJEÇÃO ═══ -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
         <div class="panel" style="margin:0">
           <div class="ptl">💸 Estrutura de Custos & Top Fornecedores</div>
@@ -1037,7 +1287,10 @@ function generateInsights(mesEscolhido) {
 
       ${monthHistoryHTML}
 
-      <!-- ═══ PLANO DE AÇÃO ═══ -->
+      ${weeklyCompareMonthHTML}
+
+      ${weeklyCompareHTML}
+
       <div style="background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:24px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--bd)">
           <div style="width:46px;height:46px;background:var(--pink-dim);border:1px solid rgba(251,113,133,.3);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🎯</div>
@@ -1054,12 +1307,13 @@ function generateInsights(mesEscolhido) {
         ${actionsHTML}
       </div>
 
-      <!-- ═══ NOTA ═══ -->
       <div style="margin-top:18px;padding:14px 18px;border-radius:10px;background:rgba(74,90,128,.08);border:1px solid rgba(74,90,128,.2);display:flex;gap:10px;align-items:flex-start;">
         <span style="font-size:16px;flex-shrink:0">💡</span>
         <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);line-height:1.8;">
-          <strong style="color:var(--tx2)">Sobre o Motor Analítico v2.0:</strong> Análise multidimensional gerada por regras heurísticas a partir dos dados carregados no sistema.
+          <strong style="color:var(--tx2)">Sobre o Motor Analítico v2.2:</strong> Análise multidimensional gerada por regras heurísticas a partir dos dados carregados no sistema.
           Os insights devem ser usados como <strong style="color:var(--tx2)">ponto de partida para investigação</strong>, não como verdade absoluta. Sempre valide com o contexto real e considere fatores externos (sazonalidade, eventos locais, equipe em férias).
+          <br><br>
+          <strong style="color:var(--tx2)">Suporte a semanas:</strong> O motor agora interpreta corretamente as semanas baseadas no dia do mês (1-7 = Semana 1, 8-14 = Semana 2, etc.) compatível com a fórmula do Excel.
           <br><br>
           <strong style="color:var(--tx2)">Lembrete:</strong> exames laboratoriais são solicitados pelos médicos veterinários — o volume do setor LAB é reflexo direto da produção clínica, não uma operação independente.
         </div>
@@ -1067,7 +1321,3 @@ function generateInsights(mesEscolhido) {
     `;
   }, 1800);
 }
-
-// ════════════════════════════════
-//  FILE LOADING & PARSING (EXCEL)
-// ════════════════════════════════
