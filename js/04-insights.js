@@ -69,21 +69,21 @@ function analyzeSector(sheet, targetMes, previousMes, weekKey, prevWeekKey) {
   const filterByWeek = (rows, mes, wk) => {
     let res = (rows || []).filter(r => r.mes === mes);
     if (!wk) return res;
-    // Normaliza a chave da semana: extrai o número
-    const wkNum = extractWeekNumber(wk);
-    if (wkNum === null) return res;
+    // Normaliza a chave da semana: aceita "1" (uma semana) ou "1,3" (várias semanas)
+    const wkNums = String(wk).split(',').map(s => extractWeekNumber(s)).filter(n => n !== null);
+    if (!wkNums.length) return res;
     return res.filter(r => {
       // Primeiro tenta usar o campo 'sem' (já calculado no Excel)
       const semVal = r.sem || r.Semana || '';
       if (semVal) {
         const semNum = extractWeekNumber(semVal);
-        if (semNum !== null) return semNum === wkNum;
+        if (semNum !== null) return wkNums.includes(semNum);
       }
       // Fallback: calcula a semana a partir da data
       if (r.data) {
         try {
           const wn = weekNumFromDateStr(r.data);
-          if (wn) return parseInt(wn, 10) === wkNum;
+          if (wn) return wkNums.includes(parseInt(wn, 10));
         } catch (e) { return false; }
       }
       return false;
@@ -454,6 +454,11 @@ function onWeekMultiToggle() {
   if (!checked.length) label.textContent = 'Todas as semanas';
   else if (checked.length === 1) label.textContent = `Semana ${checked[0]}`;
   else label.textContent = `${checked.length} semanas selecionadas`;
+
+  // Atualiza os KPIs do Diagnóstico Gerencial automaticamente com a(s) semana(s) marcada(s),
+  // comparando com o(s) mesmo(s) número(s) de semana do mês anterior.
+  const mes = document.getElementById('insights-mes-select')?.value || null;
+  generateInsights(mes, checked.length ? checked.join(',') : null);
 }
 
 function toggleWeekDropdown() {
@@ -554,18 +559,19 @@ function generateInsights(mesEscolhido, semEscolhido) {
     let baseTarget = filterByMes(baseRowsAll, targetMes);
     let cogsTarget = filterByMes(cogsRowsAll, targetMes);
     
-    // Normaliza a semana selecionada (pode vir como "Semana 1" ou "1")
-    let selectedWeek = semEscolhido || document.getElementById('insights-week-select')?.value || '';
+    // Normaliza a(s) semana(s) selecionada(s) (pode vir como "Semana 1", "1" ou "1,2" para múltiplas)
+    let selectedWeek = semEscolhido || '';
+    let selectedWeeksArr = [];
     if (selectedWeek) {
-      const wkNum = extractWeekNumber(selectedWeek);
-      if (wkNum !== null) selectedWeek = String(wkNum);
+      selectedWeeksArr = String(selectedWeek).split(',').map(s => extractWeekNumber(s)).filter(n => n !== null);
+      selectedWeek = selectedWeeksArr.length ? selectedWeeksArr.join(',') : '';
     }
 
-    // Calcular semana anterior intra-mês
+    // Calcular semana anterior intra-mês (só faz sentido quando exatamente 1 semana está selecionada)
     let prevWeekKey = null;
-    if (selectedWeek) {
-      const wkNum = extractWeekNumber(selectedWeek);
-      if (wkNum !== null && wkNum > 1) {
+    if (selectedWeeksArr.length === 1) {
+      const wkNum = selectedWeeksArr[0];
+      if (wkNum > 1) {
         prevWeekKey = String(wkNum - 1);
         // Verificar se existem dados para essa semana no mês atual
         const hasPrevWeek = baseRowsAll.some(r => r.mes === targetMes && extractWeekNumber(r.sem || r.Semana || '') === wkNum - 1);
@@ -573,12 +579,9 @@ function generateInsights(mesEscolhido, semEscolhido) {
       }
     }
 
-    if (selectedWeek) {
-      const wkNum = extractWeekNumber(selectedWeek);
-      if (wkNum !== null) {
-        baseTarget = baseTarget.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
-        cogsTarget = cogsTarget.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
-      }
+    if (selectedWeeksArr.length) {
+      baseTarget = baseTarget.filter(r => selectedWeeksArr.includes(extractWeekNumber(r.sem || r.Semana || '')));
+      cogsTarget = cogsTarget.filter(r => selectedWeeksArr.includes(extractWeekNumber(r.sem || r.Semana || '')));
     }
 
     if (!mesEscolhido) {
@@ -601,25 +604,27 @@ function generateInsights(mesEscolhido, semEscolhido) {
 
     let basePrevious = previousMes ? filterByMes(baseRowsAll, previousMes) : [];
     let cogsPrevious = previousMes ? filterByMes(cogsRowsAll, previousMes) : [];
-    if (selectedWeek) {
-      const wkNum = extractWeekNumber(selectedWeek);
-      if (wkNum !== null) {
-        basePrevious = basePrevious.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
-        cogsPrevious = cogsPrevious.filter(r => extractWeekNumber(r.sem || r.Semana || '') === wkNum);
-      }
+    if (selectedWeeksArr.length) {
+      basePrevious = basePrevious.filter(r => selectedWeeksArr.includes(extractWeekNumber(r.sem || r.Semana || '')));
+      cogsPrevious = cogsPrevious.filter(r => selectedWeeksArr.includes(extractWeekNumber(r.sem || r.Semana || '')));
     }
 
     const totalSemanas   = getNumSemanas(targetMes);
     const semanaAtual    = getSemanaAtual(targetMes);
     const mesEhCorrente  = (MES_IDX[targetMes] === (new Date().getMonth()+1));
     const periodoParcial = mesEhCorrente && (semanaAtual < totalSemanas);
+    const semanaLabelTxt = selectedWeeksArr.length > 1
+      ? `Semanas ${selectedWeeksArr.join(', ')}`
+      : selectedWeeksArr.length === 1
+        ? `Semana ${selectedWeeksArr[0]}`
+        : '';
     const semanaInfo = {
       total: totalSemanas,
       atual: semanaAtual,
       parcial: periodoParcial,
       fracaoDecorrida: totalSemanas ? Math.min(1, semanaAtual / totalSemanas) : 1,
-      label: selectedWeek
-        ? `Semana ${selectedWeek} · ${cap(targetMes)}`
+      label: semanaLabelTxt
+        ? `${semanaLabelTxt} · ${cap(targetMes)}`
         : periodoParcial
           ? `Semana ${semanaAtual} de ${totalSemanas} (mês em andamento)`
           : `Mês completo · ${totalSemanas} semanas`
@@ -785,7 +790,6 @@ function generateInsights(mesEscolhido, semEscolhido) {
       const sym = data.variation.trend === 'up' ? '↑' : data.variation.trend === 'down' ? '↓' : '→';
       const weekSym = data.weekVariation.trend === 'up' ? '↑' : data.weekVariation.trend === 'down' ? '↓' : '→';
       const efColor = data.efficiency >= 0.9 ? 'var(--green)' : data.efficiency >= 0.7 ? 'var(--amber)' : 'var(--red)';
-      const weekLabel = selectedWeek ? `sem. ant.` : 'sem. ant.';
       return `
         <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden">
           <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${trendColor};opacity:0.7"></div>
@@ -799,7 +803,7 @@ function generateInsights(mesEscolhido, semEscolhido) {
           <div style="font-family:var(--font-display);font-size:19px;font-weight:700;color:${trendColor};letter-spacing:-0.4px;margin-bottom:8px">${data.revenue > 0 ? fR(data.revenue) : '—'}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-family:var(--font-mono);color:var(--tx3)">
             <span>${sym} ${Math.abs(data.variation.variation).toFixed(1)}% vs mês ant.</span>
-            ${selectedWeek ? `<span>${weekSym} ${Math.abs(data.weekVariation.variation).toFixed(1)}% vs sem. ant.</span>` : ''}
+            ${selectedWeeksArr.length === 1 ? `<span>${weekSym} ${Math.abs(data.weekVariation.variation).toFixed(1)}% vs sem. ant.</span>` : ''}
             <span>Ef: <span style="color:${efColor};font-weight:600">${data.efficiency > 0 ? (data.efficiency*100).toFixed(0) + '%' : '—'}</span></span>
           </div>
           ${data.topProc ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:10.5px;color:var(--tx3);font-family:var(--font-mono);line-height:1.5">
