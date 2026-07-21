@@ -1,0 +1,338 @@
+  <div id="admin-view" style="display:none;">
+    <div class="tb">
+      <button class="lgbtn btn-back" onclick="goHub()">⟵ Hub</button>
+      <div class="tbl" style="color:var(--amber)">Admin<span style="color:var(--tx2)">Center</span></div>
+      <div class="tnav"></div>
+      <div class="tbr">
+        <span class="brl" id="brl-admin"></span>
+        <button class="lgbtn" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+    <div class="pg on">
+      <div class="ptitle" style="color:var(--tx)">Painel <span style="color:var(--amber)">Administrativo</span></div>
+      <div class="psub">Controle central de arquivos, acessos e auditoria do sistema.</div>
+
+      <!-- ═══ SYSTEM STATUS DASHBOARD ═══ -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px">
+        <div class="kc" style="--clr:var(--cyan)">
+          <div class="klbl">👥 Usuários</div>
+          <div class="kval" id="ad-users-count">—</div>
+          <div class="ksub" id="ad-users-role"></div>
+        </div>
+        <div class="kc" style="--clr:var(--violet)">
+          <div class="klbl">📊 Base de Dados</div>
+          <div class="kval" id="ad-base-rows">—</div>
+          <div class="ksub" id="ad-base-status"></div>
+        </div>
+        <div class="kc" style="--clr:var(--pink)">
+          <div class="klbl">🔬 Análises</div>
+          <div class="kval" id="ad-anal-rows">—</div>
+          <div class="ksub" id="ad-anal-status"></div>
+        </div>
+        <div class="kc" style="--clr:var(--amber)">
+          <div class="klbl">📉 Custos (COGS)</div>
+          <div class="kval" id="ad-cogs-rows">—</div>
+          <div class="ksub" id="ad-cogs-status"></div>
+        </div>
+        <div class="kc" style="--clr:var(--green)">
+          <div class="klbl">🕐 Escala</div>
+          <div class="kval" id="ad-escala-status">—</div>
+          <div class="ksub" id="ad-escala-meta"></div>
+        </div>
+      </div>
+
+      <!-- ═══ SYSTEM ALERTS / HEALTH ═══ -->
+      <div id="ad-health-alert" style="display:none;margin-bottom:18px;padding:14px 18px;border-radius:10px;font-family:var(--font-mono);font-size:12px;line-height:1.8;">
+      </div>
+
+      <!-- ═══ FIREBASE STATUS BAR ═══ -->
+      <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px">
+          <span id="ad-firebase-indicator" style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)"></span>
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--tx2)">Firebase</span>
+          <span id="ad-firebase-status" style="font-size:11px;font-family:var(--font-mono);color:var(--green)">Conectado</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px">
+          <span style="font-size:12px">📡</span>
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--tx2)">Última Sinc.</span>
+          <span id="ad-last-sync" style="font-size:11px;font-family:var(--font-mono);color:var(--cyan)">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px">
+          <span style="font-size:12px">🌐</span>
+          <span style="font-size:11px;font-family:var(--font-mono);color:var(--tx2)">Logs</span>
+          <span id="ad-logs-count" style="font-size:11px;font-family:var(--font-mono);color:var(--violet)">0 registros</span>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button onclick="exportAllData()" style="padding:7px 14px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;color:var(--tx2);font-size:11px;font-family:var(--font-mono);cursor:pointer;transition:all .18s">
+            📤 Exportar Dados
+          </button>
+          <button onclick="clearAllData()" style="padding:7px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:var(--red);font-size:11px;font-family:var(--font-mono);cursor:pointer;transition:all .18s">
+            🗑️ Limpar Tudo
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-layout">
+        <div class="admin-sidebar">
+          <button class="as-btn on" onclick="switchAdmin('ab-base', this)">📂 Alterar Arquivos</button>
+          <button class="as-btn" onclick="switchAdmin('ab-escala', this)">🕐 Escala de Horas</button>
+          <button class="as-btn" onclick="switchAdmin('ab-users', this)">👥 Usuários</button>
+          <button class="as-btn" onclick="switchAdmin('ab-logs', this)">📜 Logs de Acesso</button>
+          <button class="as-btn" onclick="switchAdmin('ab-config', this)">⚙️ Configurações</button>
+        </div>
+        <div class="admin-content">
+          <div id="ab-base" class="ab-sec on">
+            <div class="ibox">
+              ℹ️ Faça upload dos arquivos Excel. Os dados <strong>substituem</strong> os anteriores a cada upload e atualizam para todos os usuários em tempo real.<br>
+              <strong>Planilha_sem_título.xlsx</strong> — aba "Base de dados"<br>
+              <strong>Analises_Balneario.xlsx</strong> — abas: INTER, C. CIRURGICO, CLINICA, LAB<br>
+              <strong>Custos_Balneario.xlsx</strong> — aba única com as despesas de COGS.
+            </div>
+
+            <!-- Enhanced File Upload Grid -->
+            <div class="ugrid">
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-base').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'base')">
+                  <div class="ui">📋</div>
+                  <div class="ut">Base de Dados</div>
+                  <div class="uh">Planilha_sem_título.xlsx</div>
+                  <div><span class="utag">BASE DE DADOS</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-base').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-base" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'base')">
+                <div class="fst" id="fst-base"></div>
+                <div id="fst-base-info" style="margin-top:8px;padding:8px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:var(--tx2)">
+                  Linhas: <span id="fi-base-count" style="color:var(--cyan)">—</span>
+                </div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-anal').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'anal')">
+                  <div class="ui">🔬</div>
+                  <div class="ut">Análises Balneário</div>
+                  <div class="uh">Analises_Balneario.xlsx</div>
+                  <div><span class="utag">INTER · CIRÚRGICO · CLÍNICA</span></div>
+                  <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-anal').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-anal" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'anal')">
+                <div class="fst" id="fst-anal"></div>
+                <div id="fst-anal-info" style="margin-top:8px;padding:8px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:var(--tx2)">
+                  Linhas: <span id="fi-anal-count" style="color:var(--violet)">—</span>
+                </div>
+              </div>
+              <div>
+                <div class="uzn" onclick="document.getElementById('fi-cogs').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'cogs')">
+                  <div class="ui">📉</div>
+                  <div class="ut">Custos Operacionais</div>
+                  <div class="uh">Custos_Balneario.xlsx</div>
+                  <div><span class="utag" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2)">TM35 · O2 · LABS</span></div>
+                  <button class="ubtn" style="background:var(--red)" onclick="event.stopPropagation();document.getElementById('fi-cogs').click()">Selecionar</button>
+                </div>
+                <input type="file" id="fi-cogs" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'cogs')">
+                <div class="fst" id="fst-cogs"></div>
+                <div id="fst-cogs-info" style="margin-top:8px;padding:8px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;font-size:11px;font-family:var(--font-mono);color:var(--tx2)">
+                  Linhas: <span id="fi-cogs-count" style="color:var(--amber)">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Data Preview -->
+            <div id="ad-data-preview" style="margin-top:20px;display:none">
+              <div class="panel">
+                <div class="ptl">👁️ Prévia Rápida dos Dados</div>
+                <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+                  <button class="abtn" onclick="previewData('base')" style="background:var(--sf3);color:var(--tx)">Ver Base</button>
+                  <button class="abtn" onclick="previewData('anal')" style="background:var(--sf3);color:var(--tx)">Ver Análises</button>
+                  <button class="abtn" onclick="previewData('cogs')" style="background:var(--sf3);color:var(--tx)">Ver Custos</button>
+                </div>
+                <div id="ad-preview-content" style="max-height:300px;overflow:auto;font-size:11px;font-family:var(--font-mono);background:var(--bg);padding:12px;border-radius:8px;border:1px solid var(--bd)">
+                  Selecione acima para ver a prévia...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-escala" class="ab-sec">
+            <div class="ibox">
+              🕐 Faça upload da planilha de escala (formato PegaPlantão / Escalas). O sistema lê os turnos, calcula as horas normais e noturnas de cada profissional e atualiza a Base de Dados automaticamente.<br>
+              <strong>Passo 1:</strong> Suba a planilha · <strong>Passo 2:</strong> Associe os nomes da escala aos veterinários do sistema · <strong>Passo 3:</strong> Clique em Salvar Horas.
+            </div>
+
+            <!-- Tabela de remuneração vigente -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+              <div class="panel">
+                <div class="ptl">💰 Tabela de Remuneração — Horas</div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+                  <thead><tr>
+                    <th style="text-align:left;padding:7px 10px;background:var(--sf2);color:var(--tx3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)">Tipo de Hora</th>
+                    <th style="text-align:right;padding:7px 10px;background:var(--sf2);color:var(--tx3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)">Valor/Hora</th>
+                    <th style="text-align:left;padding:7px 10px;background:var(--sf2);color:var(--tx3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)">Condição</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">Hora Normal</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--cyan);font-family:var(--font-mono);font-weight:600">R$ 26,22</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx2);font-size:11px">Até 180h/mês</td></tr>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">Hora Normal</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--cyan);font-family:var(--font-mono);font-weight:600">R$ 23,60</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx2);font-size:11px">181h a 200h/mês</td></tr>
+                    <tr><td style="padding:8px 10px;color:var(--tx)">Hora Noturna</td><td style="padding:8px 10px;text-align:right;color:#a78bfa;font-family:var(--font-mono);font-weight:600">R$ 37,79</td><td style="padding:8px 10px;color:var(--tx2);font-size:11px">Turno ≥ 20h ou madrugada</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="panel">
+                <div class="ptl">📊 Tabela de Comissão Variável</div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
+                  <thead><tr>
+                    <th style="text-align:left;padding:7px 10px;background:var(--sf2);color:var(--tx3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)">Faixa de Produção</th>
+                    <th style="text-align:right;padding:7px 10px;background:var(--sf2);color:var(--tx3);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)">%</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">Abaixo de R$ 35.000</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--red);font-family:var(--font-mono);font-weight:600">0%</td></tr>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">R$ 35.000 a R$ 40.999</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--amber);font-family:var(--font-mono);font-weight:600">3%</td></tr>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">R$ 41.000 a R$ 50.999</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--amber);font-family:var(--font-mono);font-weight:600">5%</td></tr>
+                    <tr><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);color:var(--tx)">R$ 51.000 a R$ 60.999</td><td style="padding:8px 10px;border-bottom:1px solid rgba(34,45,69,.4);text-align:right;color:var(--green);font-family:var(--font-mono);font-weight:600">7%</td></tr>
+                    <tr><td style="padding:8px 10px;color:var(--tx)">R$ 61.000 ou mais</td><td style="padding:8px 10px;text-align:right;color:var(--green);font-family:var(--font-mono);font-weight:700">10%</td></tr>
+                  </tbody>
+                </table>
+                <div style="margin-top:10px;font-size:10px;color:var(--tx3);font-family:var(--font-mono)">
+                  ⚠️ Fixos mensais: erica.santana = R$ 8.000 · Talita = R$ 8.000
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload zone -->
+            <div style="margin-bottom:20px">
+              <div class="uzn" style="max-width:340px" onclick="document.getElementById('fi-escala').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'escala')">
+                <div class="ui">🗓️</div>
+                <div class="ut">Escala de Plantão</div>
+                <div class="uh">Escalas_Balneario.xlsx — PegaPlantão</div>
+                <div><span class="utag">ESCALAS · HORAS · TURNOS</span></div>
+                <button class="ubtn" onclick="event.stopPropagation();document.getElementById('fi-escala').click()">Selecionar Arquivo</button>
+              </div>
+              <input type="file" id="fi-escala" class="fi" accept=".xlsx,.xls" onchange="loadF(event,'escala')">
+              <div class="fst" id="fst-escala"></div>
+            </div>
+
+            <!-- Mapping table — rendered by JS after parse -->
+            <div id="escala-map-wrap" style="display:none">
+              <div class="panel" style="margin-bottom:16px">
+                <div class="ptl">Mapeamento: Nome na Escala → Veterinário do Sistema</div>
+                <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-bottom:16px;">
+                  Associe cada profissional encontrado na escala ao login correspondente. Nomes já reconhecidos são preenchidos automaticamente.
+                </div>
+                <div id="escala-map-table"></div>
+                <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <button class="abtn" onclick="saveEscalaHours()" style="background:var(--green)">💾 Salvar Horas no Sistema</button>
+                  <div id="escala-save-status" style="font-size:12px;color:var(--tx3);font-family:var(--font-mono)"></div>
+                </div>
+              </div>
+
+              <!-- Preview of calculated hours -->
+              <div class="panel">
+                <div class="ptl">Prévia das Horas Calculadas</div>
+                <div class="tscroll" id="escala-preview"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-users" class="ab-sec">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="panel">
+                <div class="ptl">Adicionar Usuário</div>
+                <div class="fg"><label class="fgl">Tipo de Acesso</label>
+                  <select id="nrole" style="width:100%;margin-bottom:10px">
+                    <option value="viewer">Visualizador (Viewer)</option>
+                    <option value="admin">Administrador (Admin)</option>
+                  </select>
+                </div>
+                <div class="fg"><label class="fgl">Nome de Usuário</label><input type="text" class="fgi" id="nu" placeholder="nome.sobrenome"></div>
+                <div class="fg"><label class="fgl">Senha Inicial</label><input type="password" class="fgi" id="np" placeholder="••••••••"></div>
+                <button class="abtn" onclick="addUser()">Adicionar Usuário</button>
+              </div>
+              <div class="panel">
+                <div class="ptl">Usuários do Sistema</div>
+                <div id="ulist"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-logs" class="ab-sec">
+            <div class="panel">
+              <div class="ptl">Auditoria de Acessos Recentes</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <div style="font-size:11px;font-family:var(--font-mono);color:var(--tx3)">
+                  Total: <span id="ab-logs-total" style="color:var(--violet)">0</span> registros
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button onclick="exportLogs()" style="padding:6px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;color:var(--tx2);font-size:11px;font-family:var(--font-mono);cursor:pointer">
+                    📤 Exportar CSV
+                  </button>
+                  <button onclick="clearLogs()" style="padding:6px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:6px;color:var(--red);font-size:11px;font-family:var(--font-mono);cursor:pointer">
+                    🗑️ Limpar Logs
+                  </button>
+                </div>
+              </div>
+              <div style="overflow-x:auto">
+                <div id="log-list"><div class="nd">Carregando logs...</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="ab-config" class="ab-sec">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="panel">
+                <div class="ptl">💰 Configurar Tabela de Remuneração</div>
+                <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-bottom:14px">
+                  Altere os valores da hora normal/noturna. As mudanças são salvas na nuvem.
+                </div>
+                <div class="fg"><label class="fgl">Hora Normal ≤ 180h (R$/h)</label>
+                  <input type="number" class="fgi" id="cfg-hn180" value="26.22" step="0.01" style="width:100%;margin-bottom:10px">
+                </div>
+                <div class="fg"><label class="fgl">Hora Normal > 180h (R$/h)</label>
+                  <input type="number" class="fgi" id="cfg-hn200" value="23.60" step="0.01" style="width:100%;margin-bottom:10px">
+                </div>
+                <div class="fg"><label class="fgl">Hora Noturna (R$/h)</label>
+                  <input type="number" class="fgi" id="cfg-hnot" value="37.79" step="0.01" style="width:100%;margin-bottom:14px">
+                </div>
+                <button class="abtn" onclick="saveConfig()" style="background:var(--green)">💾 Salvar Configurações</button>
+                <div id="cfg-save-status" style="margin-top:8px;font-size:11px;font-family:var(--font-mono)"></div>
+              </div>
+
+              <div class="panel">
+                <div class="ptl">👤 Configurar Fixos Mensais</div>
+                <div style="font-size:11px;color:var(--tx3);font-family:var(--font-mono);margin-bottom:14px">
+                  Veterinários com salário fixo mensal (não calculado por hora).
+                </div>
+                <div id="cfg-fixos-list">
+                  <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <input type="text" class="fgi" id="cfg-fix-user" placeholder="nome.sobrenome" style="flex:1">
+                    <input type="number" class="fgi" id="cfg-fix-val" placeholder="8000.00" step="0.01" style="width:120px">
+                    <button class="abtn" onclick="addFixo()" style="background:var(--cyan)">+</button>
+                  </div>
+                </div>
+                <div id="cfg-fixos-items" style="max-height:200px;overflow:auto"></div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top:16px">
+              <div class="ptl">📋 Informações do Sistema</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+                <div style="padding:12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px">
+                  <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Versão</div>
+                  <div style="font-size:14px;font-family:var(--font-display);font-weight:600;color:var(--cyan)">FJ Analytics v2</div>
+                </div>
+                <div style="padding:12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px">
+                  <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Firebase Project</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);color:var(--tx2)">gc-widget-obs</div>
+                </div>
+                <div style="padding:12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px">
+                  <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Admin Atual</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);color:var(--amber)" id="cfg-admin-info">—</div>
+                </div>
+                <div style="padding:12px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px">
+                  <div style="font-size:10px;color:var(--tx3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Navegador</div>
+                  <div style="font-size:12px;font-family:var(--font-mono);color:var(--tx2)" id="cfg-browser-info">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+

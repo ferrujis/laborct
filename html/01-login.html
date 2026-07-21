@@ -1,0 +1,21 @@
+<body>
+
+<!-- ██ LOGIN ██ -->
+<main id="ls" aria-label="Acesso ao sistema">
+  <div class="login-wrap">
+    <div class="login-brand" role="banner">
+      <div class="login-logo" aria-label="FJ Analytics versão 2">FJ<span class="accent"> Analytics</span><span class="tag" aria-hidden="true">v2</span></div>
+      <div class="login-sub">Ecossistema de Inteligência de Negócios</div>
+    </div>
+    <div class="login-card" role="form" aria-label="Formulário de login">
+      <label class="login-field-label" for="lu">Usuário Corporativo</label>
+      <input type="text" class="login-input" id="lu" placeholder="nome.sobrenome" autocomplete="username" aria-required="true">
+      <label class="login-field-label" for="lp">Senha de Acesso</label>
+      <input type="password" class="login-input" id="lp" placeholder="••••••••" autocomplete="current-password" aria-required="true" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-btn" onclick="doLogin()" type="button" aria-label="Entrar no sistema">Entrar no Sistema →</button>
+      <div class="login-err" id="lerr" role="alert" aria-live="assertive">Usuário ou senha incorretos. Tente novamente.</div>
+    </div>
+  </div>
+</main>
+
+<!-- ██ APP WRAPPER ██ -->

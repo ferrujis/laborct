@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070a10">
+  <meta name="robots" content="noindex, nofollow">
+  <script>
+    (function(){
+      const html = document.documentElement;
+      const stored = localStorage.getItem('fj-theme');
+      const theme = stored === 'light' ? 'light' : 'dark';
+      html.dataset.theme = theme;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = theme === 'light' ? '#f8fafc' : '#070a10';
+      window.toggleTheme = function(){
+        const next = html.dataset.theme === 'light' ? 'dark' : 'light';
+        html.dataset.theme = next;
+        localStorage.setItem('fj-theme', next);
+        if (meta) meta.content = next === 'light' ? '#f8fafc' : '#070a10';
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = next === 'light' ? '☀️' : '🌙';
+      };
+      document.addEventListener('DOMContentLoaded', function(){
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+        // Insert project logo (try multiple relative paths)
+        if (!document.getElementById('site-logo')) {
+          const img = document.createElement('img');
+          img.id = 'site-logo';
+          img.alt = 'FJ Analytics';
+          img.title = 'FJ Analytics';
+          img.style.cursor = 'pointer';
+          img.addEventListener('click', () => { if(typeof goHub === 'function') goHub(); else window.location.href = './html/02-hub.html'; });
+          const candidates = [
+            new URL('../public/logo.png', location.href).href,
+            new URL('./public/logo.png', location.href).href,
+            new URL('/public/logo.png', location.origin).href
+          ];
+          let tried = 0;
+          function tryNext(){ if(tried >= candidates.length) return; img.src = candidates[tried++]; }
+          img.onerror = () => tryNext();
+          tryNext();
+          document.body.appendChild(img);
+        }
+      });
+    })();
+  </script>
+  <title>FJ Analytics — Sistema inteligente de análise</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
+</head>
+<body>
+  <div id="loading"><div class="spinner"></div><div>Carregando FJ Analytics...</div></div>
+  <div id="app" style="display:none;"></div>
+  <button id="theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema" onclick="toggleTheme()">🌙</button>
+
+  <script>
+    (async function loadApp() {
+      const basePath = '../';
+
+      const fragments = [
+        'html/01-login.html',
+        'html/02-hub.html',
+        'html/03-labor.html',
+        'html/04-cogs.html',
+        'html/05-insights.html',
+        'html/06-admin.html',
+        'html/07-footer.html'
+      ];
+
+      try {
+        const htmlPieces = await Promise.all(fragments.map(async (file) => {
+          const res = await fetch(basePath + file);
+          if (!res.ok) throw new Error(`${file}: HTTP ${res.status}`);
+          return await res.text();
+        }));
+        document.getElementById('app').innerHTML = htmlPieces.join('');
+      } catch (error) {
+        console.error('Erro ao carregar fragments:', error);
+        document.getElementById('app').innerHTML = '<div style="padding:24px;color:#e8edf8;background:#070a10;min-height:100vh;display:flex;align-items:center;justify-content:center;">Erro ao carregar recursos. Abra o console do browser para detalhes.</div>';
+      }
+
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      document.title = 'FJ Analytics — Ecossistema de Inteligência';
+
+      const scripts = [
+        'js/01-core.js',
+        'js/02-render-financeiro.js',
+        'js/03-cogs.js',
+        'js/04-insights.js',
+        'js/05-import.js',
+        'js/06-admin.js'
+      ];
+
+      const loadScript = (src) => new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = basePath + src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+
+      for (const file of scripts) {
+        try {
+          await loadScript(file);
+          console.log(`✅ ${file} carregado`);
+        } catch (e) {
+          console.error(`❌ Erro ao carregar ${file}:`, e);
+        }
+      }
+
+      if (typeof window.initApp === 'function') {
+        window.initApp();
+      } else if (typeof window.onload === 'function') {
+        window.onload();
+      } else {
+        window.dispatchEvent(new Event('load'));
+      }
+
+      console.log('🚀 Aplicação carregada com sucesso!');
+    })();
+  </script>
+</body>
+</html>
