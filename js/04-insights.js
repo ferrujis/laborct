@@ -411,38 +411,66 @@ function buildMonthHistory(baseRowsAll, cogsRowsAll) {
   });
 }
 
-// ── FUNÇÃO para popular select de semanas (usada no HTML) ──
-function populateInsightsWeekSelect(mes) {
-  const sel = document.getElementById('insights-week-select');
-  if (!sel) return;
-  // Limpar
-  sel.innerHTML = '<option value="">Todas as semanas</option>';
-  if (!mes) { sel.disabled = true; return; }
+// ── Controle do dropdown multi-seleção de semanas (usado no filtro do topo) ──
+let selectedWeeksMulti = []; // semanas marcadas no dropdown, ex: ['1','3']
 
-  const base = getAdjustedBase();
-  // Extrai semanas do mês selecionado (normalizando "Semana 1" para "1")
-  const semanasRaw = [...new Set(base.filter(r => r.mes === mes).map(r => r.sem || r.Semana || '').filter(Boolean))];
-  if (semanasRaw.length === 0) { sel.disabled = true; return; }
-  sel.disabled = false;
-  
-  // Converte para números e ordena
-  const semanasNum = semanasRaw.map(s => extractWeekNumber(s)).filter(n => n !== null);
-  const semanasUnicas = [...new Set(semanasNum)].sort((a, b) => a - b);
-  
-  semanasUnicas.forEach(num => {
-    const opt = document.createElement('option');
-    opt.value = String(num); // valor numérico
-    opt.textContent = `Semana ${num}`;
-    sel.appendChild(opt);
-  });
-  
-  // Se havia uma semana selecionada anteriormente, tenta restaurar
-  const currentVal = sel.dataset.lastValue || '';
-  if (currentVal) {
-    const exists = Array.from(sel.options).some(o => o.value === currentVal);
-    if (exists) sel.value = currentVal;
-  }
+function onInsightsMesChange() {
+  const mes = document.getElementById('insights-mes-select')?.value || null;
+  populateInsightsWeekMulti(mes);
+  generateInsights(mes, null);
 }
+
+function populateInsightsWeekMulti(mes) {
+  const btn = document.getElementById('insights-week-multibtn');
+  const dropdown = document.getElementById('insights-week-dropdown');
+  const label = document.getElementById('insights-week-multilabel');
+  if (!btn || !dropdown || !label) return;
+
+  selectedWeeksMulti = [];
+  dropdown.innerHTML = '';
+  dropdown.style.display = 'none';
+  label.textContent = 'Todas as semanas';
+
+  if (!mes) { btn.disabled = true; return; }
+
+  const weeks = getAvailableWeeksForMesCompare(mes);
+  if (!weeks.length) { btn.disabled = true; return; }
+
+  btn.disabled = false;
+  dropdown.innerHTML = weeks.map(w => `
+    <label style="display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;font-family:var(--font-mono);font-size:12px;color:var(--tx2);white-space:nowrap" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+      <input type="checkbox" value="${w}" onchange="onWeekMultiToggle()" style="accent-color:var(--pink);cursor:pointer">
+      Semana ${w}
+    </label>
+  `).join('');
+}
+
+function onWeekMultiToggle() {
+  const dropdown = document.getElementById('insights-week-dropdown');
+  const label = document.getElementById('insights-week-multilabel');
+  if (!dropdown || !label) return;
+  const checked = Array.from(dropdown.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+  selectedWeeksMulti = checked;
+  if (!checked.length) label.textContent = 'Todas as semanas';
+  else if (checked.length === 1) label.textContent = `Semana ${checked[0]}`;
+  else label.textContent = `${checked.length} semanas selecionadas`;
+}
+
+function toggleWeekDropdown() {
+  const dropdown = document.getElementById('insights-week-dropdown');
+  const btn = document.getElementById('insights-week-multibtn');
+  if (!dropdown || btn?.disabled) return;
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener('click', function (e) {
+  const dropdown = document.getElementById('insights-week-dropdown');
+  const btn = document.getElementById('insights-week-multibtn');
+  if (!dropdown || !btn) return;
+  if (dropdown.style.display === 'block' && !dropdown.contains(e.target) && e.target !== btn) {
+    dropdown.style.display = 'none';
+  }
+});
 
 // ════════════════════════════════
 //  FUNÇÃO PRINCIPAL: generateInsights
@@ -1405,40 +1433,33 @@ function computePeriodSummary(p) {
 }
 
 function initPeriodComparator() {
-  const mesSel = document.getElementById('cmp-mes-select');
-  if (!mesSel) return; // HTML do comparador ainda não presente nesta tela
-
-  const allMeses = [...new Set([
-    ...(S.base || []).map(r => r.mes),
-    ...(S.cogs || []).map(r => r.mes)
-  ])].filter(Boolean).sort((a, b) => MESES.indexOf(a) - MESES.indexOf(b));
-
-  const currentMesVal = mesSel.value;
-  mesSel.innerHTML = allMeses.map(m => `<option value="${m}">${cap(m)}</option>`).join('');
-  if (currentMesVal && allMeses.includes(currentMesVal)) mesSel.value = currentMesVal;
-
-  updateCmpWeekSelect();
+  // Garante que o dropdown de semanas reflita o mês atualmente selecionado no filtro do topo
+  const mesSel = document.getElementById('insights-mes-select');
+  if (!mesSel) return; // HTML ainda não presente nesta tela
+  populateInsightsWeekMulti(mesSel.value || null);
   renderComparePeriodsChips();
 }
 
-function updateCmpWeekSelect() {
-  const mesSel = document.getElementById('cmp-mes-select');
-  const wkSel = document.getElementById('cmp-week-select');
-  if (!mesSel || !wkSel) return;
-  const mes = mesSel.value;
-  const weeks = getAvailableWeeksForMesCompare(mes);
-  wkSel.innerHTML = '<option value="">Mês inteiro</option>' + weeks.map(w => `<option value="${w}">Semana ${w}</option>`).join('');
-}
-
+// Adiciona à comparação o(s) período(s) marcado(s) no filtro do topo:
+// - Se nenhuma semana estiver marcada → adiciona o mês inteiro
+// - Se uma ou mais semanas estiverem marcadas → adiciona uma entrada por semana marcada
 function addComparePeriod() {
-  const mesSel = document.getElementById('cmp-mes-select');
-  const wkSel = document.getElementById('cmp-week-select');
+  const mesSel = document.getElementById('insights-mes-select');
   const mes = mesSel?.value;
-  const week = wkSel?.value || null;
-  if (!mes) return;
-  const p = { mes, week };
-  if (comparePeriods.some(x => periodKey(x) === periodKey(p))) return; // já adicionado, evita duplicata
-  comparePeriods.push(p);
+  if (!mes) {
+    alert('Selecione um mês específico (não "Automático") para adicionar à comparação.');
+    return;
+  }
+
+  if (!selectedWeeksMulti.length) {
+    const p = { mes, week: null };
+    if (!comparePeriods.some(x => periodKey(x) === periodKey(p))) comparePeriods.push(p);
+  } else {
+    selectedWeeksMulti.forEach(week => {
+      const p = { mes, week };
+      if (!comparePeriods.some(x => periodKey(x) === periodKey(p))) comparePeriods.push(p);
+    });
+  }
   renderComparePeriodsChips();
 }
 
@@ -1460,7 +1481,7 @@ function renderComparePeriodsChips() {
   const box = document.getElementById('cmp-chips');
   if (!box) return;
   if (!comparePeriods.length) {
-    box.innerHTML = '<span style="font-size:11px;color:var(--tx3);font-family:var(--font-mono)">Nenhum período adicionado ainda. Escolha mês + semana e clique em "Adicionar".</span>';
+    box.innerHTML = '<span style="font-size:11px;color:var(--tx3);font-family:var(--font-mono)">Nenhum período adicionado ainda. Marque a(s) semana(s) desejada(s) e clique em "+ Adicionar à comparação".</span>';
     return;
   }
   box.innerHTML = comparePeriods.map(p => `
