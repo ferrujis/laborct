@@ -27,12 +27,3 @@ fj/
     └── index.html                # arquivo final gerado — é o que você abre/publica
 ```
 
-## Como usar
-
-- Para pedir uma alteração, me diga qual arquivo (ex: "no 03-cogs.js, ajusta a função renderCogsDRE") — assim eu leio só o necessário.
-- Depois de qualquer edição, rode `bash build.sh` (ou peça que eu rode) para gerar o `dist/index.html` atualizado, que é o arquivo real para usar/publicar.
-- O `build.sh` apenas concatena os arquivos na ordem certa — não faz nenhuma transformação de conteúdo.
-
-## Verificado
-
-O `dist/index.html` gerado a partir dessa separação é **byte a byte idêntico** ao `index.html` original enviado.
